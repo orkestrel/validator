@@ -1,0 +1,2489 @@
+I’ve prepared a complete initial scaffold for @orkestrel/validator that follows your ethos, mirrors orkestrel/core’s configuration style (without copying its content), and includes strict, modular TypeScript guards/assertions, deep equality/clone checks, diagnostics, and a mirrored test suite using Node’s built-in test runner.
+
+Branch and PR instructions
+- Create a branch:
+  git checkout -b feat/initial-scaffold
+- Add all files below into the repo at the indicated paths.
+- Build and run tests locally:
+  npm i
+  npm run typecheck
+  npm run build
+  npm test
+- Push and open PR:
+  git add -A
+  git commit -m "feat: scaffold @orkestrel/validator with strict guards, assertions, deep checks, diagnostics, and tests"
+  git push -u origin feat/initial-scaffold
+  # then open a PR in GitHub 
+
+Project files
+
+```json name=package.json
+{
+  "name": "@orkestrel/validator",
+  "version": "0.1.0",
+  "description": "Tiny, composable runtime type guards and assertions for TypeScript with LLM-friendly diagnostics",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"dist/tests/**/*.js\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "typescript": "^5.6.3"
+  }
+}
+```
+
+```json name=tsconfig.base.json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": true,
+    "forceConsistentCasingInFileNames": true,
+    "exactOptionalPropertyTypes": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "stripInternal": true
+  }
+}
+```
+
+```json name=tsconfig.json
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src", "tests"]
+}
+```
+
+```json name=tsconfig.build.json
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": false
+  },
+  "include": ["src", "tests"]
+}
+```
+
+```yaml name=.github/workflows/ci.yml
+name: CI
+on:
+  push:
+    branches: [ main, "feat/**" ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci || npm i
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+```
+
+````markdown name=README.md
+# @orkestrel/validator
+
+TypeScript‑first, ESM‑only runtime validators and assertion helpers with rich, LLM‑friendly diagnostics.
+
+Principles
+- Determinism: same inputs, same outputs; preserve insertion and declared dependency order
+- Strong typing: strict types with zero `any`, no non‑null assertions, honest boundaries
+- Small surface: minimal, composable APIs; real use cases drive growth
+- Portability: browser + Node compatible by default; no Node‑only primitives in public APIs
+
+Typing ethos
+- No `any`. No non‑null assertions (`!`). Avoid unsafe casts; prefer narrowing
+- Validate at the edges: accept `unknown`, check, then type
+- Prefer `readonly` for public outputs; avoid mutating returned values
+- Keep helpers small and well‑typed; document invariants where helpful
+
+TSDoc policy
+- Exported functions: full TSDoc with description, `@param`, `@returns`, small `ts` examples
+- Types and interfaces: no TSDoc blocks (keep comments minimal)
+- Private/internal helpers: single‑line description comments only
+- Options objects: document a single parameter; list properties in the description; no dotted `@param` names
+
+Install
+```sh
+npm i @orkestrel/validator
+```
+
+Quick start
+```ts
+import { isRecord, isString, arrayOf, assertRecord, assertArrayOf } from '@orkestrel/validator'
+
+const input: unknown = JSON.parse('{"tags":["x","y"]}')
+
+if (isRecord(input) && arrayOf(isString)(input.tags)) {
+  console.log(input.tags.join(','))
+}
+
+assertRecord(input, { path: ['input'] })
+assertArrayOf(input.tags, isString, { path: ['input','tags'], hint: 'Expect an array of strings' })
+```
+
+Deep checks
+- isDeepEqual(a, b, opts) — structural equality (handles Array, Object, Map, Set, Date, RegExp, ArrayBuffer/DataView/TypedArrays). Cycle‑safe.
+- isDeepClone(a, b, opts) — structural equality plus no shared object references (shared function/Error allowed by default; configurable).
+- assertDeepEqual and assertDeepClone throw TypeError with path-aware messages and structured metadata.
+
+Diagnostics
+- createTypeError(expected, received, options) produces a human‑friendly message and attaches machine‑readable metadata:
+  { expected, path, label, receivedType, receivedTag, receivedPreview, hint, helpUrl }.
+- pathToString(['meta','tags',1,'id']) -> "meta.tags[1].id"
+- extendPath(path, seg) to build nested paths immutably
+
+Tests
+- Node’s native runner (node:test) + assert/strict
+- Test files mirror src filenames (src/foo.ts -> tests/foo.test.ts)
+- No fakes/mocks/spies
+
+Scripts
+- npm run typecheck — strict TS checks
+- npm run build — emit ESM and declarations to dist
+- npm test — build then run the Node test suite (dist/tests)
+````
+
+````markdown name=LICENSE
+MIT License
+
+Copyright (c) 2025 Orkestrel
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+````
+
+Source files (src)
+
+```typescript name=src/types.ts
+export type Guard<T> = (x: unknown) => x is T
+
+export type GuardType<G> = G extends Guard<infer T> ? T : never
+
+export type GuardsShape = Readonly<Record<string, Guard<unknown>>>
+export type FromGuards<G extends GuardsShape> = Readonly<{ [K in keyof G]: GuardType<G[K]> }>
+
+export type PrimitiveTag =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'symbol'
+  | 'bigint'
+  | 'function'
+  | 'object'
+
+export type SchemaSpec = Readonly<{ [k: string]: SchemaSpec | PrimitiveTag | Guard<unknown> }>
+export type ResolveRule<R> =
+  R extends 'string' ? string
+    : R extends 'number' ? number
+    : R extends 'boolean' ? boolean
+    : R extends 'symbol' ? symbol
+    : R extends 'bigint' ? bigint
+    : R extends 'function' ? (...args: unknown[]) => unknown
+    : R extends 'object' ? Record<string, unknown>
+    : R extends Guard<infer U> ? U
+    : R extends SchemaSpec ? FromSchema<R>
+    : never
+
+export type FromSchema<S extends SchemaSpec> = Readonly<{ [K in keyof S]: ResolveRule<S[K]> }>
+
+export type Result<T, E = Error> =
+  | Readonly<{ ok: true; value: T }>
+  | Readonly<{ ok: false; error: E }>
+
+export type UnionToIntersection<U> =
+  (U extends unknown ? (k: U) => void : never) extends (k: infer I) => void ? I : never
+
+export type TupleTypes<T extends readonly unknown[]> = T[number]
+```
+
+```typescript name=src/primitives.ts
+import type { Guard } from './types.js'
+
+/**
+ * Return the internal [[Class]] tag string for a value.
+ *
+ * @param x - Value to inspect
+ * @returns Tag like "[object Array]" or "[object Date]"
+ */
+export function getTag(x: unknown): string {
+  return Object.prototype.toString.call(x)
+}
+
+export function isNull(x: unknown): x is null {
+  return x === null
+}
+
+export function isUndefined(x: unknown): x is undefined {
+  return x === undefined
+}
+
+/**
+ * Check whether a value is defined (not null/undefined).
+ *
+ * @param x - Value to check
+ * @returns True if x is neither null nor undefined
+ */
+export function isDefined<T>(x: T | null | undefined): x is T {
+  return x !== null && x !== undefined
+}
+
+export function isString(x: unknown): x is string {
+  return typeof x === 'string'
+}
+
+export function isNumber(x: unknown): x is number {
+  return typeof x === 'number' && Number.isFinite(x)
+}
+
+export function isInteger(x: unknown): x is number {
+  return typeof x === 'number' && Number.isInteger(x)
+}
+
+export function isSafeInteger(x: unknown): x is number {
+  return typeof x === 'number' && Number.isSafeInteger(x)
+}
+
+export function numberInRange(min: number, max: number): Guard<number> {
+  return (x: unknown): x is number => isNumber(x) && x >= min && x <= max
+}
+
+export function isNonNegativeNumber(x: unknown): x is number {
+  return isNumber(x) && x >= 0
+}
+
+export function isPositiveNumber(x: unknown): x is number {
+  return isNumber(x) && x > 0
+}
+
+export function isBoolean(x: unknown): x is boolean {
+  return typeof x === 'boolean'
+}
+
+export function isBigInt(x: unknown): x is bigint {
+  return typeof x === 'bigint'
+}
+
+export function isSymbol(x: unknown): x is symbol {
+  return typeof x === 'symbol'
+}
+
+export function isFunction(x: unknown): x is (...args: unknown[]) => unknown {
+  return typeof x === 'function'
+}
+
+/**
+ * Heuristic for async functions (native or transpiled).
+ *
+ * @param fn - Value to check
+ * @returns True if fn appears to be an async function
+ */
+export function isAsyncFunction(fn: unknown): fn is (...args: unknown[]) => Promise<unknown> {
+  if (!isFunction(fn)) return false
+  if (getTag(fn) === '[object AsyncFunction]') return true
+  const proto = Object.getPrototypeOf(fn)
+  const ctorName = typeof proto?.constructor?.name === 'string' ? proto.constructor.name : undefined
+  return ctorName === 'AsyncFunction'
+}
+
+export function isZeroArg(fn: (...args: unknown[]) => unknown): fn is () => unknown {
+  return fn.length === 0
+}
+
+export function isDate(x: unknown): x is Date {
+  return getTag(x) === '[object Date]'
+}
+
+export function isRegExp(x: unknown): x is RegExp {
+  return getTag(x) === '[object RegExp]'
+}
+
+export function isError(x: unknown): x is Error {
+  return x instanceof Error
+}
+
+export function isPromiseLike<T = unknown>(x: unknown): x is PromiseLike<T> {
+  if (x == null) return false
+  const t = typeof x
+  if (t !== 'object' && t !== 'function') return false
+  if (!('then' in (x as object))) return false
+  const then = (x as { then?: unknown }).then
+  return typeof then === 'function'
+}
+```
+
+```typescript name=src/objects.ts
+import type { Guard } from './types.js'
+
+export function isObject(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null
+}
+
+export function isRecord(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null && !Array.isArray(x)
+}
+
+/**
+ * hasOwn with overloads that preserve the original type where known.
+ *
+ * @param obj - Value to check
+ * @param key - One or more keys to require on the object
+ */
+export function hasOwn<K extends PropertyKey>(obj: unknown, key: K): obj is Record<K, unknown>
+export function hasOwn<Ks extends readonly PropertyKey[]>(obj: unknown, ...keys: Ks): obj is { [P in Ks[number]]: unknown }
+export function hasOwn<T extends object, K extends PropertyKey>(obj: T, key: K): obj is T & Record<K, unknown>
+export function hasOwn<T extends object, Ks extends readonly PropertyKey[]>(obj: T, ...keys: Ks): obj is T & { [P in Ks[number]]: unknown }
+export function hasOwn(obj: unknown, ...keys: readonly PropertyKey[]): boolean {
+  if (!isRecord(obj)) return false
+  for (const k of keys) if (!Object.prototype.hasOwnProperty.call(obj, k)) return false
+  return true
+}
+
+/**
+ * Object must own only the specified keys (no extras).
+ *
+ * @param obj - Value to check
+ * @param keys - Exact allowed keys
+ */
+export function hasOnlyKeys<Ks extends readonly PropertyKey[]>(obj: unknown, ...keys: Ks): obj is { [P in Ks[number]]: unknown } {
+  if (!isRecord(obj)) return false
+  const objKeys = Object.keys(obj)
+  if (objKeys.length !== keys.length) return false
+  for (const k of keys) if (!Object.prototype.hasOwnProperty.call(obj, k)) return false
+  return true
+}
+
+/**
+ * Guard for keyof a given object literal (by membership).
+ *
+ * @param obj - Object to derive keys from
+ */
+export function keyOf<const O extends Readonly<Record<PropertyKey, unknown>>>(obj: O): Guard<keyof O> {
+  return (x: unknown): x is keyof O => (typeof x === 'string' || typeof x === 'symbol' || typeof x === 'number') && x in obj
+}
+
+/**
+ * Opposite of hasOwn: returns true if object owns none of the provided keys.
+ *
+ * @param obj - Value to check
+ * @param keys - Keys that must not be present
+ */
+export function hasNo(obj: unknown, ...keys: readonly PropertyKey[]): boolean {
+  if (!isRecord(obj)) return false
+  for (const k of keys) if (Object.prototype.hasOwnProperty.call(obj, k)) return false
+  return true
+}
+```
+
+```typescript name=src/arrays.ts
+import type { Guard } from './types.js'
+import { isRecord } from './objects.js'
+
+export function isArray<T = unknown>(x: unknown): x is ReadonlyArray<T> {
+  return Array.isArray(x)
+}
+
+export function arrayOf<T>(elem: Guard<T>): Guard<ReadonlyArray<T>> {
+  return (x: unknown): x is ReadonlyArray<T> => Array.isArray(x) && x.every(elem)
+}
+
+export function nonEmptyArrayOf<T>(elem: Guard<T>): Guard<readonly [T, ...T[]]> {
+  return (x: unknown): x is readonly [T, ...T[]] => Array.isArray(x) && x.length > 0 && x.every(elem)
+}
+
+export function tupleOf<const Gs extends readonly Guard<unknown>[]>(...guards: Gs): Guard<{ readonly [K in keyof Gs]: Gs[K] extends Guard<infer T> ? T : never }> {
+  return (x: unknown): x is { readonly [K in keyof Gs]: Gs[K] extends Guard<infer T> ? T : never } => {
+    if (!Array.isArray(x) || x.length !== guards.length) return false
+    for (let i = 0; i < guards.length; i++) {
+      if (!guards[i](x[i])) return false
+    }
+    return true
+  }
+}
+
+export function recordOf<T>(valueGuard: Guard<T>): Guard<Record<string, T>> {
+  return (x: unknown): x is Record<string, T> => {
+    if (!isRecord(x)) return false
+    for (const k of Object.keys(x)) {
+      if (!valueGuard((x as Record<string, unknown>)[k])) return false
+    }
+    return true
+  }
+}
+```
+
+```typescript name=src/collections.ts
+import type { Guard } from './types.js'
+
+export function isMap<K = unknown, V = unknown>(x: unknown): x is ReadonlyMap<K, V> {
+  return x instanceof Map
+}
+
+export function isSet<T = unknown>(x: unknown): x is ReadonlySet<T> {
+  return x instanceof Set
+}
+
+export function isWeakMap(x: unknown): x is WeakMap<object, unknown> {
+  return x instanceof WeakMap
+}
+
+export function isWeakSet(x: unknown): x is WeakSet<object> {
+  return x instanceof WeakSet
+}
+
+export function mapOf<K, V>(keyGuard: Guard<K>, valueGuard: Guard<V>): Guard<ReadonlyMap<K, V>> {
+  return (x: unknown): x is ReadonlyMap<K, V> => {
+    if (!(x instanceof Map)) return false
+    for (const [k, v] of x as Map<unknown, unknown>) {
+      if (!keyGuard(k) || !valueGuard(v)) return false
+    }
+    return true
+  }
+}
+
+export function setOf<T>(elemGuard: Guard<T>): Guard<ReadonlySet<T>> {
+  return (x: unknown): x is ReadonlySet<T> => {
+    if (!(x instanceof Set)) return false
+    for (const v of x as Set<unknown>) {
+      if (!elemGuard(v)) return false
+    }
+    return true
+  }
+}
+
+export function nonEmptySetOf<T>(elemGuard: Guard<T>): Guard<ReadonlySet<T>> {
+  return (x: unknown): x is ReadonlySet<T> => {
+    if (!(x instanceof Set) || x.size === 0) return false
+    for (const v of x as Set<unknown>) {
+      if (!elemGuard(v)) return false
+    }
+    return true
+  }
+}
+```
+
+```typescript name=src/iterables.ts
+import type { Guard } from './types.js'
+
+export function isIterable<T = unknown>(x: unknown): x is Iterable<T> {
+  return x != null && typeof (x as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function'
+}
+
+/**
+ * WARNING: This will consume the iterable.
+ */
+export function iterableOf<T>(elemGuard: Guard<T>): Guard<Iterable<T>> {
+  return (x: unknown): x is Iterable<T> => {
+    if (!isIterable<T>(x)) return false
+    for (const v of x as Iterable<unknown>) {
+      if (!elemGuard(v)) return false
+    }
+    return true
+  }
+}
+```
+
+```typescript name=src/strings.ts
+import type { Guard } from './types.js'
+import { isString } from './primitives.js'
+
+export function stringMatching(re: RegExp): Guard<string> {
+  return (x: unknown): x is string => isString(x) && re.test(x)
+}
+
+export function stringMinLength(min: number): Guard<string> {
+  return (x: unknown): x is string => isString(x) && x.length >= min
+}
+
+export function stringMaxLength(max: number): Guard<string> {
+  return (x: unknown): x is string => isString(x) && x.length <= max
+}
+
+export function stringLengthBetween(min: number, max: number): Guard<string> {
+  return (x: unknown): x is string => isString(x) && x.length >= min && x.length <= max
+}
+
+export function isLowercase(x: unknown): x is string {
+  return isString(x) && x === x.toLowerCase()
+}
+
+export function isUppercase(x: unknown): x is string {
+  return isString(x) && x === x.toUpperCase()
+}
+
+export function isAlphanumeric(x: unknown): x is string {
+  return isString(x) && /^[A-Za-z0-9]+$/.test(x)
+}
+
+export function isAscii(x: unknown): x is string {
+  return isString(x) && /^[\x00-\x7F]+$/.test(x)
+}
+
+/**
+ * Hex color (#RGB | #RRGGBB | #RRGGBBAA). Optionally allow leading '#'.
+ */
+export function isHexColor(x: unknown, opts?: Readonly<{ allowHash?: boolean }>): x is string {
+  if (!isString(x)) return false
+  const s = opts?.allowHash === true && x.startsWith('#') ? x.slice(1) : x
+  return /^([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(s)
+}
+
+export function isIPv4String(x: unknown): x is string {
+  if (!isString(x)) return false
+  const m = x.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/)
+  if (!m) return false
+  for (let i = 1; i <= 4; i++) {
+    const n = Number(m[i])
+    if (!Number.isInteger(n) || n < 0 || n > 255) return false
+    if (m[i].length > 1 && m[i].startsWith('0')) return false
+  }
+  return true
+}
+
+/**
+ * RFC 1123-ish hostname.
+ */
+export function isHostnameString(x: unknown): x is string {
+  if (!isString(x)) return false
+  if (x.length === 0 || x.length > 253) return false
+  const labels = x.split('.')
+  for (const label of labels) {
+    if (label.length < 1 || label.length > 63) return false
+    if (!/^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/.test(label)) return false
+  }
+  return true
+}
+```
+
+```typescript name=src/numbers.ts
+import type { Guard } from './types.js'
+import { isInteger, isNumber } from './primitives.js'
+
+export function isNegativeNumber(x: unknown): x is number {
+  return isNumber(x) && x < 0
+}
+
+export function intInRange(min: number, max: number): Guard<number> {
+  return (x: unknown): x is number => isInteger(x) && x >= min && x <= max
+}
+
+export function isMultipleOf(m: number): Guard<number> {
+  return (x: unknown): x is number => isNumber(x) && Number.isFinite(m) && m !== 0 && x % m === 0
+}
+```
+
+```typescript name=src/combinators.ts
+import type { Guard, Result, UnionToIntersection } from './types.js'
+import { isRecord } from './objects.js'
+
+export function literalOf<const Literals extends readonly (string | number | boolean)[]>(
+  ...literals: Literals
+): Guard<Literals[number]> {
+  return (x: unknown): x is Literals[number] => literals.includes(x as never)
+}
+
+export function and<A, B>(a: Guard<A>, b: Guard<B>): Guard<A & B> {
+  return (x: unknown): x is A & B => a(x) && b(x)
+}
+
+export function or<A, B>(a: Guard<A>, b: Guard<B>): Guard<A | B> {
+  return (x: unknown): x is A | B => a(x) || b(x)
+}
+
+/**
+ * Negation returns Guard<unknown>; the complement is not representable exactly in TS.
+ */
+export function not(_g: Guard<unknown>): Guard<unknown> {
+  const g = _g as Guard<unknown>
+  return (x: unknown): x is unknown => !g(x)
+}
+
+/**
+ * Alias for not(...) to expose as isNot.
+ */
+export const isNot = not
+
+export function unionOf<const Gs extends readonly Guard<unknown>[]>(...guards: Gs): Guard<Gs[number] extends Guard<infer T> ? T : never> {
+  return (x: unknown): x is Gs[number] extends Guard<infer T> ? T : never => guards.some(g => g(x))
+}
+
+export function intersectionOf<const Gs extends readonly Guard<unknown>[]>(...guards: Gs): Guard<UnionToIntersection<Gs[number] extends Guard<infer T> ? T : never>> {
+  return (x: unknown): x is UnionToIntersection<Gs[number] extends Guard<infer T> ? T : never> => guards.every(g => g(x))
+}
+
+export function optionalOf<T>(g: Guard<T>): Guard<T | undefined> {
+  return (x: unknown): x is T | undefined => x === undefined || g(x)
+}
+
+export function nullableOf<T>(g: Guard<T>): Guard<T | null> {
+  return (x: unknown): x is T | null => x === null || g(x)
+}
+
+export function lazy<T>(thunk: () => Guard<T>): Guard<T> {
+  return (x: unknown): x is T => thunk()(x)
+}
+
+export function refine<T, U extends T>(base: Guard<T>, refineFn: (x: T) => x is U): Guard<U> {
+  return (x: unknown): x is U => base(x) && refineFn(x as T)
+}
+
+export function safeParse<T, E extends Error = TypeError>(
+  x: unknown,
+  g: Guard<T>,
+  onError?: (x: unknown) => E,
+): Result<T, E> {
+  if (g(x)) return { ok: true, value: x }
+  return { ok: false, error: onError ? onError(x) : new TypeError('Validation failed') as E }
+}
+
+export function discriminatedUnion<
+  K extends string,
+  const M extends Readonly<Record<string, Guard<unknown>>>
+>(disc: K, mapping: M): Guard<M[keyof M] extends Guard<infer T> ? T : never> {
+  const keys = new Set(Object.keys(mapping))
+  return (x: unknown): x is M[keyof M] extends Guard<infer T> ? T : never => {
+    if (!isRecord(x)) return false
+    const v = x[disc]
+    if (typeof v !== 'string') return false
+    if (!keys.has(v)) return false
+    const g = mapping[v]
+    return g ? g(x) : false
+  }
+}
+
+export function fromNativeEnum<E extends Record<string, string | number>>(e: E): Guard<E[keyof E]> {
+  const values = new Set(Object.values(e).filter(v => typeof v === 'string' || typeof v === 'number') as (string | number)[])
+  return (x: unknown): x is E[keyof E] => values.has(x as string | number)
+}
+```
+
+```typescript name=src/schema.ts
+import type { FromSchema, Guard, GuardsShape, SchemaSpec, GuardType } from './types.js'
+import { isFunction } from './primitives.js'
+
+export function hasSchema<S extends SchemaSpec>(obj: unknown, schema: S): obj is FromSchema<S> {
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return false
+  const o = obj as Record<string, unknown>
+  for (const [k, rule] of Object.entries(schema)) {
+    if (!Object.prototype.hasOwnProperty.call(o, k)) return false
+    const v = o[k]
+    if (typeof rule === 'string') {
+      if (rule === 'object') {
+        if (!(typeof v === 'object' && v !== null && !Array.isArray(v))) return false
+      } else if (typeof v !== rule) {
+        return false
+      }
+    } else if (isFunction(rule)) {
+      if (!(rule as Guard<unknown>)(v)) return false
+    } else {
+      if (!hasSchema(v, rule as SchemaSpec)) return false
+    }
+  }
+  return true
+}
+
+/**
+ * Validate that object, if it has schema keys, they satisfy the rules.
+ * Missing keys are allowed.
+ */
+export function hasPartialSchema<S extends SchemaSpec>(obj: unknown, schema: S): obj is Partial<FromSchema<S>> {
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return false
+  const o = obj as Record<string, unknown>
+  for (const [k, rule] of Object.entries(schema)) {
+    if (!Object.prototype.hasOwnProperty.call(o, k)) continue
+    const v = o[k]
+    if (typeof rule === 'string') {
+      if (rule === 'object') {
+        if (!(typeof v === 'object' && v !== null && !Array.isArray(v))) return false
+      } else if (typeof v !== rule) {
+        return false
+      }
+    } else if (isFunction(rule)) {
+      if (!(rule as Guard<unknown>)(v)) return false
+    } else {
+      if (!hasPartialSchema(v, rule as SchemaSpec)) return false
+    }
+  }
+  return true
+}
+
+export function objectOf<const G extends GuardsShape, const Opt extends readonly (keyof G)[] = []>(
+  props: G,
+  options?: Readonly<{ optional?: Opt; exact?: boolean; rest?: Guard<unknown> }>,
+): (x: unknown) => x is Readonly<{ [K in Exclude<keyof G, Opt[number]>]-?: GuardType<G[K]> } & { [K in Opt[number]]?: GuardType<G[K]> }> {
+  const optionalSet = new Set<keyof G>(options?.optional as readonly (keyof G)[] | undefined ?? [])
+  const exact = options?.exact === true
+  const rest = options?.rest
+  return (x: unknown): x is Readonly<{ [K in Exclude<keyof G, Opt[number]>]-?: GuardType<G[K]> } & { [K in Opt[number]]?: GuardType<G[K]> }> => {
+    if (typeof x !== 'object' || x === null || Array.isArray(x)) return false
+    const obj = x as Record<string, unknown>
+    for (const [k, g] of Object.entries(props) as [keyof G, Guard<unknown>][]) {
+      const present = Object.prototype.hasOwnProperty.call(obj, k as string)
+      const isOpt = optionalSet.has(k)
+      if (!present && !isOpt) return false
+      if (present && !g(obj[k as string])) return false
+    }
+    if (exact) {
+      for (const k of Object.keys(obj)) {
+        if (!(k in props)) return false
+      }
+    } else if (rest) {
+      for (const k of Object.keys(obj)) {
+        if (!(k in props) && !rest(obj[k])) return false
+      }
+    }
+    return true
+  }
+}
+```
+
+```typescript name=src/domains.ts
+import { isString, numberInRange, isInteger } from './primitives.js'
+
+export function isUUIDv4(x: unknown): x is string {
+  return isString(x) && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x)
+}
+
+export function isISODateString(x: unknown): x is string {
+  if (!isString(x)) return false
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(x)
+  if (!m) return false
+  const y = Number(m[1]); const mo = Number(m[2]); const d = Number(m[3])
+  if (!(mo >= 1 && mo <= 12)) return false
+  if (!(d >= 1 && d <= 31)) return false
+  const dt = new Date(Date.UTC(y, mo - 1, d))
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d
+}
+
+export function isISODateTimeString(x: unknown): x is string {
+  if (!isString(x)) return false
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(x)) return false
+  const dt = new Date(x)
+  return !Number.isNaN(dt.getTime())
+}
+
+export function isEmail(x: unknown): x is string {
+  return isString(x) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)
+}
+
+export function isURLString(x: unknown): x is string {
+  if (!isString(x)) return false
+  try {
+    // eslint-disable-next-line no-new
+    new URL(x)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function isHttpUrlString(x: unknown): x is string {
+  if (!isURLString(x)) return false
+  const u = new URL(x)
+  return u.protocol === 'http:' || u.protocol === 'https:'
+}
+
+export function isPortNumber(x: unknown): x is number {
+  return isInteger(x) && numberInRange(1, 65535)(x)
+}
+
+export function isMimeType(x: unknown): x is string {
+  return isString(x) && /^[a-z0-9][\w.+-]*\/[a-z0-9][\w.+-]*$/i.test(x)
+}
+
+export function isSlug(x: unknown): x is string {
+  return isString(x) && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(x)
+}
+
+export function isBase64String(x: unknown): x is string {
+  return isString(x) && /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(x)
+}
+
+export function isHexString(x: unknown, opts?: Readonly<{ evenLength?: boolean; allow0x?: boolean }>): x is string {
+  if (!isString(x)) return false
+  const s = opts?.allow0x === true && x.startsWith('0x') ? x.slice(2) : x
+  if (!/^[0-9a-fA-F]+$/.test(s)) return false
+  return opts?.evenLength ? s.length % 2 === 0 : true
+}
+
+export function isSemver(x: unknown): x is string {
+  if (!isString(x)) return false
+  // eslint-disable-next-line no-useless-escape
+  const re = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+  return re.test(x)
+}
+
+export function isJsonString(x: unknown): x is string {
+  if (!isString(x)) return false
+  try {
+    JSON.parse(x)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export type JsonValue = null | boolean | number | string | JsonArray | JsonObject
+export type JsonArray = ReadonlyArray<JsonValue>
+export type JsonObject = Readonly<{ [k: string]: JsonValue }>
+
+export function isJsonValue(x: unknown): x is JsonValue {
+  if (x === null) return true
+  const t = typeof x
+  if (t === 'string' || t === 'boolean') return true
+  if (t === 'number') return Number.isFinite(x as number)
+  if (Array.isArray(x)) return (x as unknown[]).every(isJsonValue)
+  if (t === 'object') {
+    const o = x as Record<string, unknown>
+    for (const k of Object.keys(o)) {
+      if (!isJsonValue(o[k])) return false
+    }
+    return true
+  }
+  return false
+}
+
+const httpMethods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'] as const
+export type HttpMethod = typeof httpMethods[number]
+
+export function isHttpMethod(x: unknown): x is HttpMethod {
+  return isString(x) && (httpMethods as readonly string[]).includes(x)
+}
+```
+
+```typescript name=src/diagnostics.ts
+export type PathSegment = string | number
+export type ValidationPath = ReadonlyArray<PathSegment>
+
+function isValidIdent(s: string): boolean {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(s)
+}
+
+/**
+ * Turn ['meta','tags',1,'id'] into "meta.tags[1].id"
+ */
+export function pathToString(path?: ValidationPath): string {
+  if (!path || path.length === 0) return ''
+  const parts: string[] = []
+  for (const seg of path) {
+    if (typeof seg === 'number') {
+      parts.push(`[${seg}]`)
+    } else if (isValidIdent(seg)) {
+      if (parts.length === 0 || parts[parts.length - 1].startsWith('[')) {
+        parts.push(seg)
+      } else {
+        parts.push(`.${seg}`)
+      }
+    } else {
+      parts.push(`[${JSON.stringify(seg)}]`)
+    }
+  }
+  return parts.join('')
+}
+
+function previewValue(x: unknown): string {
+  try {
+    if (x === null) return 'null'
+    if (x === undefined) return 'undefined'
+    const t = typeof x
+    if (t === 'string') return x.length > 100 ? `${x.slice(0, 100)}…` : x
+    if (t === 'number' || t === 'boolean' || t === 'bigint' || t === 'symbol' || t === 'function') return String(x)
+    if (t === 'object') {
+      const tag = Object.prototype.toString.call(x)
+      if (Array.isArray(x)) return `${tag} length=${(x as unknown[]).length}`
+      const json = JSON.stringify(x as Record<string, unknown>, (_, v) => (typeof v === 'bigint' ? String(v) : v))
+      if (json && json.length <= 200) return json
+      return tag
+    }
+    return String(x)
+  } catch {
+    return '[unprintable]'
+  }
+}
+
+function typeAndTag(x: unknown): { type: string, tag: string } {
+  const type = x === null ? 'null' : typeof x
+  const tag = Object.prototype.toString.call(x as object)
+  return { type, tag }
+}
+
+export interface CreateTypeErrorOptions {
+  readonly path?: ValidationPath
+  readonly label?: string
+  readonly message?: string
+  readonly hint?: string
+  readonly helpUrl?: string
+}
+
+/**
+ * Create an LLM-friendly TypeError with:
+ * - Human-readable message including expected, path, label, received type/tag/preview
+ * - Machine-friendly enumerable metadata: expected, path, label, receivedType, receivedTag, receivedPreview, hint, helpUrl
+ */
+export function createTypeError(expected: string, received: unknown, options?: CreateTypeErrorOptions): TypeError {
+  const p = pathToString(options?.path)
+  const { type: receivedType, tag: receivedTag } = typeAndTag(received)
+  const receivedPreview = previewValue(received)
+  const prefix = options?.message ?? 'ValidationError'
+  const loc = p ? ` at ${p}` : ''
+  const label = options?.label ? ` (${options.label})` : ''
+  const hint = options?.hint ? ` | hint: ${options.hint}` : ''
+  const help = options?.helpUrl ? ` | help: ${options.helpUrl}` : ''
+  const msg = `${prefix}: expected ${expected}${loc}${label} | received.type=${receivedType} tag=${receivedTag} preview=${receivedPreview}${hint}${help}`
+
+  const err = new TypeError(msg)
+  const meta = {
+    expected,
+    path: options?.path ?? [],
+    label: options?.label,
+    receivedType,
+    receivedTag,
+    receivedPreview,
+    hint: options?.hint,
+    helpUrl: options?.helpUrl,
+  } as const
+  Object.assign(err, meta)
+  return err
+}
+
+export function extendPath(path: ValidationPath | undefined, seg: PathSegment): ValidationPath {
+  return [...(path ?? []), seg]
+}
+```
+
+```typescript name=src/emptiness.ts
+import { isRecord } from './objects.js'
+
+/**
+ * Generic emptiness check:
+ * - string: length === 0
+ * - array: length === 0
+ * - Map/Set: size === 0
+ * - object: no own enumerable string or symbol keys
+ * - other values: false
+ */
+export function isEmpty(x: unknown): boolean {
+  if (typeof x === 'string') return x.length === 0
+  if (Array.isArray(x)) return x.length === 0
+  if (x instanceof Map || x instanceof Set) return x.size === 0
+  if (isRecord(x)) {
+    if (Object.keys(x).length > 0) return false
+    const syms = Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable)
+    return syms.length === 0
+  }
+  return false
+}
+
+export function isEmptyString(x: unknown): x is string {
+  return typeof x === 'string' && x.length === 0
+}
+
+export function isEmptyArray(x: unknown): x is readonly [] {
+  return Array.isArray(x) && x.length === 0
+}
+
+export function isEmptyObject(x: unknown): x is Record<string | symbol, never> {
+  if (!isRecord(x)) return false
+  if (Object.keys(x).length > 0) return false
+  const syms = Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable)
+  return syms.length === 0
+}
+
+export function isEmptyMap<K = unknown, V = unknown>(x: unknown): x is ReadonlyMap<K, V> {
+  return x instanceof Map && x.size === 0
+}
+
+export function isEmptySet<T = unknown>(x: unknown): x is ReadonlySet<T> {
+  return x instanceof Set && x.size === 0
+}
+
+export function isNonEmptyString(x: unknown): x is string {
+  return typeof x === 'string' && x.length > 0
+}
+export function isNonEmptyArray<T = unknown>(x: unknown): x is ReadonlyArray<T> {
+  return Array.isArray(x) && x.length > 0
+}
+export function isNonEmptyObject(x: unknown): x is Record<string | symbol, unknown> {
+  if (!isRecord(x)) return false
+  if (Object.keys(x).length > 0) return true
+  const syms = Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable)
+  return syms.length > 0
+}
+export function isNonEmptyMap<K = unknown, V = unknown>(x: unknown): x is ReadonlyMap<K, V> {
+  return x instanceof Map && x.size > 0
+}
+export function isNonEmptySet<T = unknown>(x: unknown): x is ReadonlySet<T> {
+  return x instanceof Set && x.size > 0
+}
+```
+
+```typescript name=src/deep.ts
+export type DeepEqualOptions = {
+  readonly compareSetOrder?: boolean
+  readonly compareMapOrder?: boolean
+  readonly strictNumbers?: boolean
+}
+
+export type DeepCloneCheckOptions = DeepEqualOptions & {
+  readonly allowSharedFunctions?: boolean
+  readonly allowSharedErrors?: boolean
+}
+
+export type DeepCompareResult =
+  | { equal: true }
+  | { equal: false, path: readonly (string | number | symbol)[], reason: string, detail?: string }
+
+type InternalOptions = {
+  identityMustDiffer: boolean
+  opts: DeepCloneCheckOptions
+}
+
+/**
+ * Check deep structural equality between two values.
+ */
+export function isDeepEqual(a: unknown, b: unknown, opts: DeepEqualOptions = {}): boolean {
+  return deepCompare(a, b, { identityMustDiffer: false, opts }).equal
+}
+
+/**
+ * Check whether two values are deep clones (deep equal + no shared references).
+ */
+export function isDeepClone(a: unknown, b: unknown, opts: DeepCloneCheckOptions = {}): boolean {
+  return deepCompare(a, b, { identityMustDiffer: true, opts }).equal
+}
+
+/** Internal deep compare with cycle safety and first-difference diagnostics. */
+export function deepCompare(a: unknown, b: unknown, cfg: InternalOptions): DeepCompareResult {
+  const { identityMustDiffer, opts } = cfg
+  const seen = new WeakMap<object, WeakMap<object, true>>()
+  const strictNumbers = opts.strictNumbers !== false // default true
+
+  function markSeen(x: object, y: object): void {
+    let inner = seen.get(x)
+    if (!inner) {
+      inner = new WeakMap<object, true>()
+      seen.set(x, inner)
+    }
+    inner.set(y, true)
+  }
+  function isSeen(x: object, y: object): boolean {
+    return seen.get(x)?.has(y) ?? false
+  }
+
+  function ownEnumerableKeys(o: object): (string | symbol)[] {
+    const keys: (string | symbol)[] = []
+    for (const k of Object.keys(o)) keys.push(k)
+    for (const s of Object.getOwnPropertySymbols(o)) {
+      const desc = Object.getOwnPropertyDescriptor(o, s)
+      if (desc?.enumerable) keys.push(s)
+    }
+    return keys
+  }
+
+  function compareTypedArrays(x: unknown, y: unknown, path: readonly (string | number | symbol)[]): DeepCompareResult | undefined {
+    if (!ArrayBuffer.isView(x) && !ArrayBuffer.isView(y)) return undefined
+    if (!(ArrayBuffer.isView(x) && ArrayBuffer.isView(y))) {
+      return { equal: false, path, reason: 'instanceMismatch', detail: 'One is a TypedArray/DataView, the other is not' }
+    }
+    if (x instanceof DataView || y instanceof DataView) return undefined
+    const ctorX = (x as { constructor: { name: string } }).constructor.name
+    const ctorY = (y as { constructor: { name: string } }).constructor.name
+    if (ctorX !== ctorY) return { equal: false, path, reason: 'typedArrayCtorMismatch', detail: `Expected ${ctorY} but got ${ctorX}` }
+
+    const ax = x as unknown as { length: number; [n: number]: number | bigint }
+    const ay = y as unknown as { length: number; [n: number]: number | bigint }
+    if (ax.length !== ay.length) return { equal: false, path, reason: 'typedArrayLengthMismatch', detail: `Expected length ${ay.length} but got ${ax.length}` }
+    for (let i = 0; i < ax.length; i++) {
+      // @ts-expect-error Object.is works for number|bigint uniformly for identity
+      if (!Object.is(ax[i], ay[i])) {
+        return { equal: false, path: [...path, i], reason: 'typedArrayElementMismatch', detail: `Element ${i} differs` }
+      }
+    }
+    return { equal: true }
+  }
+
+  function cmp(x: unknown, y: unknown, path: readonly (string | number | symbol)[]): DeepCompareResult {
+    if (identityMustDiffer && x !== null && y !== null && typeof x === 'object' && typeof y === 'object' && x === y) {
+      const allowFn = opts.allowSharedFunctions !== false
+      const allowErr = opts.allowSharedErrors !== false
+      if ((allowFn && typeof x === 'function') || (allowErr && x instanceof Error)) {
+      } else {
+        return { equal: false, path, reason: 'sharedReference', detail: 'Both sides reference the same object' }
+      }
+    }
+
+    if (x === y) {
+      if (strictNumbers && typeof x === 'number' && typeof y === 'number') {
+        if (Object.is(x, y)) return { equal: true }
+        if (Number.isNaN(x) && Number.isNaN(y)) return { equal: true }
+        return { equal: false, path, reason: 'numberValueMismatch', detail: `Expected number ${String(y)} but got ${String(x)}` }
+      }
+      return { equal: true }
+    }
+
+    if (typeof x === 'number' && typeof y === 'number') {
+      if (!strictNumbers) {
+        if (Number.isNaN(x) && Number.isNaN(y)) return { equal: true }
+        if (x === y) return { equal: true }
+      }
+      return { equal: false, path, reason: 'numberValueMismatch', detail: `Expected number ${String(y)} but got ${String(x)}` }
+    }
+
+    const tx = typeof x
+    const ty = typeof y
+    if (tx !== ty) {
+      return { equal: false, path, reason: 'typeMismatch', detail: `Expected type ${ty} but got ${tx}` }
+    }
+
+    if (x === null || y === null) {
+      return { equal: false, path, reason: 'nullMismatch', detail: 'One is null, the other is not' }
+    }
+
+    if (tx !== 'object') {
+      if (Object.is(x as unknown, y as unknown)) return { equal: true }
+      return { equal: false, path, reason: 'valueMismatch', detail: `Expected ${String(y)} but got ${String(x)}` }
+    }
+
+    const ox = x as object
+    const oy = y as object
+    if (isSeen(ox, oy)) return { equal: true }
+    markSeen(ox, oy)
+
+    if (x instanceof Date || y instanceof Date) {
+      if (!(x instanceof Date && y instanceof Date)) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is Date, the other is not' }
+      return x.getTime() === y.getTime() ? { equal: true } : { equal: false, path, reason: 'dateMismatch', detail: `Expected time ${y.getTime()} but got ${x.getTime()}` }
+    }
+
+    if (x instanceof RegExp || y instanceof RegExp) {
+      if (!(x instanceof RegExp && y instanceof RegExp)) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is RegExp, the other is not' }
+      return (x.source === y.source && x.flags === y.flags) ? { equal: true } : { equal: false, path, reason: 'regexpMismatch', detail: `Expected /${y.source}/${y.flags} but got /${x.source}/${x.flags}` }
+    }
+
+    if (x instanceof ArrayBuffer || y instanceof ArrayBuffer) {
+      if (!(x instanceof ArrayBuffer && y instanceof ArrayBuffer)) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is ArrayBuffer, the other is not' }
+      if (x.byteLength !== y.byteLength) return { equal: false, path, reason: 'bufferLengthMismatch', detail: `Expected byteLength ${y.byteLength} but got ${x.byteLength}` }
+      const ax = new Uint8Array(x)
+      const ay = new Uint8Array(y)
+      for (let i = 0; i < ax.length; i++) {
+        if (ax[i] !== ay[i]) return { equal: false, path: [...path, i], reason: 'bufferByteMismatch', detail: `Expected ${ay[i]} but got ${ax[i]}` }
+      }
+      return { equal: true }
+    }
+
+    if (x instanceof DataView || y instanceof DataView) {
+      if (!(x instanceof DataView && y instanceof DataView)) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is DataView, the other is not' }
+      if (x.byteLength !== y.byteLength) return { equal: false, path, reason: 'dataViewLengthMismatch', detail: `Expected byteLength ${y.byteLength} but got ${x.byteLength}` }
+      const ax = new Uint8Array(x.buffer, x.byteOffset, x.byteLength)
+      const ay = new Uint8Array(y.buffer, y.byteOffset, y.byteLength)
+      for (let i = 0; i < ax.length; i++) {
+        if (ax[i] !== ay[i]) return { equal: false, path: [...path, i], reason: 'dataViewByteMismatch', detail: `Expected ${ay[i]} but got ${ax[i]}` }
+      }
+      return { equal: true }
+    }
+
+    {
+      const ta = compareTypedArrays(x, y, path)
+      if (ta) return ta
+    }
+
+    if (Array.isArray(x) || Array.isArray(y)) {
+      if (!(Array.isArray(x) && Array.isArray(y))) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is Array, the other is not' }
+      if (x.length !== y.length) return { equal: false, path, reason: 'arrayLengthMismatch', detail: `Expected length ${y.length} but got ${x.length}` }
+      for (let i = 0; i < x.length; i++) {
+        const r = cmp(x[i], y[i], [...path, i])
+        if (!r.equal) return r
+      }
+      return { equal: true }
+    }
+
+    if (x instanceof Map || y instanceof Map) {
+      if (!(x instanceof Map && y instanceof Map)) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is Map, the other is not' }
+      if (x.size !== y.size) return { equal: false, path, reason: 'mapSizeMismatch', detail: `Expected size ${y.size} but got ${x.size}` }
+      if (opts.compareMapOrder) {
+        const xi = x.entries()
+        const yi = y.entries()
+        let idx = 0
+        while (true) {
+          const a = xi.next()
+          const b = yi.next()
+          if (a.done && b.done) break
+          const [kx, vx] = a.value as [unknown, unknown]
+          const [ky, vy] = b.value as [unknown, unknown]
+          const rk = cmp(kx, ky, [...path, `@key(${idx})`])
+          if (!rk.equal) return rk
+          const rv = cmp(vx, vy, [...path, idx])
+          if (!rv.equal) return rv
+          idx++
+        }
+        return { equal: true }
+      } else {
+        const used = new Set<number>()
+        outer: for (const [kx, vx] of x.entries()) {
+          let matched = false
+          let j = 0
+          for (const [ky, vy] of y.entries()) {
+            if (used.has(j)) { j++; continue }
+            const rk = cmp(kx, ky, [...path, '@key'])
+            if (!rk.equal) { j++; continue }
+            const rv = cmp(vx, vy, [...path, '@value'])
+            if (!rv.equal) { j++; continue }
+            used.add(j)
+            matched = true
+            break
+          }
+          if (!matched) return { equal: false, path, reason: 'mapEntryMismatch', detail: 'No matching [key,value] found in target Map' }
+        }
+        return { equal: true }
+      }
+    }
+
+    if (x instanceof Set || y instanceof Set) {
+      if (!(x instanceof Set && y instanceof Set)) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is Set, the other is not' }
+      if (x.size !== y.size) return { equal: false, path, reason: 'setSizeMismatch', detail: `Expected size ${y.size} but got ${x.size}` }
+      if (opts.compareSetOrder) {
+        const xi = x.values()
+        const yi = y.values()
+        let idx = 0
+        while (true) {
+          const a = xi.next()
+          const b = yi.next()
+          if (a.done && b.done) break
+          const r = cmp(a.value, b.value, [...path, idx])
+          if (!r.equal) return r
+          idx++
+        }
+        return { equal: true }
+      } else {
+        const used = new Set<number>()
+        outer: for (const vx of x.values()) {
+          let matched = false
+          let j = 0
+          for (const vy of y.values()) {
+            if (used.has(j)) { j++; continue }
+            const r = cmp(vx, vy, [...path, j])
+            if (r.equal) {
+              used.add(j)
+              matched = true
+              break
+            }
+            j++
+          }
+          if (!matched) return { equal: false, path, reason: 'setElementMismatch', detail: 'No matching element found in target Set' }
+        }
+        return { equal: true }
+      }
+    }
+
+    const keysX = ownEnumerableKeys(x as object)
+    const keysY = ownEnumerableKeys(y as object)
+    if (keysX.length !== keysY.length) {
+      return { equal: false, path, reason: 'objectKeyCountMismatch', detail: `Expected ${keysY.length} keys but got ${keysX.length}` }
+    }
+    for (const k of keysX) {
+      if (!keysY.includes(k)) {
+        return { equal: false, path, reason: 'objectMissingKey', detail: `Key ${String(k)} missing in target` }
+      }
+    }
+    for (const k of keysX) {
+      const vx = (x as Record<PropertyKey, unknown>)[k as unknown as PropertyKey]
+      const vy = (y as Record<PropertyKey, unknown>)[k as unknown as PropertyKey]
+      const r = cmp(vx, vy, [...path, k])
+      if (!r.equal) return r
+    }
+    return { equal: true }
+  }
+
+  return cmp(a, b, [])
+}
+```
+
+```typescript name=src/assert.ts
+import type { FromSchema, Guard, GuardsShape, GuardType, SchemaSpec } from './types.js'
+import type { ValidationPath } from './diagnostics.js'
+import { createTypeError, extendPath } from './diagnostics.js'
+import { isArray } from './arrays.js'
+import { isAsyncFunction, isBoolean, isDefined, isFunction, isNumber, isString } from './primitives.js'
+import { hasSchema } from './schema.js'
+import { isObject, isRecord, hasNo } from './objects.js'
+import { deepCompare, type DeepEqualOptions, type DeepCloneCheckOptions } from './deep.js'
+import { isEmpty, isEmptyArray, isEmptyMap, isEmptyObject, isEmptySet, isEmptyString } from './emptiness.js'
+
+export interface AssertOptions {
+  readonly path?: ValidationPath
+  readonly label?: string
+  readonly message?: string
+  readonly hint?: string
+  readonly helpUrl?: string
+}
+
+function fail(expected: string, received: unknown, options?: AssertOptions): never {
+  throw createTypeError(expected, received, options)
+}
+
+export function assertWithGuard<T>(x: unknown, guard: Guard<T>, options?: AssertOptions): asserts x is T {
+  if (!guard(x)) fail(options?.label ?? 'value matching guard', x, options)
+}
+
+export function assertString(x: unknown, options?: AssertOptions): asserts x is string {
+  if (!isString(x)) fail('string', x, options)
+}
+
+export function assertNumber(x: unknown, options?: AssertOptions): asserts x is number {
+  if (!isNumber(x)) fail('finite number', x, options)
+}
+
+export function assertBoolean(x: unknown, options?: AssertOptions): asserts x is boolean {
+  if (!isBoolean(x)) fail('boolean', x, options)
+}
+
+export function assertFunction(x: unknown, options?: AssertOptions): asserts x is (...args: unknown[]) => unknown {
+  if (!isFunction(x)) fail('function', x, options)
+}
+
+export function assertAsyncFunction(x: unknown, options?: AssertOptions): asserts x is (...args: unknown[]) => Promise<unknown> {
+  if (!isAsyncFunction(x)) fail('async function', x, options)
+}
+
+export function assertObject(x: unknown, options?: AssertOptions): asserts x is Record<string, unknown> {
+  if (!isObject(x)) fail('object', x, options)
+}
+
+export function assertRecord(x: unknown, options?: AssertOptions): asserts x is Record<string, unknown> {
+  if (!isRecord(x)) fail('record', x, options)
+}
+
+export function assertArray<T = unknown>(x: unknown, options?: AssertOptions): asserts x is ReadonlyArray<T> {
+  if (!isArray<T>(x)) fail('array', x, options)
+}
+
+export function assertArrayOf<T>(x: unknown, elem: Guard<T>, options?: AssertOptions): asserts x is ReadonlyArray<T> {
+  if (!Array.isArray(x)) fail('array of elements matching guard', x, options)
+  for (let i = 0; i < x.length; i++) {
+    if (!elem(x[i])) {
+      fail('element matching guard', x[i], { ...options, path: extendPath(options?.path, i) })
+    }
+  }
+}
+
+export function assertNonEmptyArrayOf<T>(x: unknown, elem: Guard<T>, options?: AssertOptions): asserts x is readonly [T, ...T[]] {
+  if (!Array.isArray(x) || x.length === 0) fail('non-empty array of elements matching guard', x, options)
+  for (let i = 0; i < x.length; i++) {
+    if (!elem(x[i])) {
+      fail('element matching guard', x[i], { ...options, path: extendPath(options?.path, i) })
+    }
+  }
+}
+
+export function assertTupleOf<const Gs extends readonly Guard<unknown>[]>(x: unknown, guards: Gs, options?: AssertOptions): asserts x is { readonly [K in keyof Gs]: Gs[K] extends Guard<infer T> ? T : never } {
+  if (!Array.isArray(x) || x.length !== guards.length) {
+    fail(`tuple length ${guards.length}`, x, options)
+  }
+  for (let i = 0; i < guards.length; i++) {
+    if (!guards[i](x[i])) {
+      fail(`tuple element ${i} matching guard`, x[i], { ...options, path: extendPath(options?.path, i) })
+    }
+  }
+}
+
+export function assertRecordOf<T>(x: unknown, valueGuard: Guard<T>, options?: AssertOptions): asserts x is Record<string, T> {
+  if (typeof x !== 'object' || x === null || Array.isArray(x)) {
+    fail('record of values matching guard', x, options)
+  }
+  const obj = x as Record<string, unknown>
+  for (const k of Object.keys(obj)) {
+    const v = obj[k]
+    if (!valueGuard(v)) {
+      fail('property value matching guard', v, { ...options, path: extendPath(options?.path, k) })
+    }
+  }
+}
+
+function findSchemaViolation(obj: unknown, schema: SchemaSpec, path: ValidationPath = []) {
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+    return { expected: 'object matching schema', received: obj, path }
+  }
+  const o = obj as Record<string, unknown>
+  for (const [k, rule] of Object.entries(schema)) {
+    if (!Object.prototype.hasOwnProperty.call(o, k)) {
+      return { expected: `property "${k}"`, received: o, path }
+    }
+    const v = o[k]
+    if (typeof rule === 'string') {
+      if (rule === 'object') {
+        if (!(typeof v === 'object' && v !== null && !Array.isArray(v))) {
+          return { expected: `property "${k}" to be object`, received: v, path: extendPath(path, k) }
+        }
+      } else if (typeof v !== rule) {
+        return { expected: `property "${k}" of type ${rule}`, received: v, path: extendPath(path, k) }
+      }
+    } else if (typeof rule === 'function') {
+      if (!(rule as Guard<unknown>)(v)) {
+        return { expected: `property "${k}" matching guard`, received: v, path: extendPath(path, k) }
+      }
+    } else {
+      const child = findSchemaViolation(v, rule, extendPath(path, k))
+      if (child) return child
+    }
+  }
+  return undefined
+}
+
+export function assertSchema<S extends SchemaSpec>(x: unknown, schema: S, options?: AssertOptions): asserts x is FromSchema<S> {
+  if (hasSchema(x, schema)) return
+  const failInfo = findSchemaViolation(x, schema, options?.path ?? [])
+  if (failInfo) {
+    fail(failInfo.expected, failInfo.received, { ...options, path: failInfo.path })
+  } else {
+    fail('value matching schema', x, options)
+  }
+}
+
+export function assertDefined<T>(x: T | null | undefined, options?: AssertOptions): asserts x is T {
+  if (!isDefined(x)) fail('defined value', x, options)
+}
+
+export function assertDeepEqual(actual: unknown, expected: unknown, options?: AssertOptions & DeepEqualOptions): void {
+  const res = deepCompare(actual, expected, { identityMustDiffer: false, opts: options ?? {} })
+  if (res.equal) return
+  const base = `deep equality to expected value (${res.reason}${res.detail ? `: ${res.detail}` : ''})`
+  fail(base, actual, { ...options, path: res.path })
+}
+
+export function assertDeepClone(actual: unknown, expected: unknown, options?: AssertOptions & DeepCloneCheckOptions): void {
+  const res = deepCompare(actual, expected, { identityMustDiffer: true, opts: options ?? {} })
+  if (res.equal) return
+  const base = `deep clone (deep equality + no shared references) (${res.reason}${res.detail ? `: ${res.detail}` : ''})`
+  fail(base, actual, { ...options, path: res.path })
+}
+
+/**
+ * Assertion equivalent for "not": fails when guard(x) is true.
+ * Note: cannot narrow x's type (no complement types in TS).
+ */
+export function assertNot<T>(x: unknown, guard: Guard<T>, options?: AssertOptions): void {
+  if (guard(x)) {
+    fail(options?.label ? `not ${options.label}` : 'not matching guard', x, options)
+  }
+}
+
+/**
+ * Assert that an object owns none of the provided keys.
+ */
+export function assertHasNo(obj: unknown, ...keysAndMaybeOptions: [...keys: readonly PropertyKey[], options?: AssertOptions]): void {
+  const maybeOptions = keysAndMaybeOptions[keysAndMaybeOptions.length - 1]
+  const hasOptions = typeof maybeOptions === 'object' && maybeOptions != null && !Array.isArray(maybeOptions) && !('length' in (maybeOptions as object))
+  const options = (hasOptions ? maybeOptions : undefined) as AssertOptions | undefined
+  const keys = (hasOptions ? keysAndMaybeOptions.slice(0, -1) : keysAndMaybeOptions) as readonly PropertyKey[]
+  if (!hasNo(obj, ...keys)) {
+    fail(`object without keys: ${keys.map(String).join(', ')}`, obj, options)
+  }
+}
+
+export function assertEmpty(x: unknown, options?: AssertOptions): void {
+  if (!isEmpty(x)) fail('empty value', x, options)
+}
+export function assertEmptyString(x: unknown, options?: AssertOptions): asserts x is string {
+  if (!isEmptyString(x)) fail('empty string', x, options)
+}
+export function assertEmptyArray(x: unknown, options?: AssertOptions): asserts x is readonly [] {
+  if (!isEmptyArray(x)) fail('empty array', x, options)
+}
+export function assertEmptyObject(x: unknown, options?: AssertOptions): asserts x is Record<string | symbol, never> {
+  if (!isEmptyObject(x)) fail('empty object', x, options)
+}
+export function assertEmptyMap(x: unknown, options?: AssertOptions): asserts x is ReadonlyMap<unknown, unknown> {
+  if (!isEmptyMap(x)) fail('empty map', x, options)
+}
+export function assertEmptySet(x: unknown, options?: AssertOptions): asserts x is ReadonlySet<unknown> {
+  if (!isEmptySet(x)) fail('empty set', x, options)
+}
+```
+
+```typescript name=src/index.ts
+export * from './types.js'
+export * from './primitives.js'
+export * from './objects.js'
+export * from './arrays.js'
+export * from './collections.js'
+export * from './iterables.js'
+export * from './strings.js'
+export * from './numbers.js'
+export * from './combinators.js'
+export * from './schema.js'
+export * from './domains.js'
+export * from './diagnostics.js'
+export * from './emptiness.js'
+export * from './deep.js'
+export * from './assert.js'
+```
+
+Tests (tests)
+
+```typescript name=tests/types.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+
+test('types.ts: placeholder (compile-time only)', () => {
+  assert.equal(true, true)
+})
+```
+
+```typescript name=tests/primitives.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  getTag,
+  isNull,
+  isUndefined,
+  isDefined,
+  isString,
+  isNumber,
+  isInteger,
+  isSafeInteger,
+  numberInRange,
+  isNonNegativeNumber,
+  isPositiveNumber,
+  isBoolean,
+  isBigInt,
+  isSymbol,
+  isFunction,
+  isAsyncFunction,
+  isZeroArg,
+  isDate,
+  isRegExp,
+  isError,
+  isPromiseLike,
+} from '../src/primitives.js'
+
+test('getTag basics', () => {
+  assert.equal(getTag([]), '[object Array]')
+  assert.equal(getTag(new Date()), '[object Date]')
+})
+
+test('null/undefined/defined', () => {
+  assert.equal(isNull(null), true)
+  assert.equal(isUndefined(undefined), true)
+  assert.equal(isDefined(0), true)
+  assert.equal(isDefined(null), false)
+})
+
+test('strings and numbers', () => {
+  assert.equal(isString('a'), true)
+  assert.equal(isNumber(1), true)
+  assert.equal(isNumber(NaN), false)
+  assert.equal(isInteger(3), true)
+  assert.equal(isInteger(3.1), false)
+  assert.equal(isSafeInteger(Number.MAX_SAFE_INTEGER), true)
+  assert.equal(numberInRange(1, 3)(2), true)
+  assert.equal(isNonNegativeNumber(0), true)
+  assert.equal(isPositiveNumber(1), true)
+  assert.equal(isPositiveNumber(0), false)
+})
+
+test('booleans/bigint/symbol/function', () => {
+  assert.equal(isBoolean(false), true)
+  assert.equal(isBigInt(1n), true)
+  assert.equal(isSymbol(Symbol('x')), true)
+  const f = (a: number) => a
+  assert.equal(isFunction(f), true)
+  assert.equal(isZeroArg(() => 1), true)
+  assert.equal(isZeroArg((x: number) => x), false)
+})
+
+test('async function, objects', () => {
+  assert.equal(isAsyncFunction(async () => {}), true)
+  assert.equal(isAsyncFunction(() => Promise.resolve(1)), false)
+  assert.equal(isDate(new Date()), true)
+  assert.equal(isRegExp(/x/), true)
+  assert.equal(isError(new Error('x')), true)
+})
+
+test('promise-like', () => {
+  const thenable = { then: (r: (v: number) => void) => r(1) }
+  assert.equal(isPromiseLike(Promise.resolve(1)), true)
+  assert.equal(isPromiseLike(thenable), true)
+  assert.equal(isPromiseLike(1), false)
+})
+```
+
+```typescript name=tests/objects.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { isObject, isRecord, hasOwn, hasOnlyKeys, keyOf, hasNo } from '../src/objects.js'
+import { assertHasNo } from '../src/assert.js'
+
+test('isObject and isRecord', () => {
+  assert.equal(isObject({}), true)
+  assert.equal(isObject(null), false)
+  assert.equal(isRecord({}), true)
+  assert.equal(isRecord([]), false)
+})
+
+test('hasOwn with prototype-less objects', () => {
+  const o = Object.create(null) as Record<string, unknown>
+  o.x = 1
+  assert.equal(hasOwn(o, 'x'), true)
+  assert.equal(hasOwn(o, 'y' as never), false)
+})
+
+test('hasOnlyKeys exactness', () => {
+  assert.equal(hasOnlyKeys({ a: 1, b: 2 }, 'a', 'b'), true)
+  assert.equal(hasOnlyKeys({ a: 1 }, 'a', 'b'), false)
+  assert.equal(hasOnlyKeys({}, ), true)
+})
+
+test('keyOf guard', () => {
+  const isSeverity = keyOf({ info: 1, warn: 2, error: 3 } as const)
+  assert.equal(isSeverity('warn'), true)
+  assert.equal(isSeverity('oops' as unknown), false)
+})
+
+test('hasNo and assertHasNo', () => {
+  const o = { a: 1 }
+  assert.equal(hasNo(o, 'b', 'c'), true)
+  assert.equal(hasNo(o, 'a'), false)
+  assert.doesNotThrow(() => assertHasNo(o, 'b', 'c'))
+  try {
+    assertHasNo(o, 'a', { path: ['obj'] })
+    assert.fail('should throw')
+  } catch (e) {
+    const err = e as Error
+    assert.match(err.message, /without keys/i)
+    assert.match(err.message, /obj/)
+  }
+})
+```
+
+```typescript name=tests/arrays.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { isArray, arrayOf, nonEmptyArrayOf, tupleOf, recordOf } from '../src/arrays.js'
+import { isString, isNumber } from '../src/primitives.js'
+
+test('isArray', () => {
+  assert.equal(isArray([]), true)
+  assert.equal(isArray('x'), false)
+})
+
+test('arrayOf', () => {
+  const isStringArray = arrayOf(isString)
+  assert.equal(isStringArray(['a', 'b']), true)
+  assert.equal(isStringArray(['a', 1] as unknown[]), false)
+})
+
+test('nonEmptyArrayOf', () => {
+  const isNonEmptyNumArray = nonEmptyArrayOf(isNumber)
+  assert.equal(isNonEmptyNumArray([1]), true)
+  assert.equal(isNonEmptyNumArray([]), false)
+})
+
+test('tupleOf', () => {
+  const isPoint = tupleOf(isNumber, isNumber)
+  assert.equal(isPoint([1, 2]), true)
+  assert.equal(isPoint([1, '2'] as unknown[]), false)
+})
+
+test('recordOf', () => {
+  const isRecOfNum = recordOf(isNumber)
+  assert.equal(isRecOfNum({ a: 1 }), true)
+  assert.equal(isRecOfNum({ a: 'x' } as unknown), false)
+})
+```
+
+```typescript name=tests/collections.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { isMap, isSet, isWeakMap, isWeakSet, mapOf, setOf, nonEmptySetOf } from '../src/collections.js'
+import { isString, isNumber } from '../src/primitives.js'
+
+test('isMap/isSet', () => {
+  assert.equal(isMap(new Map()), true)
+  assert.equal(isSet(new Set()), true)
+  assert.equal(isMap({}), false)
+  assert.equal(isSet([]), false)
+})
+
+test('weak collections', () => {
+  assert.equal(isWeakMap(new WeakMap()), true)
+  assert.equal(isWeakSet(new WeakSet()), true)
+})
+
+test('mapOf validates', () => {
+  const m = new Map<unknown, unknown>([[1, 'a'], [2, 'b']])
+  const g = mapOf(isNumber, isString)
+  assert.equal(g(m), true)
+
+  const bad = new Map<unknown, unknown>([[1, 2]])
+  assert.equal(g(bad), false)
+})
+
+test('setOf and nonEmptySetOf', () => {
+  const s = new Set<unknown>(['a', 'b'])
+  assert.equal(setOf(isString)(s), true)
+  assert.equal(nonEmptySetOf(isString)(s), true)
+  assert.equal(nonEmptySetOf(isString)(new Set()), false)
+})
+```
+
+```typescript name=tests/iterables.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { isIterable, iterableOf } from '../src/iterables.js'
+import { isNumber } from '../src/primitives.js'
+
+test('isIterable', () => {
+  assert.equal(isIterable([1, 2, 3]), true)
+  assert.equal(isIterable('abc'), true)
+  assert.equal(isIterable(123), false)
+})
+
+test('iterableOf consumes and validates', () => {
+  function* gen() { yield 1; yield 2 }
+  assert.equal(iterableOf(isNumber)(gen()), true)
+  assert.equal(iterableOf(isNumber)([1, 'x'] as unknown[]), false)
+})
+```
+
+```typescript name=tests/strings.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  stringMatching,
+  stringMinLength,
+  stringMaxLength,
+  stringLengthBetween,
+  isLowercase,
+  isUppercase,
+  isAlphanumeric,
+  isAscii,
+  isHexColor,
+  isIPv4String,
+  isHostnameString,
+} from '../src/strings.js'
+
+test('string length and regex', () => {
+  assert.equal(stringMatching(/^[a-z]+$/)('abc'), true)
+  assert.equal(stringMatching(/^\d+$/)('abc'), false)
+  assert.equal(stringMinLength(2)('x'), false)
+  assert.equal(stringMaxLength(3)('xxxx'), false)
+  assert.equal(stringLengthBetween(2, 3)('ab'), true)
+})
+
+test('case and classes', () => {
+  assert.equal(isLowercase('abc'), true)
+  assert.equal(isUppercase('ABC'), true)
+  assert.equal(isLowercase('Abc'), false)
+  assert.equal(isAlphanumeric('A1'), true)
+  assert.equal(isAscii('\u00A9'), false)
+})
+
+test('hex colors', () => {
+  assert.equal(isHexColor('#fff', { allowHash: true }), true)
+  assert.equal(isHexColor('ffffff'), true)
+  assert.equal(isHexColor('ffff'), false)
+})
+
+test('IPv4', () => {
+  assert.equal(isIPv4String('127.0.0.1'), true)
+  assert.equal(isIPv4String('256.0.0.1'), false)
+  assert.equal(isIPv4String('01.2.3.4'), false)
+})
+
+test('hostname', () => {
+  assert.equal(isHostnameString('example.com'), true)
+  assert.equal(isHostnameString('-bad.com'), false)
+  assert.equal(isHostnameString('toolonglabeltoolonglabeltoolonglabeltoolonglabeltoolonglabel.com'), false)
+})
+```
+
+```typescript name=tests/numbers.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { isNegativeNumber, intInRange, isMultipleOf } from '../src/numbers.js'
+
+test('isNegativeNumber', () => {
+  assert.equal(isNegativeNumber(-1), true)
+  assert.equal(isNegativeNumber(0), false)
+})
+
+test('intInRange', () => {
+  const g = intInRange(1, 3)
+  assert.equal(g(2), true)
+  assert.equal(g(2.5), false)
+  assert.equal(g(4), false)
+})
+
+test('isMultipleOf', () => {
+  assert.equal(isMultipleOf(3)(9), true)
+  assert.equal(isMultipleOf(3)(10), false)
+})
+```
+
+```typescript name=tests/combinators.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { literalOf, and, or, not, isNot, unionOf, intersectionOf, optionalOf, nullableOf, lazy, refine, safeParse, discriminatedUnion, fromNativeEnum } from '../src/combinators.js'
+import { isString, isNumber } from '../src/primitives.js'
+import { objectOf } from '../src/schema.js'
+
+test('literalOf/and/or/not/isNot', () => {
+  const isA = literalOf('a' as const)
+  const isB = literalOf('b' as const)
+  assert.equal(and(isA, isB)('a'), false)
+  assert.equal(or(isA, isB)('b'), true)
+  assert.equal(not(isA)('a'), false)
+  assert.equal(isNot(isA)('c'), true)
+})
+
+test('unionOf/intersectionOf', () => {
+  const isAB = unionOf(literalOf('a' as const), literalOf('b' as const))
+  assert.equal(isAB('a'), true)
+  assert.equal(isAB('c' as unknown), false)
+
+  const isNonEmptyString = refine(isString, (s): s is string => s.length > 0)
+  const both = intersectionOf(isString as (x: unknown) => x is string, isNonEmptyString)
+  assert.equal(both('x'), true)
+  assert.equal(both(''), false)
+})
+
+test('optionalOf/nullableOf', () => {
+  assert.equal(optionalOf(isString)(undefined), true)
+  assert.equal(nullableOf(isString)(null), true)
+})
+
+test('lazy recursive with objectOf', () => {
+  type Node = { value: number; next?: Node }
+  const isNode: (x: unknown) => x is Node = lazy(() =>
+    objectOf({ value: isNumber, next: optionalOf(isNode) }, { optional: ['next' as const], exact: true }),
+  )
+  assert.equal(isNode({ value: 1 }), true)
+  assert.equal(isNode({ value: 1, next: { value: 2 } }), true)
+})
+
+test('safeParse', () => {
+  const ok = safeParse('x', isString)
+  assert.equal(ok.ok, true)
+  const err = safeParse('x', isNumber)
+  assert.equal(err.ok, false)
+})
+
+test('discriminatedUnion and fromNativeEnum', () => {
+  const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
+  const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
+  const isShape = discriminatedUnion('kind', { circle: isCircle, rect: isRect } as const)
+  assert.equal(isShape({ kind: 'circle', r: 1 }), true)
+  assert.equal(isShape({ kind: 'rect', w: 2, h: 3 }), true)
+  assert.equal(isShape({ kind: 'circle', r: 'x' } as unknown), false)
+  assert.equal(isShape({ kind: 'triangle' } as unknown), false)
+
+  enum Color { Red = 'RED', Blue = 'BLUE' }
+  enum Num { A, B, C }
+  const isColor = fromNativeEnum(Color)
+  const isNum = fromNativeEnum(Num)
+  assert.equal(isColor('RED'), true)
+  assert.equal(isColor('GREEN' as unknown), false)
+  assert.equal(isNum(0), true)
+  assert.equal(isNum(3 as unknown), false)
+})
+```
+
+```typescript name=tests/schema.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { hasSchema, hasPartialSchema, objectOf } from '../src/schema.js'
+import { isString, isNumber } from '../src/primitives.js'
+import { stringMatching } from '../src/strings.js'
+
+test('hasSchema nested', () => {
+  const schema = { id: 'string', age: 'number', meta: { note: 'string' } } as const
+  assert.equal(hasSchema({ id: 'a', age: 1, meta: { note: 'x' } }, schema), true)
+  assert.equal(hasSchema({ id: 'a', age: '1', meta: { note: 'x' } }, schema), false)
+})
+
+test('hasPartialSchema allows missing keys but validates present ones', () => {
+  const schema = { id: 'string', tag: stringMatching(/^[a-z]+$/) } as const
+  assert.equal(hasPartialSchema({}, schema), true)
+  assert.equal(hasPartialSchema({ id: 'x' }, schema), true)
+  assert.equal(hasPartialSchema({ tag: 'ok' }, schema), true)
+  assert.equal(hasPartialSchema({ tag: 'NotOk' }, schema), false)
+})
+
+test('objectOf optional/exact/rest', () => {
+  const User = objectOf({ id: isString, age: isNumber, note: isString }, { optional: ['note'], exact: true } as const)
+  assert.equal(User({ id: 'x', age: 1 }), true)
+  assert.equal(User({ id: 'x', age: 1, extra: 1 }), false)
+
+  const WithRest = objectOf({ id: isString }, { rest: isNumber })
+  assert.equal(WithRest({ id: 'x' }), true)
+  assert.equal(WithRest({ id: 'x', a: 1, b: 2 }), true)
+  assert.equal(WithRest({ id: 'x', a: 'nope' as unknown }), false)
+})
+```
+
+```typescript name=tests/domains.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  isUUIDv4,
+  isISODateString,
+  isISODateTimeString,
+  isEmail,
+  isURLString,
+  isHttpUrlString,
+  isPortNumber,
+  isMimeType,
+  isSlug,
+  isBase64String,
+  isHexString,
+  isSemver,
+  isJsonString,
+  isJsonValue,
+  isHttpMethod,
+} from '../src/domains.js'
+
+test('UUID v4', () => {
+  assert.equal(isUUIDv4('123e4567-e89b-12d3-a456-426614174000'), true)
+  assert.equal(isUUIDv4('123e4567-e89b-12d3-a456-zzzzzzzzzzzz'), false)
+  assert.equal(isUUIDv4('not-a-uuid'), false)
+})
+
+test('ISO date', () => {
+  assert.equal(isISODateString('2024-02-29'), true)
+  assert.equal(isISODateString('2024-13-01'), false)
+  assert.equal(isISODateString('2024-01-32'), false)
+  assert.equal(isISODateString('2024-1-1'), false)
+})
+
+test('ISO datetime (RFC3339 subset)', () => {
+  assert.equal(isISODateTimeString('2024-10-12T16:59:32Z'), true)
+  assert.equal(isISODateTimeString('2024-10-12T16:59:32.123Z'), true)
+  assert.equal(isISODateTimeString('2024-10-12T16:59:32+05:30'), true)
+  assert.equal(isISODateTimeString('2024-10-12 16:59:32Z'), false)
+  assert.equal(isISODateTimeString('not-time'), false)
+})
+
+test('Email', () => {
+  assert.equal(isEmail('a@b.co'), true)
+  assert.equal(isEmail('a@b'), false)
+  assert.equal(isEmail('@b.com'), false)
+  assert.equal(isEmail('a b@c.com'), false)
+})
+
+test('URL strings', () => {
+  assert.equal(isURLString('https://example.com/x?y=1'), true)
+  assert.equal(isURLString('ftp://example.com'), true)
+  assert.equal(isURLString('/relative/path'), false)
+  assert.equal(isHttpUrlString('https://example.com'), true)
+  assert.equal(isHttpUrlString('http://example.com'), true)
+  assert.equal(isHttpUrlString('ftp://example.com'), false)
+})
+
+test('Port numbers', () => {
+  assert.equal(isPortNumber(1), true)
+  assert.equal(isPortNumber(65535), true)
+  assert.equal(isPortNumber(0), false)
+  assert.equal(isPortNumber(70000), false)
+  assert.equal(isPortNumber(3.14), false)
+})
+
+test('MIME types', () => {
+  assert.equal(isMimeType('text/plain'), true)
+  assert.equal(isMimeType('application/json'), true)
+  assert.equal(isMimeType('application/vnd.api+json'), true)
+  assert.equal(isMimeType('not-a-type'), false)
+  assert.equal(isMimeType('/json'), false)
+})
+
+test('Slug', () => {
+  assert.equal(isSlug('hello-world'), true)
+  assert.equal(isSlug('Hello-World'), false)
+  assert.equal(isSlug('hello_world'), false)
+  assert.equal(isSlug(''), false)
+})
+
+test('Base64', () => {
+  assert.equal(isBase64String(''), true)
+  assert.equal(isBase64String('TWFu'), true)
+  assert.equal(isBase64String('TWE='), true)
+  assert.equal(isBase64String('TQ=='), true)
+  assert.equal(isBase64String('@@@'), false)
+})
+
+test('Hex', () => {
+  assert.equal(isHexString('deadBEEF'), true)
+  assert.equal(isHexString('0xdeadbeef', { allow0x: true }), true)
+  assert.equal(isHexString('abc'), true)
+  assert.equal(isHexString('abc', { evenLength: true }), false)
+  assert.equal(isHexString('xyz'), false)
+})
+
+test('SemVer', () => {
+  assert.equal(isSemver('1.2.3'), true)
+  assert.equal(isSemver('1.2.3-alpha.1+build.5'), true)
+  assert.equal(isSemver('01.2.3'), false)
+  assert.equal(isSemver('1.2'), false)
+})
+
+test('JSON strings and values', () => {
+  assert.equal(isJsonString('{"a":1}'), true)
+  assert.equal(isJsonString('{a:1}'), false)
+  assert.equal(isJsonValue({ a: [1, 'x', true, null] }), true)
+  assert.equal(isJsonValue({ a: [1, undefined] }), false)
+  assert.equal(isJsonValue({ fn: () => {} }), false)
+})
+
+test('HTTP methods', () => {
+  assert.equal(isHttpMethod('GET'), true)
+  assert.equal(isHttpMethod('PATCH'), true)
+  assert.equal(isHttpMethod('get'), false)
+})
+```
+
+```typescript name=tests/diagnostics.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { pathToString, extendPath, createTypeError } from '../src/diagnostics.js'
+
+test('pathToString', () => {
+  assert.equal(pathToString(['meta', 'tags', 1, 'id']), 'meta.tags[1].id')
+  assert.equal(pathToString([]), '')
+  assert.equal(pathToString(['weird key', 0]), '["weird key"][0]')
+})
+
+test('extendPath', () => {
+  const p1 = ['a'] as const
+  const p2 = extendPath(p1, 'b')
+  assert.deepEqual(p1, ['a'])
+  assert.deepEqual(p2, ['a', 'b'])
+})
+
+test('createTypeError LLM-friendly', () => {
+  const err = createTypeError('string', 42, {
+    path: ['payload', 'name'],
+    label: 'User.name',
+    hint: 'Ensure input is a string',
+    helpUrl: 'https://example.com/help#name',
+  })
+  assert.equal(err instanceof TypeError, true)
+  assert.match(err.message, /expected string/i)
+  assert.match(err.message, /payload\.name/)
+  assert.match(err.message, /received.type=number/)
+  assert.match(err.message, /tag=\[object Number\]/)
+  const meta = err as unknown as {
+    expected: string
+    path: readonly (string | number)[]
+    label?: string
+    receivedType: string
+    receivedTag: string
+    receivedPreview: string
+    hint?: string
+    helpUrl?: string
+  }
+  assert.equal(meta.expected, 'string')
+  assert.deepEqual(meta.path, ['payload', 'name'])
+  assert.equal(meta.label, 'User.name')
+  assert.equal(meta.receivedType, 'number')
+  assert.ok(meta.receivedTag.startsWith('[object '))
+  assert.equal(meta.hint, 'Ensure input is a string')
+  assert.equal(meta.helpUrl, 'https://example.com/help#name')
+})
+```
+
+```typescript name=tests/emptiness.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  isEmpty,
+  isEmptyArray,
+  isEmptyMap,
+  isEmptyObject,
+  isEmptySet,
+  isEmptyString,
+  isNonEmptyArray,
+  isNonEmptyMap,
+  isNonEmptyObject,
+  isNonEmptySet,
+  isNonEmptyString,
+} from '../src/emptiness.js'
+import {
+  assertEmpty,
+  assertEmptyArray,
+  assertEmptyMap,
+  assertEmptyObject,
+  assertEmptySet,
+  assertEmptyString,
+} from '../src/assert.js'
+
+test('isEmpty generic and specific checks', () => {
+  assert.equal(isEmpty(''), true)
+  assert.equal(isEmpty([]), true)
+  assert.equal(isEmpty(new Set()), true)
+  assert.equal(isEmpty(new Map()), true)
+  assert.equal(isEmpty({}), true)
+  assert.equal(isEmpty(['x']), false)
+})
+
+test('specific emptiness guards', () => {
+  assert.equal(isEmptyString(''), true)
+  assert.equal(isEmptyArray([]), true)
+  assert.equal(isEmptySet(new Set()), true)
+  assert.equal(isEmptyMap(new Map()), true)
+  assert.equal(isEmptyObject({}), true)
+
+  assert.equal(isNonEmptyString('a'), true)
+  assert.equal(isNonEmptyArray([1]), true)
+  assert.equal(isNonEmptySet(new Set([1])), true)
+  assert.equal(isNonEmptyMap(new Map([[1, 2]])), true)
+  assert.equal(isNonEmptyObject({ a: 1 }), true)
+})
+
+test('emptiness assertions', () => {
+  assert.doesNotThrow(() => assertEmpty(''))
+  assert.doesNotThrow(() => assertEmptyArray([]))
+  assert.doesNotThrow(() => assertEmptySet(new Set()))
+  assert.doesNotThrow(() => assertEmptyMap(new Map()))
+  assert.doesNotThrow(() => assertEmptyObject({}))
+  assert.doesNotThrow(() => assertEmptyString(''))
+
+  try {
+    assertEmpty(['x'], { path: ['root', 'arr'] })
+    assert.fail('should throw')
+  } catch (e) {
+    const err = e as Error
+    assert.match(err.message, /empty value/i)
+    assert.match(err.message, /root\.arr/)
+  }
+})
+```
+
+```typescript name=tests/deep.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { isDeepEqual, isDeepClone } from '../src/deep.js'
+import { assertDeepEqual, assertDeepClone } from '../src/assert.js'
+
+test('isDeepEqual primitives and number edge cases', () => {
+  assert.equal(isDeepEqual('a', 'a'), true)
+  assert.equal(isDeepEqual(0, -0), false)
+  assert.equal(isDeepEqual(NaN, NaN), true)
+  assert.equal(isDeepEqual(0, -0, { strictNumbers: false }), true)
+})
+
+test('isDeepEqual arrays and nested objects', () => {
+  const a = [1, { x: ['y'] }]
+  const b = [1, { x: ['y'] }]
+  const c = [1, { x: ['z'] }]
+  assert.equal(isDeepEqual(a, b), true)
+  assert.equal(isDeepEqual(a, c), false)
+})
+
+test('isDeepEqual sets and maps (unordered by default)', () => {
+  const sa = new Set([1, 2, 3])
+  const sb = new Set([3, 2, 1])
+  assert.equal(isDeepEqual(sa, sb), true)
+  assert.equal(isDeepEqual(sa, sb, { compareSetOrder: true }), false)
+
+  const ma = new Map<unknown, unknown>([[{ k: 1 }, 'a'], [{ k: 2 }, 'b']])
+  const mb = new Map<unknown, unknown>([[{ k: 2 }, 'b'], [{ k: 1 }, 'a']])
+  assert.equal(isDeepEqual(ma, mb), true)
+  assert.equal(isDeepEqual(ma, mb, { compareMapOrder: true }), false)
+})
+
+test('isDeepEqual Dates, RegExps, Buffers and TypedArrays', () => {
+  assert.equal(isDeepEqual(new Date(5), new Date(5)), true)
+  assert.equal(isDeepEqual(new Date(5), new Date(6)), false)
+
+  assert.equal(isDeepEqual(/a/gi, /a/gi), true)
+  assert.equal(isDeepEqual(/a/g, /a/i), false)
+
+  const ab1 = new ArrayBuffer(4)
+  const ab2 = new ArrayBuffer(4)
+  new Uint8Array(ab1).set([1, 2, 3, 4])
+  new Uint8Array(ab2).set([1, 2, 3, 4])
+  assert.equal(isDeepEqual(ab1, ab2), true)
+  new Uint8Array(ab2)[2] = 9
+  assert.equal(isDeepEqual(ab1, ab2), false)
+
+  assert.equal(isDeepEqual(new Uint16Array([1, 2]), new Uint16Array([1, 2])), true)
+  assert.equal(isDeepEqual(new Uint16Array([1, 2]), new Uint16Array([2, 1])), false)
+})
+
+test('isDeepClone validations', () => {
+  const a = { x: { y: 1 }, z: [1, 2] }
+  const b = { x: { y: 1 }, z: [1, 2] }
+  assert.equal(isDeepClone(a, b), true)
+
+  const c = { x: 1 }
+  assert.equal(isDeepClone(c, c), false)
+
+  const shared = { y: 1 }
+  const d = { x: shared }
+  const e = { x: shared }
+  assert.equal(isDeepClone(d, e), false)
+
+  const fn = () => 1
+  const err = new Error('x')
+  const f = { fn, e: err, k: { v: 1 } }
+  const g = { fn, e: err, k: { v: 1 } }
+  assert.equal(isDeepClone(f, g), true)
+  assert.equal(isDeepClone(f, g, { allowSharedFunctions: false }), false)
+  assert.equal(isDeepClone(f, g, { allowSharedErrors: false }), false)
+})
+
+test('assertDeepEqual and assertDeepClone diagnostics', () => {
+  assert.doesNotThrow(() => assertDeepEqual({ a: [1] }, { a: [1] }, { path: ['root'] }))
+  try {
+    assertDeepEqual({ a: [1, 2] }, { a: [1, 3] }, { path: ['root'] })
+    assert.fail('should throw')
+  } catch (e) {
+    const err = e as Error
+    assert.match(err.message, /deep equality/i)
+    assert.match(err.message, /root\.a\[1\]/)
+  }
+
+  const a = { x: { y: 1 } }
+  const b = { x: { y: 1 } }
+  assert.doesNotThrow(() => assertDeepClone(a, b, { path: ['obj'] }))
+})
+```
+
+```typescript name=tests/assert.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  assertString,
+  assertNumber,
+  assertArrayOf,
+  assertNonEmptyArrayOf,
+  assertRecordOf,
+  assertTupleOf,
+  assertSchema,
+  assertDefined,
+  assertDeepEqual,
+  assertDeepClone,
+  assertNot,
+  assertHasNo,
+  assertEmpty,
+  assertEmptyString,
+  assertEmptyArray,
+  assertEmptyObject,
+  assertEmptyMap,
+  assertEmptySet,
+} from '../src/assert.js'
+import { isString, isNumber } from '../src/primitives.js'
+
+test('assertString/Number', () => {
+  assert.doesNotThrow(() => assertString('x'))
+  assert.doesNotThrow(() => assertNumber(42))
+})
+
+test('assertString diagnostics', () => {
+  try {
+    assertString(42, { path: ['payload', 'name'], label: 'User.name', hint: 'Use String(value)' })
+    assert.fail('should have thrown')
+  } catch (e) {
+    const err = e as Error & { path?: unknown, hint?: string }
+    assert.match(err.message, /expected string/i)
+    assert.match(err.message, /payload\.name/)
+    assert.equal(err.hint, 'Use String(value)')
+    assert.ok(Array.isArray((err as any).path))
+  }
+})
+
+test('assertArrayOf pinpoints index', () => {
+  const input = ['a', 1, 'c'] as unknown[]
+  try {
+    assertArrayOf(input, isString, { path: ['tags'] })
+    assert.fail('should have thrown')
+  } catch (e) {
+    const err = e as Error
+    assert.match(err.message, /element matching guard/i)
+    assert.match(err.message, /\[1\]/)
+    assert.match(err.message, /tags/)
+  }
+})
+
+test('assertNonEmptyArrayOf', () => {
+  assert.doesNotThrow(() => assertNonEmptyArrayOf(['a'], isString))
+  try {
+    assertNonEmptyArrayOf([], isString)
+    assert.fail('should have thrown')
+  } catch (e) {
+    assert.match((e as Error).message, /non-empty array/i)
+  }
+})
+
+test('assertRecordOf pinpoints key', () => {
+  const input = { a: 'x', b: 2 } as Record<string, unknown>
+  try {
+    assertRecordOf(input, isString, { path: ['attrs'] })
+    assert.fail('should have thrown')
+  } catch (e) {
+    const err = e as Error
+    assert.match(err.message, /property value matching guard/i)
+    assert.match(err.message, /attrs\.b/)
+  }
+})
+
+test('assertTupleOf pinpoints index', () => {
+  const input = ['x', 2] as unknown
+  try {
+    assertTupleOf(input, [isString, isString], { path: ['pair'] })
+    assert.fail('should have thrown')
+  } catch (e) {
+    const err = e as Error
+    assert.match(err.message, /tuple element 1 matching guard/i)
+    assert.match(err.message, /pair\[1\]/)
+  }
+})
+
+test('assertSchema and assertDefined', () => {
+  const schema = {
+    id: 'string',
+    meta: {
+      tags: (_x: unknown): _x is readonly string[] => Array.isArray(_x) && _x.every(isString),
+      count: isNumber,
+    },
+  } as const
+
+  const good = { id: 'x', meta: { tags: ['a', 'b'], count: 1 } }
+  assert.doesNotThrow(() => assertSchema(good, schema, { path: ['user'] }))
+
+  const bad1 = { id: 1, meta: { tags: ['a'], count: 1 } }
+  try {
+    assertSchema(bad1, schema, { path: ['user'] })
+    assert.fail('should have thrown')
+  } catch (e) {
+    const err = e as Error
+    assert.match(err.message, /property "id" of type string/i)
+    assert.match(err.message, /user\.id/)
+  }
+
+  const v: string | undefined = 'x'
+  assert.doesNotThrow(() => assertDefined(v))
+  try {
+    assertDefined(undefined)
+    assert.fail('should have thrown')
+  } catch (e) {
+    assert.match((e as Error).message, /defined value/i)
+  }
+})
+
+test('assertDeepEqual/Clone', () => {
+  assert.doesNotThrow(() => assertDeepEqual({ a: [1] }, { a: [1] }, { path: ['root'] }))
+  try {
+    assertDeepEqual({ a: [1, 2] }, { a: [1, 3] }, { path: ['root'] })
+    assert.fail('should throw')
+  } catch (e) {
+    const err = e as Error
+    assert.match(err.message, /deep equality/i)
+    assert.match(err.message, /root\.a\[1\]/)
+  }
+
+  const a = { x: { y: 1 } }
+  const b = { x: { y: 1 } }
+  assert.doesNotThrow(() => assertDeepClone(a, b, { path: ['obj'] }))
+})
+
+test('assertNot and assertHasNo', () => {
+  assert.doesNotThrow(() => assertNot('x', isNumber))
+  try {
+    assertNot('x', isString, { path: ['where'] })
+    assert.fail('should throw')
+  } catch (e) {
+    const err = e as Error
+    assert.match(err.message, /not/i)
+    assert.match(err.message, /where/)
+  }
+
+  const o = { a: 1 }
+  assert.doesNotThrow(() => assertHasNo(o, 'b', 'c'))
+  try {
+    assertHasNo(o, 'a', { path: ['obj'] })
+    assert.fail('should throw')
+  } catch (e) {
+    assert.match((e as Error).message, /without keys/i)
+  }
+})
+```
+
+```typescript name=tests/index.test.ts
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import * as api from '../src/index.js'
+
+test('index exports surface', () => {
+  assert.equal(typeof api, 'object')
+  assert.ok(Object.keys(api).length > 0)
+})
+```
+
+PR title and body
+
+- Title: feat: scaffold @orkestrel/validator with strict guards, assertions, deep checks, diagnostics, and tests
+- Body:
+  - Adds a TypeScript-first, ESM-only validator library with:
+    - Core guards for primitives, objects, arrays, strings, numbers, iterables, collections
+    - Combinators (and/or/not/union/intersection/optional/nullable/lazy/refine), discriminatedUnion, fromNativeEnum
+    - Schema helpers: hasSchema, hasPartialSchema, objectOf (optional/exact/rest)
+    - Domain guards (ecosystem-friendly: UUIDv4, ISO dates, email, URL, HTTP URL, port, MIME, slug, base64, hex, semver, JSON, HTTP methods)
+    - Deep checks: isDeepEqual, isDeepClone, with cycle safety and ordered/unordered Map/Set options
+    - Emptiness helpers: isEmpty + specific ones and non-empty counterparts
+    - Diagnostics: pathToString, extendPath, createTypeError (LLM-friendly message + metadata)
+    - Assertions: assertX for all above, assertDeepEqual/Clone, assertNot, assertHasNo, emptiness assertions
+  - Tests mirror src filenames, using node:test and assert/strict, no mocks.
+  - Strict TS config, ESM exports, and CI workflow for typecheck/build/test.
