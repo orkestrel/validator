@@ -4,6 +4,11 @@ node_modules/
 # Build outputs
 dist/
 
+# Compiled test files (TypeScript outputs test files to dist/, but also creates artifacts in tests/)
+tests/*.js
+tests/*.d.ts
+tests/*.map
+
 # IDE
 .vscode/
 .idea/
