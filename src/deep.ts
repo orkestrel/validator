@@ -1,9 +1,4 @@
-import type { DeepEqualOptions, DeepCloneCheckOptions, DeepCompareResult } from './types.js'
-
-type InternalOptions = {
-	identityMustDiffer: boolean
-	opts: DeepCloneCheckOptions
-}
+import type { DeepEqualOptions, DeepCloneCheckOptions, DeepCompareResult, InternalDeepCompareOptions } from './types.js'
 
 function isDataView(v: unknown): v is DataView<ArrayBufferLike> {
 	return Object.prototype.toString.call(v) === '[object DataView]'
@@ -22,7 +17,7 @@ function isDataView(v: unknown): v is DataView<ArrayBufferLike> {
  * ```
  */
 export function isDeepEqual(a: unknown, b: unknown, opts: DeepEqualOptions = {}): boolean {
-	return deepCompare(a, b, { identityMustDiffer: false, opts }).equal
+	return deepCompare(a, b, { identityMustDiffer: false, opts: opts as DeepCloneCheckOptions }).equal
 }
 
 /**
@@ -56,7 +51,7 @@ export function isDeepClone(a: unknown, b: unknown, opts: DeepCloneCheckOptions 
  * deepCompare(1, 2, { identityMustDiffer: false, opts: {} }) // { equal: false, path: [], reason: 'numberValueMismatch', detail: '...' }
  * ```
  */
-export function deepCompare(a: unknown, b: unknown, cfg: InternalOptions): DeepCompareResult {
+export function deepCompare(a: unknown, b: unknown, cfg: InternalDeepCompareOptions): DeepCompareResult {
 	const { identityMustDiffer, opts } = cfg
 	const seen = new WeakMap<object, WeakMap<object, true>>()
 	const strictNumbers = opts.strictNumbers !== false // default true
@@ -88,7 +83,7 @@ export function deepCompare(a: unknown, b: unknown, cfg: InternalOptions): DeepC
 		if (!(ArrayBuffer.isView(x) && ArrayBuffer.isView(y))) {
 			return { equal: false, path, reason: 'instanceMismatch', detail: 'One is a TypedArray/DataView, the other is not' }
 		}
-		if (isDataView(x) || isDataView(y)) return undefined
+		if (Object.prototype.toString.call(x) === '[object DataView]' || Object.prototype.toString.call(y) === '[object DataView]') return undefined
 		const ctorX = (x as { constructor: { name: string } }).constructor.name
 		const ctorY = (y as { constructor: { name: string } }).constructor.name
 		if (ctorX !== ctorY) return { equal: false, path, reason: 'typedArrayCtorMismatch', detail: `Expected ${ctorY} but got ${ctorX}` }
@@ -174,7 +169,7 @@ export function deepCompare(a: unknown, b: unknown, cfg: InternalOptions): DeepC
 			return { equal: true }
 		}
 
-		if (isDataView(x) || isDataView(y)) {
+		if (Object.prototype.toString.call(x) === '[object DataView]' || Object.prototype.toString.call(y) === '[object DataView]') {
 			if (!(isDataView(x) && isDataView(y))) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is DataView, the other is not' }
 			if (x.byteLength !== y.byteLength) return { equal: false, path, reason: 'dataViewLengthMismatch', detail: `Expected byteLength ${y.byteLength} but got ${x.byteLength}` }
 			const ax = new Uint8Array(x.buffer, x.byteOffset, x.byteLength)

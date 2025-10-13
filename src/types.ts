@@ -87,6 +87,9 @@ export type DeepCloneCheckOptions = DeepEqualOptions & {
 	readonly allowSharedErrors?: boolean // allow same Error reference when checking clone
 }
 
+// Internal deep-compare configuration (used by deep.ts implementation).
+export type InternalDeepCompareOptions = { identityMustDiffer: boolean, opts: DeepCloneCheckOptions }
+
 // Result of a deep comparison; includes path/reason when unequal.
 export type DeepCompareResult
 	= | { equal: true }
