@@ -1,6 +1,5 @@
-import { test } from 'node:test'
-import assert from 'node:assert/strict'
+import { test, expect } from 'vitest'
 
 test('types.ts: placeholder (compile-time only)', () => {
-  assert.equal(true, true)
+	expect(true).toBe(true)
 })

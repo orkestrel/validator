@@ -5,6 +5,14 @@
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/orkestrel/validator.git"
+  },
+  "homepage": "https://github.com/orkestrel/validator#readme",
+  "bugs": {
+    "url": "https://github.com/orkestrel/validator/issues"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,14 +26,22 @@
     "dist"
   ],
   "scripts": {
-    "clean": "rm -rf dist",
-    "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc -p tsconfig.json",
-    "test": "tsx --test \"tests/**/*.test.ts\""
+    "clean": "node -e \"try{require('fs').rmSync(process.argv[1],{recursive:true,force:true})}catch(e){}\"",
+    "build": "npm run clean dist && vite build && tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "check": "tsc -p tsconfig.json",
+    "format": "eslint . --fix",
+    "prepublishOnly": "npm run check && npm run format && npm run test && npm run build"
   },
   "devDependencies": {
-    "@types/node": "^22.7.5",
-    "typescript": "^5.6.3",
-    "tsx": "^4.19.1"
+    "@nuxt/eslint-config": "^1.9.0",
+    "@types/node": "^24.7.2",
+    "eslint": "^9.37.0",
+    "eslint-plugin-jsdoc": "^61.1.1",
+    "eslint-plugin-tsdoc": "^0.4.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9",
+    "vitest": "^3.2.4"
   }
 }

@@ -1,16 +1,18 @@
-import { test } from 'node:test'
-import assert from 'node:assert/strict'
+import { test, expect } from 'vitest'
 import { isIterable, iterableOf } from '../src/iterables.js'
 import { isNumber } from '../src/primitives.js'
 
 test('isIterable', () => {
-  assert.equal(isIterable([1, 2, 3]), true)
-  assert.equal(isIterable('abc'), true)
-  assert.equal(isIterable(123), false)
+	expect(isIterable([1, 2, 3])).toBe(true)
+	expect(isIterable('abc')).toBe(true)
+	expect(isIterable(123)).toBe(false)
 })
 
 test('iterableOf consumes and validates', () => {
-  function* gen() { yield 1; yield 2 }
-  assert.equal(iterableOf(isNumber)(gen()), true)
-  assert.equal(iterableOf(isNumber)([1, 'x'] as unknown[]), false)
+	function* gen() {
+		yield 1
+		yield 2
+	}
+	expect(iterableOf(isNumber)(gen())).toBe(true)
+	expect(iterableOf(isNumber)([1, 'x'] as unknown[])).toBe(false)
 })

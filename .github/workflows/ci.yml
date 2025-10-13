@@ -16,6 +16,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci || npm i
-      - run: npm run typecheck
+      - run: npm run check
+      - run: npm run format
+      - run: npm run test
       - run: npm run build
-      - run: npm test

@@ -1,8 +1,7 @@
-import { test } from 'node:test'
-import assert from 'node:assert/strict'
+import { test, expect } from 'vitest'
 import * as api from '../src/index.js'
 
 test('index exports surface', () => {
-  assert.equal(typeof api, 'object')
-  assert.ok(Object.keys(api).length > 0)
+	expect(typeof api).toBe('object')
+	expect(Object.keys(api).length).toBeGreaterThan(0)
 })
