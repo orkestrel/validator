@@ -1,0 +1,6 @@
+{
+  "name": "@orkestrel/validator",
+  "version": "0.1.0",
+  "description": "Tiny, composable runtime type guards and assertions for TypeScript with LLM-friendly diagnostics",
+  "type": "module"
+}
