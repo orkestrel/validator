@@ -1,4 +1,4 @@
-import type { FromSchema, Guard, GuardsShape, SchemaSpec, GuardType } from './types.js'
+import type { FromSchema, Guard, GuardsShape, SchemaSpec, GuardType, ObjectOfOptions } from './types.js'
 import { isFunction } from './primitives.js'
 
 /**
@@ -89,7 +89,12 @@ export function hasPartialSchema<S extends SchemaSpec>(obj: unknown, schema: S):
  * property values when `exact` is false.
  *
  * @param props - Mapping of property names to guard functions
- * @param options - Optional configuration: `{ optional?: readonly (keyof G)[], exact?: boolean, rest?: Guard<unknown> }`
+ * @param options - Optional configuration
+ * @remarks
+ * Properties on `options`:
+ * - `optional` — readonly array of keys from `props` that may be missing
+ * - `exact` — boolean; when true additional object keys are disallowed
+ * - `rest` — a `Guard<unknown>` applied to any extra property values when `exact` is false
  * @returns A guard function that validates objects matching `props` with the given options
  * @example
  * ```ts
@@ -99,7 +104,7 @@ export function hasPartialSchema<S extends SchemaSpec>(obj: unknown, schema: S):
  */
 export function objectOf<const G extends GuardsShape, const Opt extends readonly (keyof G)[] = []>(
 	props: G,
-	options?: Readonly<{ optional?: Opt, exact?: boolean, rest?: Guard<unknown> }>,
+	options?: ObjectOfOptions<Opt>,
 ): (x: unknown) => x is Readonly<{ [K in Exclude<keyof G, Opt[number]>]-?: GuardType<G[K]> } & { [K in Opt[number]]?: GuardType<G[K]> }> {
 	const optionalSet = new Set<keyof G>(options?.optional as readonly (keyof G)[] | undefined ?? [])
 	const exact = options?.exact === true

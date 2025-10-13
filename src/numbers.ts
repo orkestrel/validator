@@ -4,6 +4,10 @@ import { isInteger, isNumber } from './primitives.js'
 /**
  * Determine whether a value is a finite negative number.
  *
+ * Overloads:
+ * - When called with `number`, returns `boolean`.
+ * - When called with `unknown`, returns a type predicate narrowing to `number`.
+ *
  * @param x - Value to test
  * @returns True if `x` is a finite number less than 0
  * @example
@@ -11,7 +15,9 @@ import { isInteger, isNumber } from './primitives.js'
  * isNegativeNumber(-1) // true
  * ```
  */
-export function isNegativeNumber(x: unknown): x is number {
+export function isNegativeNumber(x: number): boolean
+export function isNegativeNumber(x: unknown): x is number
+export function isNegativeNumber(x: unknown): boolean {
 	return isNumber(x) && x < 0
 }
 

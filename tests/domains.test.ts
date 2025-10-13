@@ -3,7 +3,7 @@ import {
 	isUUIDv4,
 	isISODateString,
 	isISODateTimeString,
-	isEmail,
+	isEmailString,
 	isURLString,
 	isHttpUrlString,
 	isPortNumber,
@@ -39,10 +39,10 @@ test('ISO datetime (RFC3339 subset)', () => {
 })
 
 test('Email', () => {
-	expect(isEmail('a@b.co')).toBe(true)
-	expect(isEmail('a@b')).toBe(false)
-	expect(isEmail('@b.com')).toBe(false)
-	expect(isEmail('a b@c.com')).toBe(false)
+	expect(isEmailString('a@b.co')).toBe(true)
+	expect(isEmailString('a@b')).toBe(false)
+	expect(isEmailString('@b.com')).toBe(false)
+	expect(isEmailString('a b@c.com')).toBe(false)
 })
 
 test('URL strings', () => {

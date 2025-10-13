@@ -1,17 +1,4 @@
-export type DeepEqualOptions = {
-	readonly compareSetOrder?: boolean
-	readonly compareMapOrder?: boolean
-	readonly strictNumbers?: boolean
-}
-
-export type DeepCloneCheckOptions = DeepEqualOptions & {
-	readonly allowSharedFunctions?: boolean
-	readonly allowSharedErrors?: boolean
-}
-
-export type DeepCompareResult
-	= | { equal: true }
-		| { equal: false, path: readonly (string | number | symbol)[], reason: string, detail?: string }
+import type { DeepEqualOptions, DeepCloneCheckOptions, DeepCompareResult } from './types.js'
 
 type InternalOptions = {
 	identityMustDiffer: boolean

@@ -1,5 +1,4 @@
-export type PathSegment = string | number | symbol
-export type ValidationPath = ReadonlyArray<PathSegment>
+import type { PathSegment, ValidationPath, CreateTypeErrorOptions } from './types.js'
 
 function isValidIdent(s: string): boolean {
 	return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(s)
@@ -70,14 +69,6 @@ function typeAndTag(x: unknown): { type: string, tag: string } {
 	const type = x === null ? 'null' : typeof x
 	const tag = Object.prototype.toString.call(x as object)
 	return { type, tag }
-}
-
-export interface CreateTypeErrorOptions {
-	readonly path?: ValidationPath
-	readonly label?: string
-	readonly message?: string
-	readonly hint?: string
-	readonly helpUrl?: string
 }
 
 /**

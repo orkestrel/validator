@@ -17,19 +17,64 @@ Quick workflow (how to work)
    - `npm run build` — build ESM and types
    - `npm run format` — ESLint autofix
 
+Project organization
+- All assertion helpers live in `src/assert.ts` and are tested in `tests/assert.test.ts`
+
 Typing ethos (strict, helpful, honest)
 - No `any`. No non‑null assertions (`!`). Avoid unsafe casts; prefer narrowing
 - Validate at the edges: accept `unknown`, check, then type
 - Prefer `readonly` for public outputs; avoid mutating returned values
 - Keep helpers small and well‑typed; document invariants where helpful
+- All shared public types live in `src/types.ts` and are exported/imported from there
+- Do not define new `type`/`interface` declarations outside `src/types.ts`
+- When adding options to a function, create a named `...Options` interface in `src/types.ts` and import it
 
 TSDoc policy (what to document)
-- Exported functions: full TSDoc with description, `@param`, `@returns`, and minimal `ts` examples
-- Private/non-exported helpers: single-line comments only
-- Types/interfaces: no TSDoc banners
+- Public exported classes and their public methods: full TSDoc
+    - Include: description, `@param` and `@returns` with descriptions, an `@example`, and `@remarks` if helpful
+    - Examples must use fenced code blocks with the `ts` language tag (```ts)
+- Exported functions: full TSDoc as above
+- Simple getters and setters: no `@example`. Provide a concise description and meaningful `@returns`.
+- Private methods, non‑exported classes/functions, and overload signatures: use a single‑line description comment only
+- Types and interfaces: keep comments concise
+    - Prefer single‑line comments for type and interface declarations, especially in `src/types.ts`
+    - For options interfaces, it’s okay to add short one‑line comments for the interface and its members
+- TSDoc does not support dotted `@param` names (e.g., `@param opts.foo`).
+- For options objects, document a single parameter for the object, and list its properties in the description or under `@remarks`.
+- Do not include type annotations in JSDoc; rely on TypeScript types.
+- Avoid inline object types in parameter positions for exported functions. Define a named interface in `src/types.ts` and reference it; document its fields under `@remarks`.
+- Adopted style for options objects
+    - Use a single `@param` for the object and describe its fields under `@remarks`.
+    - Do not write dotted `@param` names. Keep property details readable as a bullet list.
+    - Keep `@example` small and copy‑paste friendly.
+
+Example
+````ts
+/**
+ * Build an object guard from a shape of property guards.
+ *
+ * `props` maps property names to guards. `options.optional` may list keys that
+ * are allowed to be missing. When `options.exact` is true, additional keys on
+ * the object are disallowed. `options.rest` is a guard applied to any extra
+ * property values when `exact` is false.
+ *
+ * @param props - Mapping of property names to guard functions
+ * @param options - Optional configuration
+ * @remarks
+ * Properties on `options`:
+ * - optional — readonly array of keys from `props` that may be missing
+ * - exact — boolean; when true additional object keys are disallowed
+ * - rest — a Guard<unknown> applied to any extra property values when `exact` is false
+ * @returns A guard function that validates objects matching `props` with the given options
+ * @example
+ * ```ts
+ * const g = objectOf({ a: (x): x is number => typeof x === 'number' })
+ * g({ a: 1 }) // true
+ * ```
+ */
+````
 
 Consistency
-- Examples should be minimal and copy‑paste friendly
 - Diagnostics should be clear, path-aware, and include structured metadata
 - Mirror test files and cover golden paths + key edge cases
 
@@ -40,10 +85,10 @@ API and change control
 
 Testing conventions and QA
 - Tests mirror source files: `tests/[file].test.ts`
+- Assertion helpers: add/adjust coverage in `tests/assert.test.ts`
 - Use built-ins only where appropriate; prefer direct values over heavy mocks
 - Cover edge cases: NaN/+0/-0, cycles, Map/Set order, path diagnostics
 - Keep tests fast (seconds, not minutes)
 
 Code of Conduct
 - Be kind. Assume good intent. Discuss ideas, not people.
-

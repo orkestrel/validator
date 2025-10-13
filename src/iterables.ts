@@ -6,6 +6,10 @@ import type { Guard } from './types.js'
  * A value is considered iterable when it is non-nullish and has a
  * callable `[Symbol.iterator]` method.
  *
+ * Overloads:
+ * - When called with `Iterable<T>`, returns `boolean`.
+ * - When called with `unknown`, returns a type predicate narrowing to `Iterable<T>`.
+ *
  * @param x - Value to test
  * @returns True if `x` is iterable
  * @example
@@ -15,7 +19,9 @@ import type { Guard } from './types.js'
  * isIterable({}) // false
  * ```
  */
-export function isIterable<T = unknown>(x: unknown): x is Iterable<T> {
+export function isIterable<_T = unknown>(x: Iterable<_T>): boolean
+export function isIterable<_T = unknown>(x: unknown): x is Iterable<_T>
+export function isIterable<_T = unknown>(x: unknown): boolean {
 	return x != null && typeof (x as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function'
 }
 

@@ -1,8 +1,11 @@
 import type { Guard } from './types.js'
-import { isRecord } from './objects.js'
 
 /**
  * Determine whether a value is an array.
+ *
+ * Overloads:
+ * - When called with `readonly T[]`, returns `boolean`.
+ * - When called with `unknown`, returns a type predicate narrowing to `readonly T[]`.
  *
  * @param x - Value to test
  * @returns True if `x` is an array
@@ -12,7 +15,9 @@ import { isRecord } from './objects.js'
  * isArray({}) // false
  * ```
  */
-export function isArray<T = unknown>(x: unknown): x is ReadonlyArray<T> {
+export function isArray<_T = unknown>(x: ReadonlyArray<_T>): boolean
+export function isArray<_T = unknown>(x: unknown): x is ReadonlyArray<_T>
+export function isArray<_T = unknown>(x: unknown): boolean {
 	return Array.isArray(x)
 }
 
@@ -78,34 +83,6 @@ export function tupleOf<const Gs extends readonly Guard<unknown>[]>(...guards: G
 		for (let i = 0; i < guards.length; i++) {
 			const guard = guards[i]
 			if (!guard || !guard(x[i])) return false
-		}
-		return true
-	}
-}
-
-/**
- * Create a guard for a plain-object record whose values match a guard.
- *
- * Note: This checks that the input is a non-array object and that all own
- * enumerable string keys have values accepted by `valueGuard`.
- *
- * @param valueGuard - Guard for property values
- * @returns Guard that accepts records of `T`
- * @example
- * ```ts
- * import { recordOf } from '@orkestrel/validator'
- * import { isString } from './primitives.js'
- *
- * const record = recordOf(isString)
- * record({ a: 'x', b: 'y' }) // true
- * record({ a: 1 }) // false
- * ```
- */
-export function recordOf<T>(valueGuard: Guard<T>): Guard<Record<string, T>> {
-	return (x: unknown): x is Record<string, T> => {
-		if (!isRecord(x)) return false
-		for (const k of Object.keys(x)) {
-			if (!valueGuard((x as Record<string, unknown>)[k])) return false
 		}
 		return true
 	}

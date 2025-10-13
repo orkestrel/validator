@@ -12,6 +12,27 @@ import {
 	assertDeepClone,
 	assertNot,
 	assertHasNo,
+	assertLowercase,
+	assertUppercase,
+	assertAlphanumeric,
+	assertAscii,
+	assertHexColor,
+	assertIPv4String,
+	assertHostnameString,
+	assertUUIDv4,
+	assertISODateString,
+	assertISODateTimeString,
+	assertEmail,
+	assertURLString,
+	assertHttpUrlString,
+	assertPortNumber,
+	assertMimeType,
+	assertSlug,
+	assertBase64String,
+	assertHexString,
+	assertSemver,
+	assertJsonString,
+	assertHttpMethod,
 } from '../src/assert.js'
 import { isString, isNumber } from '../src/primitives.js'
 
@@ -177,4 +198,251 @@ test('assertNot and assertHasNo', () => {
 		expect((e as Error).message).toMatch(/without keys/i)
 	}
 	expect(threw2).toBe(true)
+})
+
+// Newly organized assertion tests
+
+test('assertLowercase and assertUppercase', () => {
+	expect(() => assertLowercase('abc')).not.toThrow()
+	expect(() => assertUppercase('ABC')).not.toThrow()
+	let t1 = false
+	try {
+		assertLowercase('Abc')
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/lowercase/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertUppercase('AbC')
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/uppercase/i)
+	}
+	expect(t2).toBe(true)
+})
+
+test('assertAlphanumeric and assertAscii', () => {
+	expect(() => assertAlphanumeric('A1')).not.toThrow()
+	expect(() => assertAscii('Hello')).not.toThrow()
+	let t1 = false
+	try {
+		assertAlphanumeric('A!')
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/alphanumeric/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertAscii('\u00A9' as unknown as string)
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/ascii/i)
+	}
+	expect(t2).toBe(true)
+})
+
+test('assertHexColor', () => {
+	expect(() => assertHexColor('#fff', { allowHash: true })).not.toThrow()
+	let t = false
+	try {
+		assertHexColor('ffff')
+	}
+	catch (e) {
+		t = true
+		expect((e as Error).message).toMatch(/hex color/i)
+	}
+	expect(t).toBe(true)
+})
+
+test('assertIPv4String and assertHostnameString', () => {
+	expect(() => assertIPv4String('127.0.0.1')).not.toThrow()
+	expect(() => assertHostnameString('example.com')).not.toThrow()
+	let t1 = false
+	try {
+		assertIPv4String('256.0.0.1')
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/ipv4/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertHostnameString('-bad.com')
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/hostname/i)
+	}
+	expect(t2).toBe(true)
+})
+
+test('assertUUIDv4 and assertEmail', () => {
+	expect(() => assertUUIDv4('123e4567-e89b-42d3-a456-426614174000')).not.toThrow()
+	expect(() => assertEmail('a@b.co')).not.toThrow()
+	let t1 = false
+	try {
+		assertUUIDv4('not-a-uuid')
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/uuid v4/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertEmail('a@b')
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/email/i)
+	}
+	expect(t2).toBe(true)
+})
+
+test('assertURLString and assertHttpUrlString', () => {
+	expect(() => assertURLString('https://example.com')).not.toThrow()
+	expect(() => assertHttpUrlString('https://example.com')).not.toThrow()
+	let t1 = false
+	try {
+		assertURLString('/relative')
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/url string/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertHttpUrlString('ftp://example.com')
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/http\(s\) url string/i)
+	}
+	expect(t2).toBe(true)
+})
+
+test('assertPortNumber and assertMimeType', () => {
+	expect(() => assertPortNumber(8080)).not.toThrow()
+	expect(() => assertMimeType('text/plain')).not.toThrow()
+	let t1 = false
+	try {
+		assertPortNumber(0)
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/port number/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertMimeType('not-a-type')
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/mime type/i)
+	}
+	expect(t2).toBe(true)
+})
+
+test('assertSlug and assertBase64String', () => {
+	expect(() => assertSlug('my-post-1')).not.toThrow()
+	expect(() => assertBase64String('TWFu')).not.toThrow()
+	let t1 = false
+	try {
+		assertSlug('Hello-World')
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/slug/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertBase64String('@@@')
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/base64/i)
+	}
+	expect(t2).toBe(true)
+})
+
+test('assertHexString and assertSemver', () => {
+	expect(() => assertHexString('deadbeef', { evenLength: true })).not.toThrow()
+	expect(() => assertSemver('1.2.3')).not.toThrow()
+	let t1 = false
+	try {
+		assertHexString('xyz')
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/hex string/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertSemver('1.2')
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/semantic version/i)
+	}
+	expect(t2).toBe(true)
+})
+
+test('assertJsonString and assertHttpMethod', () => {
+	expect(() => assertJsonString('{"a":1}')).not.toThrow()
+	expect(() => assertHttpMethod('GET')).not.toThrow()
+	let t1 = false
+	try {
+		assertJsonString('{a:1}')
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/json string/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertHttpMethod('get' as unknown)
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/http method/i)
+	}
+	expect(t2).toBe(true)
+})
+
+// Additional tests to exercise ISO date validators and avoid unused imports
+
+test('assertISODateString and assertISODateTimeString', () => {
+	expect(() => assertISODateString('2024-01-02')).not.toThrow()
+	expect(() => assertISODateTimeString('2024-10-12T16:59:32Z')).not.toThrow()
+	let t1 = false
+	try {
+		assertISODateString('2024-13-01')
+	}
+	catch (e) {
+		t1 = true
+		expect((e as Error).message).toMatch(/iso date/i)
+	}
+	expect(t1).toBe(true)
+	let t2 = false
+	try {
+		assertISODateTimeString('not-a-date')
+	}
+	catch (e) {
+		t2 = true
+		expect((e as Error).message).toMatch(/date-time/i)
+	}
+	expect(t2).toBe(true)
 })

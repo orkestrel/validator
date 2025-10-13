@@ -1,26 +1,13 @@
-import type { FromSchema, Guard, SchemaSpec } from './types.js'
-import type { ValidationPath } from './diagnostics.js'
+import type { FromSchema, Guard, SchemaSpec, AssertOptions, DeepEqualOptions, DeepCloneCheckOptions, HttpMethod, HexColorOptions, HexStringOptions } from './types.js'
 import { createTypeError, extendPath } from './diagnostics.js'
 import { isArray } from './arrays.js'
 import { isAsyncFunction, isBoolean, isDefined, isFunction, isNumber, isString } from './primitives.js'
 import { hasSchema } from './schema.js'
 import { isObject, isRecord, hasNo } from './objects.js'
-import { deepCompare, type DeepEqualOptions, type DeepCloneCheckOptions } from './deep.js'
+import { deepCompare } from './deep.js'
 import { isEmpty, isEmptyArray, isEmptyMap, isEmptyObject, isEmptySet, isEmptyString } from './emptiness.js'
-
-/**
- * Options to customize assertion error diagnostics.
- *
- * Use `label` to annotate the value's role (e.g., "user.id"), `path` to
- * pinpoint a nested failure, and `hint`/`helpUrl` to guide fixes.
- */
-export interface AssertOptions {
-	readonly path?: ValidationPath
-	readonly label?: string
-	readonly message?: string
-	readonly hint?: string
-	readonly helpUrl?: string
-}
+import { isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isHostnameString } from './strings.js'
+import { isUUIDv4, isISODateString, isISODateTimeString, isEmailString, isURLString, isHttpUrlString, isPortNumber, isMimeType, isSlug, isBase64String, isHexString, isSemver, isJsonString, isHttpMethod } from './domains.js'
 
 function fail(expected: string, received: unknown, options?: AssertOptions): never {
 	throw createTypeError(expected, received, options)
@@ -305,7 +292,7 @@ export function assertRecordOf<T>(x: unknown, valueGuard: Guard<T>, options?: As
 	}
 }
 
-function findSchemaViolation(obj: unknown, schema: SchemaSpec, path: ValidationPath = []): { expected: string, received: unknown, path: ValidationPath } | undefined {
+function findSchemaViolation(obj: unknown, schema: SchemaSpec, path: (import('./types.js').ValidationPath) = []): { expected: string, received: unknown, path: (import('./types.js').ValidationPath) } | undefined {
 	if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
 		return { expected: 'object matching schema', received: obj, path }
 	}
@@ -582,4 +569,321 @@ export function assertEmptyMap(x: unknown, options?: AssertOptions): asserts x i
  */
 export function assertEmptySet(x: unknown, options?: AssertOptions): asserts x is ReadonlySet<unknown> {
 	if (!isEmptySet(x)) fail('empty set', x, options)
+}
+
+/**
+ * Assert that a value is a lowercase string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'abc'
+ * assertLowercase(v)
+ * // v: string
+ * ```
+ */
+export function assertLowercase(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isLowercase(x)) fail('lowercase string', x, options)
+}
+
+/**
+ * Assert that a value is an uppercase string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'ABC'
+ * assertUppercase(v)
+ * // v: string
+ * ```
+ */
+export function assertUppercase(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isUppercase(x)) fail('uppercase string', x, options)
+}
+
+/**
+ * Assert that a value is an alphanumeric string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'A1'
+ * assertAlphanumeric(v)
+ * // v: string
+ * ```
+ */
+export function assertAlphanumeric(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isAlphanumeric(x)) fail('alphanumeric string', x, options)
+}
+
+/**
+ * Assert that a value is an ASCII string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'Hello'
+ * assertAscii(v)
+ * // v: string
+ * ```
+ */
+export function assertAscii(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isAscii(x)) fail('ASCII string', x, options)
+}
+
+/**
+ * Assert that a value is a hex color string.
+ * @param x - Value to check
+ * @param opts - Options such as allowing a leading '#'
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = '#fff'
+ * assertHexColor(v, { allowHash: true })
+ * // v: string
+ * ```
+ */
+export function assertHexColor(x: unknown, opts?: HexColorOptions, options?: AssertOptions): asserts x is string {
+	if (!isHexColor(x as unknown, opts)) fail('hex color string', x, options)
+}
+
+/**
+ * Assert that a value is an IPv4 address string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = '127.0.0.1'
+ * assertIPv4String(v)
+ * // v: string
+ * ```
+ */
+export function assertIPv4String(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isIPv4String(x)) fail('IPv4 address string', x, options)
+}
+
+/**
+ * Assert that a value is a hostname string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'example.com'
+ * assertHostnameString(v)
+ * // v: string
+ * ```
+ */
+export function assertHostnameString(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isHostnameString(x)) fail('hostname string', x, options)
+}
+
+/**
+ * Assert that a value is a UUID v4 string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = '123e4567-e89b-42d3-a456-426614174000'
+ * assertUUIDv4(v)
+ * // v: string
+ * ```
+ */
+export function assertUUIDv4(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isUUIDv4(x)) fail('UUID v4 string', x, options)
+}
+
+/**
+ * Assert that a value is an ISO date string (YYYY-MM-DD).
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = '2024-01-02'
+ * assertISODateString(v)
+ * // v: string
+ * ```
+ */
+export function assertISODateString(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isISODateString(x)) fail('ISO date string (YYYY-MM-DD)', x, options)
+}
+
+/**
+ * Assert that a value is an ISO date-time string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = '2024-10-12T16:59:32Z'
+ * assertISODateTimeString(v)
+ * // v: string
+ * ```
+ */
+export function assertISODateTimeString(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isISODateTimeString(x)) fail('ISO date-time string', x, options)
+}
+
+/**
+ * Assert that a value is an email string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'a@b.com'
+ * assertEmail(v)
+ * // v: string
+ * ```
+ */
+export function assertEmail(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isEmailString(x)) fail('email address string', x, options)
+}
+
+/**
+ * Assert that a value is a URL string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'https://example.com'
+ * assertURLString(v)
+ * // v: string
+ * ```
+ */
+export function assertURLString(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isURLString(x)) fail('URL string', x, options)
+}
+
+/**
+ * Assert that a value is an http(s) URL string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'https://example.com'
+ * assertHttpUrlString(v)
+ * // v: string
+ * ```
+ */
+export function assertHttpUrlString(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isHttpUrlString(x)) fail('http(s) URL string', x, options)
+}
+
+/**
+ * Assert that a value is a port number (1-65535).
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 8080
+ * assertPortNumber(v)
+ * // v: number
+ * ```
+ */
+export function assertPortNumber(x: unknown, options?: AssertOptions): asserts x is number {
+	if (!isPortNumber(x)) fail('port number (1-65535)', x, options)
+}
+
+/**
+ * Assert that a value is a MIME type string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'text/plain'
+ * assertMimeType(v)
+ * // v: string
+ * ```
+ */
+export function assertMimeType(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isMimeType(x)) fail('MIME type string', x, options)
+}
+
+/**
+ * Assert that a value is a slug string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'my-post-1'
+ * assertSlug(v)
+ * // v: string
+ * ```
+ */
+export function assertSlug(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isSlug(x)) fail('slug string', x, options)
+}
+
+/**
+ * Assert that a value is a Base64-encoded string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'SGVsbG8='
+ * assertBase64String(v)
+ * // v: string
+ * ```
+ */
+export function assertBase64String(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isBase64String(x)) fail('Base64-encoded string', x, options)
+}
+
+/**
+ * Assert that a value is a hex string.
+ * @param x - Value to check
+ * @param opts - Options to constrain allowed formats (e.g., even length)
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'deadbeef'
+ * assertHexString(v, { evenLength: true })
+ * // v: string
+ * ```
+ */
+export function assertHexString(x: unknown, opts?: HexStringOptions, options?: AssertOptions): asserts x is string {
+	if (!isHexString(x as unknown, opts)) fail('hex string', x, options)
+}
+
+/**
+ * Assert that a value is a semantic version string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = '1.2.3'
+ * assertSemver(v)
+ * // v: string
+ * ```
+ */
+export function assertSemver(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isSemver(x)) fail('semantic version string', x, options)
+}
+
+/**
+ * Assert that a value is a JSON string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = '{"a":1}'
+ * assertJsonString(v)
+ * // v: string
+ * ```
+ */
+export function assertJsonString(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isJsonString(x)) fail('JSON string', x, options)
+}
+
+/**
+ * Assert that a value is an HTTP method string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'GET'
+ * assertHttpMethod(v)
+ * // v: HttpMethod
+ * ```
+ */
+export function assertHttpMethod(x: unknown, options?: AssertOptions): asserts x is HttpMethod {
+	if (!isHttpMethod(x)) fail('HTTP method string', x, options)
 }
