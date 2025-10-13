@@ -1,9 +1,12 @@
 {
   "name": "@orkestrel/validator",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Tiny, composable runtime type guards and assertions for TypeScript with LLM-friendly diagnostics",
   "type": "module",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "sideEffects": false,
   "repository": {
     "type": "git",
@@ -23,7 +26,9 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "clean": "node -e \"try{require('fs').rmSync(process.argv[1],{recursive:true,force:true})}catch(e){}\"",
