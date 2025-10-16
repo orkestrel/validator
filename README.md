@@ -68,9 +68,11 @@ const schema = {
 ## Guards
 
 - Primitives: `isString`, `isNumber` (finite), `isBoolean`, `isFunction`, `isAsyncFunction`, `isDate`, `isRegExp`, `isError`, `isPromiseLike`
+- Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isPromiseFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`, `isZeroArgPromise`
 - Objects & keys: `isObject`, `isRecord`, `hasOwn`, `hasOnlyKeys`, `hasNo`, `keyOf`
-- Arrays/collections: `isArray`, `arrayOf`, `nonEmptyArrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`
-- Strings/numbers: `stringMatching`, `stringMinLength/MaxLength/LengthBetween`, `isLowercase/Uppercase`, `isAlphanumeric`, `isAscii`, `isHexColor`, `isIPv4String`, `isHostnameString`, `intInRange`, `isMultipleOf`
+- Arrays/collections: `isArray`, `arrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`, `iterableOf`
+- Strings/numbers: `stringMatchOf`, `stringOf`, `numberOf`, `isLowercase`, `isUppercase`, `isAlphanumeric`, `isAscii`, `isHexColor`, `isIPv4String`, `isIPv6String`, `isHostnameString`
+- Size/length/count: `lengthOf`, `sizeOf`, `countOf`, `minOf`, `maxOf`, `rangeOf`, `measureOf`, `multipleOf`
 
 Each guard accepts `unknown` and returns a precise `x is T` predicate. Helpers are pure and do not mutate inputs.
 
@@ -80,23 +82,40 @@ Build complex shapes from small parts:
 
 ```ts
 import {
-  literalOf, and, or, not, unionOf, intersectionOf,
-  optionalOf, nullableOf, lazy, refine, fromNativeEnum, discriminatedUnion,
+  literalOf, andOf, orOf, notOf, unionOf, intersectionOf,
+  optionalOf, nullableOf, lazyOf, refineOf, enumOf, discriminatedUnionOf,
   isString, isNumber, objectOf,
+  emptyOf, nonEmptyOf, stringMatchOf, stringOf, numberOf,
+  lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, multipleOf,
+  mapOf, setOf, keyOf, recordOf, iterableOf, measureOf,
 } from '@orkestrel/validator'
 
 // Literal unions and refinement
-const isId = refine(isString, (s): s is string => s.length > 0)
+const isId = refineOf(isString, (s): s is string => s.length > 0)
 const isLevel = literalOf('info','warn','error' as const)
 
+// Logical combinators
+const isStringAndNonEmpty = andOf(isString, nonEmptyOf(isString))
+const isStringOrNumber = orOf(isString, isNumber)
+
 // Negation
-const notString = not(isString) // Guard<unknown>
+const notString = notOf(isString) // Guard<unknown>
 
 // Typed exclusion using a base guard (precise Exclude)
 const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
 const isRect   = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
 const isShape  = unionOf(isCircle, isRect)
-const notCircle = not(isShape, isCircle) // Guard<{ kind: 'rect', w: number, h: number }>
+const notCircle = notOf(isShape, isCircle) // Guard<{ kind: 'rect', w: number, h: number }>
+
+// Size/length/count constraints
+const twoChars = lengthOf(2)        // string or array with length 2
+const between1And10 = rangeOf(1, 10) // number/string/array/map/set/object measure in [1, 10]
+const atLeast5 = minOf(5)           // measure >= 5
+const atMost100 = maxOf(100)        // measure <= 100
+
+// Empty/non-empty variants
+const maybeEmptyString = emptyOf(isString)     // '' or non-empty string
+const mustHaveItems = nonEmptyOf(arrayOf(isNumber)) // non-empty number array
 ```
 
 ## Schema and object builders
@@ -156,11 +175,14 @@ Options:
 
 ## Emptiness and “opposites”
 
-- `isEmpty` for strings/arrays/maps/sets/objects; specific variants: `isEmptyString/Array/Object/Map/Set`
-- Non‑empty counterparts: `isNonEmptyString/Array/Object/Map/Set`
+- `isEmpty` for strings/arrays/maps/sets/objects; specific variants: `isEmptyString`, `isEmptyArray`, `isEmptyObject`, `isEmptyMap`, `isEmptySet`
+- Non‑empty counterparts: `isNonEmptyString`, `isNonEmptyArray`, `isNonEmptyObject`, `isNonEmptyMap`, `isNonEmptySet`
+- Emptiness-aware combinators:
+    - `emptyOf(guard)` — allows empty values or values passing the guard
+    - `nonEmptyOf(guard)` — requires non-empty values and passing the guard
 - Opposites:
-    - `not(guard)` — simple negation (returns `Guard<unknown>`)
-    - `not(base, exclude)` — typed exclusion: `Exclude<Base, Excluded>`
+    - `notOf(guard)` — simple negation (returns `Guard<unknown>`)
+    - `notOf(base, exclude)` — typed exclusion: `Exclude<Base, Excluded>`
     - `hasNo(obj, ...keys)` — object owns none of these keys
 
 ## TypeScript and build

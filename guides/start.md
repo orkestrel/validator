@@ -52,10 +52,10 @@ if (!r.equal) {
 Zero-boilerplate combinators
 ```ts
 import {
-  literalOf, unionOf, and, optionalOf, isString, isNumber
+  literalOf, unionOf, andOf, optionalOf, isString, isNumber
 } from '@orkestrel/validator'
 
-const isId = and(isString, (s: string): s is string => s.length > 0)
+const isId = andOf(isString, (s: string): s is string => s.length > 0)
 const isLevel = literalOf('info','warn','error' as const)
 const isMaybeCount = optionalOf(isNumber)
 
@@ -65,10 +65,10 @@ console.log(isLevel('warn'), isMaybeCount(undefined)) // true true
 Emptiness and opposite checks
 ```ts
 import {
-  isEmpty, not, isString,
+  isEmpty, notOf, isString,
 } from '@orkestrel/validator'
 
-console.log(isEmpty([]), not(isString)(123)) // true true
+console.log(isEmpty([]), notOf(isString)(123)) // true true
 ```
 
 Where next

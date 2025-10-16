@@ -5,31 +5,31 @@ Practical guidance for composition, typing, and trade-offs.
 Typing and narrowing
 - Accept unknown at the edges; narrow progressively with guards
 - Prefer readonly outputs and avoid mutation in helpers
-- Use refine to express subtypes (e.g., non-empty string) and optionalOf/nullableOf for partials
+- Use refineOf to express subtypes (e.g., non-empty string) and optionalOf/nullableOf for partials
 
 Composition patterns
-- Build small guard pieces and combine with and/or/unionOf
-- Use literalOf for enums of strings/numbers/booleans; fromNativeEnum for TS enums
-- For recursive shapes, wrap guards with lazy
+- Build small guard pieces and combine with andOf/orOf/unionOf
+- Use literalOf for enums of strings/numbers/booleans; enumOf for TS enums
+- For recursive shapes, wrap guards with lazyOf
 - For maps/sets, prefer order-insensitive checks unless order matters; enable compareMapOrder / compareSetOrder when needed
 
 Negation and exclusion (typed, one-liners)
 - Simple negation when you only know “not this”:
-  - `const notString = not(isString)` // Guard<unknown>
+  - `const notString = notOf(isString)` // Guard<unknown>
 - Typed exclusion when you know the base set:
-  - `const notCircle = not(isShape, isCircle)` // Guard<Exclude<Shape, Circle>>
+  - `const notCircle = notOf(isShape, isCircle)` // Guard<Exclude<Shape, Circle>>
 - Exclude multiple variants in one line with unionOf:
-  - `const notCircleOrRect = not(isShape, unionOf(isCircle, isRect))`
+  - `const notCircleOrRect = notOf(isShape, unionOf(isCircle, isRect))`
 
 Combinator typing guarantees (at a glance)
-- `and<A, B>(A, B)` → Guard<A & B>
-- `or<A, B>(A, B)` → Guard<A | B>
+- `andOf<A, B>(A, B)` → Guard<A & B>
+- `orOf<A, B>(A, B)` → Guard<A | B>
 - `unionOf(g1, g2, ...)` → Guard<T1 | T2 | ...>
 - `intersectionOf(g1, g2, ...)` → Guard<T1 & T2 & ...>
 - `optionalOf<T>(g)` → Guard<T | undefined>
 - `nullableOf<T>(g)` → Guard<T | null>
-- `refine<T, U extends T>(base, predicate)` → Guard<U>
-- `not(exclude)` → Guard<unknown>; `not(base, exclude)` → Guard<Exclude<Base, Excluded>>
+- `refineOf<T, U extends T>(base, predicate)` → Guard<U>
+- `notOf(exclude)` → Guard<unknown>; `notOf(base, exclude)` → Guard<Exclude<Base, Excluded>>
 
 Schema vs objectOf
 - hasSchema: simple, declarative, “string” primitives + nested guards

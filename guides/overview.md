@@ -18,10 +18,12 @@ Highlights
 
 Modules at a glance
 - Primitives: isString, isNumber (finite), isBoolean, isFunction, isAsyncFunction, isDate, …
+- Function introspection: isZeroArg, isAsyncFunction, isGeneratorFunction, isAsyncGeneratorFunction, isPromiseFunction, isZeroArgAsync, isZeroArgGenerator, isZeroArgAsyncGenerator, isZeroArgPromise
 - Objects: isObject, isRecord, hasOwn, hasOnlyKeys, hasNo, keyOf
-- Arrays & collections: isArray, arrayOf, tupleOf, recordOf, isMap, isSet, mapOf, setOf
-- Strings & numbers: regex/length helpers, ASCII/alphanumeric, IPv4/hostname, intInRange, multiple-of
-- Combinators: literalOf, and/or/not, union/intersection, optional/nullable, lazy, refine, discriminatedUnion, fromNativeEnum
+- Arrays & collections: isArray, arrayOf, tupleOf, recordOf, isMap, isSet, mapOf, setOf, iterableOf
+- Strings & numbers: stringMatchOf, stringOf, numberOf, isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isIPv6String, isHostnameString
+- Size/length/count: lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, measureOf, multipleOf
+- Combinators: literalOf, andOf, orOf, notOf, unionOf, intersectionOf, optionalOf, nullableOf, lazyOf, refineOf, discriminatedUnionOf, enumOf, emptyOf, nonEmptyOf
 - Schema & builders: hasSchema, hasPartialSchema, objectOf (optional/exact/rest)
 - Domains: UUIDv4, ISO dates, email, URL/HTTP URL, port, MIME, slug, base64, hex, semver, JSON, HTTP methods
 - Deep checks: isDeepEqual, isDeepClone, and diagnostic-oriented deepCompare
