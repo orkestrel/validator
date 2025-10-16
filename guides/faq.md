@@ -12,7 +12,7 @@ Basics
   - Use `tupleOf(guardA, guardB, ...)`. It checks length and per-index guards.
 
 - Literal unions vs enums?
-  - Use `literalOf(...values)` for literal unions; `fromNativeEnum(Enum)` for TS enums (string or numeric).
+  - Use `literalOf(...values)` for literal unions; `enumOf(Enum)` for TS enums (string or numeric).
 
 Intermediate
 
@@ -20,12 +20,12 @@ Intermediate
   - `hasSchema` is a declarative check with primitive tags and nested guards; `objectOf` is a builder with optional/exact/rest options and strong static types.
 
 - Why do “not” combinators return `Guard<unknown>` in the simple form?
-  - TypeScript cannot express the exact set complement. Use `not(base, exclude)` to get a precise `Exclude<Base, Excluded>` when you know the base set.
+  - TypeScript cannot express the exact set complement. Use `notOf(base, exclude)` to get a precise `Exclude<Base, Excluded>` when you know the base set.
 
 - How do I exclude multiple variants?
-  - Compose the excluded variants with `unionOf` and pass that to `not(base, exclude)`:
+  - Compose the excluded variants with `unionOf` and pass that to `notOf(base, exclude)`:
     ```ts
-    const notCircleOrRect = not(isShape, unionOf(isCircle, isRect))
+    const notCircleOrRect = notOf(isShape, unionOf(isCircle, isRect))
     ```
     This keeps the API minimal and one-liner friendly without a separate `exclude` helper.
 
