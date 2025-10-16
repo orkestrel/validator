@@ -1,7 +1,14 @@
-import { test, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import * as api from '../src/index.js'
 
-test('index exports surface', () => {
-	expect(typeof api).toBe('object')
-	expect(Object.keys(api).length).toBeGreaterThan(0)
+describe('index', () => {
+	describe('exports', () => {
+		test('exports an object with API', () => {
+			expect(typeof api).toBe('object')
+		})
+
+		test('exports multiple functions', () => {
+			expect(Object.keys(api).length).toBeGreaterThan(0)
+		})
+	})
 })
