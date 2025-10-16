@@ -206,7 +206,9 @@ describe('primitives', () => {
 	describe('isZeroArg', () => {
 		test('returns true for zero-argument functions', () => {
 			expect(isZeroArg(() => 1)).toBe(true)
-			expect(isZeroArg(function() { return 1 })).toBe(true)
+			expect(isZeroArg(function () {
+				return 1
+			})).toBe(true)
 		})
 
 		test('returns false for functions with arguments', () => {
