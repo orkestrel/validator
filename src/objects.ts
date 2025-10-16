@@ -5,10 +5,11 @@
 /**
  * Count own enumerable string keys and enumerable symbol keys on an object.
  *
- * Internal helper exported for use by combinators.ts. Counts both enumerable
+ * Exported for internal use by combinators.ts. Counts both enumerable
  * string keys (via Object.keys) and enumerable symbol keys.
  *
- * @internal
+ * This is a low-level helper; most users should use {@link isCount} or {@link countOf} instead.
+ *
  * @param obj - Object to count keys on
  * @returns Total count of enumerable string and symbol keys
  * @example
@@ -202,7 +203,8 @@ export function isCountRange(x: unknown, min: number, max: number): boolean {
 /**
  * Assert that a value is a non-null object (arrays allowed).
  *
- * Throws a TypeError when the assertion fails.
+ * Throws a TypeError when the assertion fails. This assertion allows arrays
+ * since arrays are objects. For plain objects only, use {@link assertRecord}.
  *
  * @param x - Value to test
  * @param label - Optional label for the error message
@@ -210,10 +212,11 @@ export function isCountRange(x: unknown, min: number, max: number): boolean {
  * @example
  * ```ts
  * assertObject({}) // no throw
+ * assertObject([]) // no throw (arrays are objects)
  * assertObject(null) // throws TypeError
  * ```
  */
-export function assertObject(x: unknown, label = 'value'): asserts x is Record<string, unknown> {
+export function assertObject(x: unknown, label = 'value'): asserts x is object {
 	if (!isObject(x)) {
 		throw new TypeError(`Expected ${label} to be an object, got ${typeof x}`)
 	}
