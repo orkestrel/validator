@@ -17,7 +17,8 @@ Mirroring source with describe structure
 ```ts
 // src/arrays.ts -> tests/arrays.test.ts
 import { describe, test, expect } from 'vitest'
-import { arrayOf, isString } from '@orkestrel/validator'
+import { arrayOf } from '../src/arrays.js'
+import { isString } from '../src/primitives.js'
 
 describe('arrays', () => {
   describe('arrayOf', () => {
@@ -35,7 +36,8 @@ describe('arrays', () => {
 Path-aware assertion diagnostics
 ```ts
 import { describe, test, expect } from 'vitest'
-import { assertArrayOf, isString } from '@orkestrel/validator'
+import { assertArrayOf } from '../src/assert.js'
+import { isString } from '../src/primitives.js'
 
 describe('assert', () => {
   describe('assertArrayOf', () => {
@@ -50,7 +52,7 @@ describe('assert', () => {
 Deep checks
 ```ts
 import { describe, test, expect } from 'vitest'
-import { assertDeepEqual } from '@orkestrel/validator'
+import { assertDeepEqual } from '../src/deep.js'
 
 describe('deep', () => {
   describe('assertDeepEqual', () => {
