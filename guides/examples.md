@@ -128,6 +128,7 @@ import {
   assertSet,
   assertDate,
   assertIterable,
+  assertUint8Array,
 } from '@orkestrel/validator'
 
 // Type narrowing: value goes from unknown to specific types
@@ -160,6 +161,7 @@ import {
   assertNonEmptyArray,
   assertNonEmptyObject,
   assertEmptySet,
+  assertRecord,
 } from '@orkestrel/validator'
 
 function validateInput(input: unknown) {
