@@ -10,8 +10,23 @@ Guards (validate unknown, narrow precisely)
 - Strings/Numbers: stringMatching, stringMin/Max/Between, isLowercase/Uppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isHostnameString; intInRange, isMultipleOf
 
 Assertions (fail-fast with diagnostics)
-- assertX variants mirror guards and throw TypeError with structured metadata
+- assertX variants mirror all guards and throw TypeError with structured metadata
+- Every is* guard has a corresponding assert* function for fail-fast validation
+- Comprehensive coverage includes:
+  - Primitives: assertString, assertNumber, assertBoolean, assertNull, assertUndefined, assertBigInt, assertSymbol, assertFunction, assertAsyncFunction, assertDate, assertRegExp, assertError, assertPromiseLike, assertZeroArg
+  - Numbers: assertInteger, assertSafeInteger, assertPositiveNumber, assertNegativeNumber, assertNonNegativeNumber, assertMultipleOf
+  - Arrays/TypedArrays: assertArray, assertArrayOf, assertDataView, assertTypedArray, assertInt8Array, assertUint8Array, assertUint8ClampedArray, assertInt16Array, assertUint16Array, assertInt32Array, assertUint32Array, assertFloat32Array, assertFloat64Array, assertBigInt64Array, assertBigUint64Array
+  - Collections: assertMap, assertSet, assertWeakMap, assertWeakSet
+  - Objects: assertObject, assertRecord, assertRecordOf, assertHasNo
+  - Tuples: assertTupleOf, assertNonEmptyArrayOf
+  - Emptiness: assertEmpty, assertEmptyString, assertEmptyArray, assertEmptyObject, assertEmptyMap, assertEmptySet
+  - Non-empty: assertNonEmptyString, assertNonEmptyArray, assertNonEmptyObject, assertNonEmptyMap, assertNonEmptySet
+  - Strings: assertLowercase, assertUppercase, assertAlphanumeric, assertAscii, assertHexColor, assertIPv4String, assertIPv6String, assertHostnameString
+  - Domains: assertUUIDv4, assertISODateString, assertISODateTimeString, assertEmail, assertEmailString, assertURLString, assertHttpUrlString, assertPortNumber, assertMimeType, assertSlug, assertBase64String, assertHexString, assertSemver, assertJsonString, assertJsonValue, assertHttpMethod, assertValidHost, assertValidIdent
+  - Schema: assertSchema, assertDefined
+  - Deep: assertDeepEqual, assertDeepClone, assertNot, assertIterable
 - Deep variants (arrays/records/schema) pinpoint failing indices/keys via path
+- All assertions accept AssertOptions for rich error context: { path, label, message, hint, helpUrl }
 
 Combinators (compose without DSLs)
 - literalOf(...literals): one-of literal unions

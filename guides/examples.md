@@ -89,3 +89,90 @@ declare const input: unknown
 if (!isRequest(input)) throw new TypeError('Invalid request')
 ```
 
+Using assertions for fail-fast validation
+```ts
+import {
+  assertString,
+  assertNumber,
+  assertArrayOf,
+  assertNonEmptyString,
+  assertPositiveNumber,
+  assertEmailString,
+  assertUUIDv4,
+  assertRecord,
+  isString,
+} from '@orkestrel/validator'
+
+function processUser(data: unknown) {
+  // Throws TypeError with rich diagnostics if validation fails
+  assertRecord(data, { path: ['user'] })
+  
+  const { id, email, age, tags } = data
+  
+  assertUUIDv4(id, { path: ['user', 'id'], label: 'User ID' })
+  assertEmailString(email, { path: ['user', 'email'], label: 'Email' })
+  assertPositiveNumber(age, { path: ['user', 'age'], hint: 'Age must be > 0' })
+  assertArrayOf(tags, isString, { path: ['user', 'tags'] })
+  
+  // All assertions passed - data is now validated
+  return { id, email, age, tags }
+}
+```
+
+Comprehensive type narrowing with assertions
+```ts
+import {
+  assertInteger,
+  assertNonEmptyArray,
+  assertMap,
+  assertSet,
+  assertDate,
+  assertIterable,
+  assertUint8Array,
+} from '@orkestrel/validator'
+
+// Type narrowing: value goes from unknown to specific types
+function processData(value: unknown) {
+  assertInteger(value) // value is now number (integer)
+  // or
+  assertNonEmptyArray(value) // value is now readonly [unknown, ...unknown[]]
+  // or
+  assertMap(value) // value is now ReadonlyMap<unknown, unknown>
+  // or
+  assertSet(value) // value is now ReadonlySet<unknown>
+  // or
+  assertDate(value) // value is now Date
+  // or
+  assertIterable(value) // value is now Iterable<unknown>
+}
+
+// Typed array assertions
+function processBuffer(data: unknown) {
+  assertUint8Array(data) // data is now Uint8Array
+  // Work with typed data
+  return data.slice(0, 10)
+}
+```
+
+Emptiness and non-emptiness checks
+```ts
+import {
+  assertNonEmptyString,
+  assertNonEmptyArray,
+  assertNonEmptyObject,
+  assertEmptySet,
+  assertRecord,
+} from '@orkestrel/validator'
+
+function validateInput(input: unknown) {
+  assertRecord(input)
+  
+  const { name, items, metadata, processed } = input
+  
+  assertNonEmptyString(name) // Ensures name is not ''
+  assertNonEmptyArray(items) // Ensures items has at least one element
+  assertNonEmptyObject(metadata) // Ensures metadata has at least one key
+  assertEmptySet(processed) // Ensures Set is empty
+}
+```
+
