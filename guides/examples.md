@@ -48,11 +48,11 @@ if (
 
 Discriminated unions
 ```ts
-import { literalOf, discriminatedUnion, objectOf, isNumber } from '@orkestrel/validator'
+import { literalOf, discriminatedUnionOf, objectOf, isNumber } from '@orkestrel/validator'
 
 const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
 const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
-const isShape = discriminatedUnion('kind', { circle: isCircle, rect: isRect } as const)
+const isShape = discriminatedUnionOf('kind', { circle: isCircle, rect: isRect } as const)
 
 function area(x: unknown): number {
   if (!isShape(x)) throw new TypeError('not a shape')
@@ -95,9 +95,9 @@ if (!r.equal) {
 
 HTTP request guard
 ```ts
-import { objectOf, literalOf, stringMatching, isHttpUrlString } from '@orkestrel/validator'
+import { objectOf, literalOf, stringMatchOf, isHttpUrlString } from '@orkestrel/validator'
 
-const isHeaderName = stringMatching(/^[A-Za-z0-9-]+$/)
+const isHeaderName = stringMatchOf(/^[A-Za-z0-9-]+$/)
 const isHeaders = objectOf({ }, { rest: isHeaderName }) // any key -> header name; simplistic example
 const isRequest = objectOf(
   { method: literalOf('GET','POST','PUT','PATCH','DELETE' as const), url: isHttpUrlString, headers: isHeaders },
@@ -130,6 +130,11 @@ import {
   isNonEmptyArray,
   isNonEmptyObject,
   isEmpty,
+  emptyOf,
+  nonEmptyOf,
+  isString,
+  arrayOf,
+  isNumber,
 } from '@orkestrel/validator'
 
 function validateInput(input: unknown) {
@@ -141,4 +146,72 @@ function validateInput(input: unknown) {
   if (!isNonEmptyObject(metadata)) throw new TypeError('metadata must be non-empty')
   if (!isEmpty(processed)) throw new TypeError('processed must be empty')
 }
+
+// Combinator variants
+const maybeEmptyString = emptyOf(isString) // accepts '' or non-empty string
+const nonEmptyNumbers = nonEmptyOf(arrayOf(isNumber)) // requires non-empty array
+```
+
+Function introspection
+```ts
+import {
+  isZeroArg,
+  isAsyncFunction,
+  isGeneratorFunction,
+  isAsyncGeneratorFunction,
+  isPromiseFunction,
+  isZeroArgAsync,
+} from '@orkestrel/validator'
+
+const f1 = () => 1
+const f2 = (x: number) => x
+const f3 = async () => 1
+const f4 = function* () { yield 1 }
+const f5 = () => Promise.resolve(1)
+
+console.log(isZeroArg(f1))           // true
+console.log(isZeroArg(f2))           // false
+console.log(isAsyncFunction(f3))     // true
+console.log(isGeneratorFunction(f4)) // true
+console.log(isPromiseFunction(f5))   // true (heuristic)
+console.log(isZeroArgAsync(f3))      // true
+```
+
+Size and range constraints
+```ts
+import {
+  lengthOf,
+  sizeOf,
+  countOf,
+  minOf,
+  maxOf,
+  rangeOf,
+  measureOf,
+  multipleOf,
+  isNumber,
+} from '@orkestrel/validator'
+
+// Exact constraints
+const twoChars = lengthOf(2)      // string or array with length 2
+const twoItems = sizeOf(2)        // Map or Set with size 2
+const twoProps = countOf(2)       // object with 2 enumerable properties
+
+// Range constraints (work across number/string/array/map/set/object)
+const atLeast5 = minOf(5)         // measure >= 5
+const atMost10 = maxOf(10)        // measure <= 10
+const between1And10 = rangeOf(1, 10) // measure in [1, 10]
+
+// Unified measure (exact value across all supported shapes)
+const measureTwo = measureOf(2)   // number 2, string length 2, array length 2, etc.
+
+// Numeric constraints
+const evenNumber = multipleOf(2)  // checks x % 2 === 0
+const divisibleBy3 = multipleOf(3)
+
+console.log(twoChars('ab'))           // true
+console.log(atLeast5([1,2,3,4,5]))    // true
+console.log(between1And10('hello'))   // true (length 5)
+console.log(measureTwo(2))            // true (number value)
+console.log(measureTwo([1, 2]))       // true (array length)
+console.log(evenNumber(10))           // true
 ```
