@@ -8,6 +8,10 @@ import { isFunction } from './primitives.js'
  * or nested schema objects. All keys in `schema` must be present as own
  * properties on `obj` and satisfy the corresponding rule.
  *
+ * Use `isSchema` for simple, declarative validation with type strings.
+ * For more complex validation with composable guards and options (optional fields,
+ * exact keys, rest validation), use {@link objectOf} from combinators.
+ *
  * @param obj - Value to validate
  * @param schema - Schema specification describing required keys and their rules
  * @returns `true` when `obj` is an object that satisfies `schema`
@@ -15,6 +19,12 @@ import { isFunction } from './primitives.js'
  * ```ts
  * isSchema({ a: 1 }, { a: 'number' }) // true
  * isSchema({ a: 1 }, { a: x => typeof x === 'number' }) // true
+ * ```
+ * @example
+ * ```ts
+ * // For optional fields or exact validation, use objectOf instead:
+ * import { objectOf, isNumber, isString } from '@orkestrel/validator'
+ * const User = objectOf({ id: isString, age: isNumber }, { optional: ['age'], exact: true })
  * ```
  */
 export function isSchema<S extends SchemaSpec>(obj: unknown, schema: S): obj is FromSchema<S> {

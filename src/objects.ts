@@ -1,3 +1,35 @@
+// --------------------------------------------
+// Internal helpers (exported for internal use by combinators)
+// --------------------------------------------
+
+/**
+ * Count own enumerable string keys and enumerable symbol keys on an object.
+ *
+ * Exported for internal use by combinators.ts. Counts both enumerable
+ * string keys (via Object.keys) and enumerable symbol keys.
+ *
+ * This is a low-level helper; most users should use {@link isCount} or {@link countOf} instead.
+ *
+ * @param obj - Object to count keys on
+ * @returns Total count of enumerable string and symbol keys
+ * @example
+ * ```ts
+ * ownEnumerableCount({ a: 1, b: 2 }) // 2
+ * ```
+ */
+export function ownEnumerableCount(obj: object): number {
+	const keysLen = Object.keys(obj).length
+	const symsLen = Object.getOwnPropertySymbols(obj).reduce(
+		(acc, s) => acc + (Object.getOwnPropertyDescriptor(obj, s)?.enumerable ? 1 : 0),
+		0,
+	)
+	return keysLen + symsLen
+}
+
+// --------------------------------------------
+// Type guards
+// --------------------------------------------
+
 /**
  * Determine whether a value is a non-null object (arrays allowed).
  *
@@ -131,9 +163,7 @@ export function isCount<T extends Record<string | symbol, unknown>>(x: T, n: num
 export function isCount(x: unknown, n: number): x is Record<string | symbol, unknown>
 export function isCount(x: unknown, n: number): boolean {
 	if (!isRecord(x)) return false
-	const keysLen = Object.keys(x as Record<string, unknown>).length
-	const symsLen = Object.getOwnPropertySymbols(x as object).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x as object, s)?.enumerable ? 1 : 0), 0)
-	return keysLen + symsLen === n
+	return ownEnumerableCount(x as object) === n
 }
 
 /**
@@ -162,8 +192,6 @@ export function isCountRange<T extends Record<string | symbol, unknown>>(x: T, m
 export function isCountRange(x: unknown, min: number, max: number): x is Record<string | symbol, unknown>
 export function isCountRange(x: unknown, min: number, max: number): boolean {
 	if (!isRecord(x)) return false
-	const keysLen = Object.keys(x as Record<string, unknown>).length
-	const symsLen = Object.getOwnPropertySymbols(x as object).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x as object, s)?.enumerable ? 1 : 0), 0)
-	const c = keysLen + symsLen
+	const c = ownEnumerableCount(x as object)
 	return c >= min && c <= max
 }
