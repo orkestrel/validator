@@ -3,7 +3,7 @@
 Basics
 
 - Why does `isNumber` exclude NaN/Infinity?
-  - Most runtime uses expect finite values. Use `Number.isFinite` semantics. If you need integers, use `isInteger` or `intInRange`.
+  - Most runtime uses expect finite values. Use `Number.isFinite` semantics. If you need integers, use `isInteger` or `isRange`.
 
 - What’s the difference between `isObject` and `isRecord`?
   - `isObject` is any non-null object (arrays included). `isRecord` is non-null, non-array plain objects.

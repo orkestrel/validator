@@ -30,10 +30,10 @@ if (
 
 Environment variables
 ```ts
-import { isNumber, intInRange } from '@orkestrel/validator'
+import { isNumber, isRange } from '@orkestrel/validator'
 
 const env: unknown = { PORT: 8080, ALLOWED: ['a','b'] }
-const isValidPort = (x: unknown): x is number => isNumber(x) && intInRange(1, 65535)(x)
+const isValidPort = (x: unknown): x is number => isNumber(x) && isRange(1, 65535)(x)
 
 if (
   isRecord(env)
@@ -126,6 +126,7 @@ assertArrayOfStrings(tags, 'payload.tags')
 Emptiness and non-emptiness checks
 ```ts
 import {
+  isRecord,
   isNonEmptyString,
   isNonEmptyArray,
   isNonEmptyObject,
@@ -161,20 +162,28 @@ import {
   isAsyncGeneratorFunction,
   isPromiseFunction,
   isZeroArgAsync,
+  isZeroArgGenerator,
+  isZeroArgAsyncGenerator,
+  isZeroArgPromise,
 } from '@orkestrel/validator'
 
 const f1 = () => 1
 const f2 = (x: number) => x
 const f3 = async () => 1
 const f4 = function* () { yield 1 }
-const f5 = () => Promise.resolve(1)
+const f5 = async function* () { yield 1 }
+const f6 = () => Promise.resolve(1)
 
-console.log(isZeroArg(f1))           // true
-console.log(isZeroArg(f2))           // false
-console.log(isAsyncFunction(f3))     // true
-console.log(isGeneratorFunction(f4)) // true
-console.log(isPromiseFunction(f5))   // true (heuristic)
-console.log(isZeroArgAsync(f3))      // true
+console.log(isZeroArg(f1))                 // true - no parameters
+console.log(isZeroArg(f2))                 // false - has parameter
+console.log(isAsyncFunction(f3))           // true - native async function
+console.log(isGeneratorFunction(f4))       // true - generator function
+console.log(isAsyncGeneratorFunction(f5))  // true - async generator
+console.log(isPromiseFunction(f6))         // true - returns Promise (heuristic)
+console.log(isZeroArgAsync(f3))            // true - zero-arg async
+console.log(isZeroArgGenerator(f4))        // true - zero-arg generator
+console.log(isZeroArgAsyncGenerator(f5))   // true - zero-arg async generator
+console.log(isZeroArgPromise(f6))          // true - zero-arg Promise-returning
 ```
 
 Size and range constraints
