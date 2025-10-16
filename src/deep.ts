@@ -1,8 +1,5 @@
-import type { DeepEqualOptions, DeepCloneCheckOptions, DeepCompareResult, InternalDeepCompareOptions } from './types.js'
-
-function isDataView(v: unknown): v is DataView<ArrayBufferLike> {
-	return Object.prototype.toString.call(v) === '[object DataView]'
-}
+import type { DeepEqualOptions, DeepCloneCheckOptions, DeepCompareResult, InternalDeepCompareOptions, AnyTypedArray } from './types.js'
+import { isTypedArray, isDataView, isInt8Array, isUint8Array, isUint8ClampedArray, isInt16Array, isUint16Array, isInt32Array, isUint32Array, isFloat32Array, isFloat64Array, isBigInt64Array, isBigUint64Array } from './arrays.js'
 
 /**
  * Determine whether two values are deeply equal.
@@ -79,20 +76,47 @@ export function deepCompare(a: unknown, b: unknown, cfg: InternalDeepCompareOpti
 	}
 
 	function compareTypedArrays(x: unknown, y: unknown, path: readonly (string | number | symbol)[]): DeepCompareResult | undefined {
-		if (!ArrayBuffer.isView(x) && !ArrayBuffer.isView(y)) return undefined
-		if (!(ArrayBuffer.isView(x) && ArrayBuffer.isView(y))) {
-			return { equal: false, path, reason: 'instanceMismatch', detail: 'One is a TypedArray/DataView, the other is not' }
-		}
-		if (Object.prototype.toString.call(x) === '[object DataView]' || Object.prototype.toString.call(y) === '[object DataView]') return undefined
-		const ctorX = (x as { constructor: { name: string } }).constructor.name
-		const ctorY = (y as { constructor: { name: string } }).constructor.name
-		if (ctorX !== ctorY) return { equal: false, path, reason: 'typedArrayCtorMismatch', detail: `Expected ${ctorY} but got ${ctorX}` }
+		const xIs = isTypedArray(x)
+		const yIs = isTypedArray(y)
+		if (!xIs && !yIs) return undefined
+		if (!(xIs && yIs)) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is a TypedArray, the other is not' }
 
-		const ax = x as unknown as { length: number, [n: number]: number | bigint }
-		const ay = y as unknown as { length: number, [n: number]: number | bigint }
+		// Use explicit typed array guards to ensure the same concrete type, avoiding fragile name checks.
+		const guards = [
+			isInt8Array,
+			isUint8Array,
+			isUint8ClampedArray,
+			isInt16Array,
+			isUint16Array,
+			isInt32Array,
+			isUint32Array,
+			isFloat32Array,
+			isFloat64Array,
+			isBigInt64Array,
+			isBigUint64Array,
+		] as const
+
+		let matched = false
+		for (const g of guards) {
+			const left = g(x)
+			if (left) {
+				matched = true
+				if (!g(y)) return { equal: false, path, reason: 'typedArrayCtorMismatch', detail: 'Different TypedArray constructors' }
+				break
+			}
+		}
+		if (!matched) {
+			// Should not happen because isTypedArray(x) is true and guards cover all cases, but keep a safe fallback
+			const cx = (x as AnyTypedArray).constructor
+			const cy = (y as AnyTypedArray).constructor
+			if (cx !== cy) return { equal: false, path, reason: 'typedArrayCtorMismatch', detail: 'Different TypedArray constructors' }
+		}
+
+		const ax = x as AnyTypedArray
+		const ay = y as AnyTypedArray
 		if (ax.length !== ay.length) return { equal: false, path, reason: 'typedArrayLengthMismatch', detail: `Expected length ${ay.length} but got ${ax.length}` }
 		for (let i = 0; i < ax.length; i++) {
-			if (!Object.is(ax[i], ay[i])) {
+			if (!Object.is(ax[i] as number | bigint, ay[i] as number | bigint)) {
 				return { equal: false, path: [...path, i], reason: 'typedArrayElementMismatch', detail: `Element ${i} differs` }
 			}
 		}
@@ -169,7 +193,7 @@ export function deepCompare(a: unknown, b: unknown, cfg: InternalDeepCompareOpti
 			return { equal: true }
 		}
 
-		if (Object.prototype.toString.call(x) === '[object DataView]' || Object.prototype.toString.call(y) === '[object DataView]') {
+		if (isDataView(x) || isDataView(y)) {
 			if (!(isDataView(x) && isDataView(y))) return { equal: false, path, reason: 'instanceMismatch', detail: 'One is DataView, the other is not' }
 			if (x.byteLength !== y.byteLength) return { equal: false, path, reason: 'dataViewLengthMismatch', detail: `Expected byteLength ${y.byteLength} but got ${x.byteLength}` }
 			const ax = new Uint8Array(x.buffer, x.byteOffset, x.byteLength)
@@ -298,8 +322,10 @@ export function deepCompare(a: unknown, b: unknown, cfg: InternalDeepCompareOpti
 			}
 		}
 		for (const k of keysX) {
-			const vx = (x as Record<PropertyKey, unknown>)[k as unknown as PropertyKey]
-			const vy = (y as Record<PropertyKey, unknown>)[k as unknown as PropertyKey]
+			const rx = x as Record<string | symbol, unknown>
+			const ry = y as Record<string | symbol, unknown>
+			const vx = rx[k as string | symbol]
+			const vy = ry[k as string | symbol]
 			const r = cmp(vx, vy, [...path, k])
 			if (!r.equal) return r
 		}

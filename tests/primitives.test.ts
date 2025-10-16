@@ -1,6 +1,5 @@
 import { test, expect } from 'vitest'
 import {
-	getTag,
 	isNull,
 	isUndefined,
 	isDefined,
@@ -22,11 +21,6 @@ import {
 	isError,
 	isPromiseLike,
 } from '../src/primitives.js'
-
-test('getTag basics', () => {
-	expect(getTag([])).toBe('[object Array]')
-	expect(getTag(new Date())).toBe('[object Date]')
-})
 
 test('null/undefined/defined', () => {
 	expect(isNull(null)).toBe(true)

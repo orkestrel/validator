@@ -88,3 +88,14 @@ test('assertDeepEqual and assertDeepClone diagnostics', () => {
 	const b = { x: { y: 1 } }
 	expect(() => assertDeepClone(a, b, { path: ['obj'] })).not.toThrow()
 })
+
+test('isDeepEqual with symbol keys (enumerable)', () => {
+	const sym = Symbol('k')
+	const a: Record<string | symbol, unknown> = {}
+	const b: Record<string | symbol, unknown> = {}
+	Object.defineProperty(a, sym, { value: 1, enumerable: true, configurable: true, writable: true })
+	Object.defineProperty(b, sym, { value: 1, enumerable: true, configurable: true, writable: true })
+	expect(isDeepEqual(a, b)).toBe(true)
+	Object.defineProperty(b, sym, { value: 2, enumerable: true, configurable: true, writable: true })
+	expect(isDeepEqual(a, b)).toBe(false)
+})

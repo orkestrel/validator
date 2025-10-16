@@ -1,8 +1,6 @@
 import type { PathSegment, ValidationPath, CreateTypeErrorOptions } from './types.js'
-
-function isValidIdent(s: string): boolean {
-	return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(s)
-}
+import { isValidIdent } from './domains.js'
+import { previewValue, typeAndTag } from './helpers.js'
 
 /**
  * Turn a validation `path` into a human-readable string.
@@ -39,36 +37,6 @@ export function pathToString(path?: ValidationPath): string {
 		}
 	}
 	return parts.join('')
-}
-
-function previewValue(x: unknown): string {
-	try {
-		if (x === null) return 'null'
-		if (x === undefined) return 'undefined'
-		const t = typeof x
-		if (t === 'string') {
-			const str = x as string
-			return str.length > 100 ? `${str.slice(0, 100)}…` : str
-		}
-		if (t === 'number' || t === 'boolean' || t === 'bigint' || t === 'symbol' || t === 'function') return String(x)
-		if (t === 'object') {
-			const tag = Object.prototype.toString.call(x)
-			if (Array.isArray(x)) return `${tag} length=${(x as unknown[]).length}`
-			const json = JSON.stringify(x as Record<string, unknown>, (_, v) => (typeof v === 'bigint' ? String(v) : v))
-			if (json && json.length <= 200) return json
-			return tag
-		}
-		return String(x)
-	}
-	catch {
-		return '[unprintable]'
-	}
-}
-
-function typeAndTag(x: unknown): { type: string, tag: string } {
-	const type = x === null ? 'null' : typeof x
-	const tag = Object.prototype.toString.call(x as object)
-	return { type, tag }
 }
 
 /**

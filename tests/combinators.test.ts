@@ -1,5 +1,20 @@
 import { test, expect } from 'vitest'
-import { literalOf, and, or, not, isNot, unionOf, intersectionOf, optionalOf, nullableOf, lazy, refine, safeParse, discriminatedUnion, fromNativeEnum } from '../src/combinators.js'
+import {
+	literalOf,
+	and,
+	or,
+	not,
+	isNot,
+	unionOf,
+	intersectionOf,
+	optionalOf,
+	nullableOf,
+	lazy,
+	refine,
+	discriminatedUnion,
+	fromNativeEnum,
+	safeParse,
+} from '../src/combinators.js'
 import { isString, isNumber } from '../src/primitives.js'
 import { objectOf } from '../src/schema.js'
 

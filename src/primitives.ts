@@ -1,18 +1,5 @@
 import type { Guard } from './types.js'
-
-/**
- * Return the internal [[Class]] tag string for a value.
- *
- * @param x - Value to inspect
- * @returns Tag like "[object Array]" or "[object Date]"
- * @example
- * ```ts
- * getTag([]) // "[object Array]"
- * ```
- */
-export function getTag(x: unknown): string {
-	return Object.prototype.toString.call(x)
-}
+import { getTag } from './helpers.js'
 
 /**
  * Determine whether a value is `null`.

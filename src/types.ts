@@ -115,3 +115,20 @@ export interface ObjectOfOptions<Opt extends readonly PropertyKey[] = readonly P
 	readonly exact?: boolean
 	readonly rest?: Guard<unknown>
 }
+
+// Parsed absolute URL shape used by the portable URL parser.
+export interface ParsedAbsoluteUrl {
+	readonly protocol: string // includes trailing ':' (e.g., 'https:')
+	readonly host: string
+	readonly port: number | undefined
+}
+
+// TypedArray union for generic guards and helpers.
+export type AnyTypedArray
+	= | Int8Array | Uint8Array | Uint8ClampedArray
+		| Int16Array | Uint16Array
+		| Int32Array | Uint32Array
+		| Float32Array | Float64Array
+		| BigInt64Array | BigUint64Array
+
+export type AnyTypedArrayElement = number | bigint

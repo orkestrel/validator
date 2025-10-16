@@ -10,6 +10,7 @@ import {
 	isAscii,
 	isHexColor,
 	isIPv4String,
+	isIPv6String,
 	isHostnameString,
 } from '../src/strings.js'
 
@@ -45,4 +46,13 @@ test('hostname', () => {
 	expect(isHostnameString('example.com')).toBe(true)
 	expect(isHostnameString('-bad.com')).toBe(false)
 	expect(isHostnameString('this-label-is-way-too-long-and-exceeds-sixty-three-characters-limit.com')).toBe(false)
+})
+
+test('IPv6', () => {
+	expect(isIPv6String('::1')).toBe(true)
+	expect(isIPv6String('2001:db8::1')).toBe(true)
+	expect(isIPv6String('::ffff:192.0.2.128')).toBe(true)
+	expect(isIPv6String(':::1')).toBe(false)
+	expect(isIPv6String('2001:db8:::1')).toBe(false)
+	expect(isIPv6String('fe80::1%eth0')).toBe(false)
 })

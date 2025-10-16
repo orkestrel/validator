@@ -6,8 +6,8 @@ Included
 - isUUIDv4 — canonical v4 format
 - isISODateString — YYYY-MM-DD with calendar validity (UTC)
 - isISODateTimeString — RFC3339 subset with timezone (Z or ±hh:mm)
-- isEmail — practical email pattern (not exhaustive RFC)
-- isURLString — absolute URL per WHATWG parser
+- isEmailString — practical email pattern (not exhaustive RFC)
+- isURLString — absolute URL (conservative parser)
 - isHttpUrlString — URL with http: or https:
 - isPortNumber — integer in [1, 65535]
 - isMimeType — type/subtype; case-insensitive with + and . support
@@ -21,6 +21,5 @@ Included
 
 Notes and caveats
 - Email and MIME checks are intentionally pragmatic; rely on upstream systems for strict RFC validation when necessary
-- URL checks use the platform URL; absolute URLs only
+- URL checks are conservative absolute URL parsing; absolute URLs only
 - JSON value excludes functions, undefined, symbols, and non-finite numbers (NaN/Infinity)
-

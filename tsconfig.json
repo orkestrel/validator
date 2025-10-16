@@ -3,30 +3,19 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
+
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "types": ["node"],
-    "lib": ["ESNext", "DOM"],
-    "baseUrl": ".",
-    "resolveJsonModule": true,
     "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+
+    "baseUrl": ".",
     "paths": {
       "@orkestrel/validator": ["./src/index.ts"]
-    }
+    },
+
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "resolveJsonModule": true
   },
-  "include": [
-    "src",
-    "tests",
-    "vite.config.ts",
-    "eslint.config.mjs"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "tmp",
-    "guides",
-    "site",
-    ".github"
-  ]
 }

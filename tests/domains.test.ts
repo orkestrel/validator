@@ -15,6 +15,8 @@ import {
 	isJsonString,
 	isJsonValue,
 	isHttpMethod,
+	isValidIdent,
+	isValidHost,
 } from '../src/domains.js'
 
 test('UUID v4', () => {
@@ -112,4 +114,26 @@ test('HTTP methods', () => {
 	expect(isHttpMethod('GET')).toBe(true)
 	expect(isHttpMethod('PATCH')).toBe(true)
 	expect(isHttpMethod('get')).toBe(false)
+})
+
+// identifier validity
+test('identifier validity', () => {
+	expect(isValidIdent('name')).toBe(true)
+	expect(isValidIdent('weird key')).toBe(false)
+})
+
+// host validity
+test('host validity', () => {
+	expect(isValidHost('example.com')).toBe(true)
+	expect(isValidHost('[::1]')).toBe(true)
+	expect(isValidHost('')).toBe(false)
+})
+
+// IPv6 host validity
+test('IPv6 host validity (strict)', () => {
+	expect(isValidHost('[::1]')).toBe(true)
+	expect(isValidHost('[2001:db8::1]')).toBe(true)
+	expect(isValidHost('[::ffff:192.0.2.128]')).toBe(true)
+	expect(isValidHost('[:::1]')).toBe(false)
+	expect(isValidHost('::1')).toBe(false) // must be bracketed in host
 })

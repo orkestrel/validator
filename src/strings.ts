@@ -193,6 +193,80 @@ export function isIPv4String(s: unknown): boolean {
 }
 
 /**
+ * Determine whether a string is an IPv6 address (RFC 4291/5952 subset).
+ *
+ * Supports compressed forms with a single "::" and IPv4-mapped endings like
+ * "::ffff:192.0.2.128". Zone identifiers ("%eth0") are not supported.
+ *
+ * Overloads:
+ * - When called with `string`, returns `boolean`.
+ * - When called with `unknown`, returns a type predicate narrowing to `string`.
+ *
+ * @example
+ * ```ts
+ * isIPv6String('::1') // true
+ * isIPv6String('2001:db8::1') // true
+ * isIPv6String('::ffff:192.0.2.128') // true
+ * isIPv6String(':::1') // false
+ * ```
+ */
+export function isIPv6String(s: string): boolean
+export function isIPv6String(s: unknown): s is string
+export function isIPv6String(s: unknown): boolean {
+	if (typeof s !== 'string') return false
+	if (s.includes('%')) return false // zone IDs not supported here
+	const hasDot = s.includes('.')
+	const parts = s.split('::')
+	if (parts.length > 2) return false
+	// Reject adjacent extra ':' around the single '::' compression
+	if (parts.length === 2) {
+		const leftRaw = parts[0]
+		const rightRaw = parts[1]
+		// If left side ends with ':' or right side starts with ':', then there are ':::' sequences
+		if ((leftRaw.length > 0 && leftRaw.endsWith(':')) || (rightRaw.length > 0 && rightRaw.startsWith(':'))) return false
+	}
+	const left = parts[0] ? parts[0].split(':').filter(p => p.length > 0) : []
+	const right = parts.length === 2 ? (parts[1] ? parts[1].split(':').filter(p => p.length > 0) : []) : []
+	let ipv4Hextets = 0
+	// Handle embedded IPv4 in the last position
+	function hasEmbeddedIPv4(arr: readonly string[]): boolean {
+		if (arr.length === 0) return false
+		const last = arr[arr.length - 1]
+		return last.includes('.')
+	}
+	if (hasDot) {
+		// Only one segment may contain IPv4 and it must be the last of left or right
+		let ipv4Str: string | undefined
+		if (hasEmbeddedIPv4(right)) {
+			ipv4Str = right[right.length - 1]
+			right.pop()
+		}
+		else if (hasEmbeddedIPv4(left) && parts.length === 1) {
+			ipv4Str = left[left.length - 1]
+			left.pop()
+		}
+		else {
+			return false
+		}
+		if (!ipv4Str || !isIPv4String(ipv4Str)) return false
+		ipv4Hextets = 2
+	}
+	// Validate hextets
+	const hexRe = /^[0-9a-fA-F]{1,4}$/
+	for (const seg of left) if (!hexRe.test(seg)) return false
+	for (const seg of right) if (!hexRe.test(seg)) return false
+	const segCount = left.length + right.length + ipv4Hextets
+	if (parts.length === 1) {
+		// No '::' compression; must be exactly 8 hextets
+		return segCount === 8
+	}
+	else {
+		// With '::', total must be < 8 (missing segments are zeros)
+		return segCount < 8
+	}
+}
+
+/**
  * Determine whether a hostname string roughly follows RFC 1123 rules.
  *
  * Overloads:

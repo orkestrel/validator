@@ -158,7 +158,7 @@ export function lazy<T>(thunk: () => Guard<T>): Guard<T> {
  * ```
  */
 export function refine<T, U extends T>(base: Guard<T>, refineFn: (x: T) => x is U): Guard<U> {
-	return (x: unknown): x is U => base(x) && refineFn(x as T)
+	return (x: unknown): x is U => (base(x) ? refineFn(x) : false)
 }
 
 /**
@@ -171,7 +171,13 @@ export function refine<T, U extends T>(base: Guard<T>, refineFn: (x: T) => x is 
  * @returns Result containing the validated value or an error
  * @example
  * ```ts
- * safeParse(1, isNumber) // { ok: true, value: 1 }
+ * import { safeParse } from '@orkestrel/validator'
+ * import { isNumber } from './primitives.js'
+ *
+ * const ok = safeParse(1, isNumber)
+ * if (ok.ok) {
+ *   ok.value // number
+ * }
  * ```
  */
 export function safeParse<T, E extends Error = TypeError>(

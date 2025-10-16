@@ -140,7 +140,7 @@ Pragmatic, ecosystem‑friendly checks:
 
 - UUID: `isUUIDv4`
 - Time: `isISODateString`, `isISODateTimeString`
-- Email/URL: `isEmail`, `isURLString`, `isHttpUrlString`
+- Email/URL: `isEmailString`, `isURLString`, `isHttpUrlString`
 - Net: `isPortNumber`, `isHostnameString`, `isIPv4String`
 - Content: `isMimeType`, `isSlug`, `isBase64String`, `isHexString({ allow0x, evenLength })`, `isSemver`
 - JSON: `isJsonString`, `isJsonValue`
@@ -196,10 +196,10 @@ Recommended TS config (excerpt):
 ```json
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ES2022",
-    "moduleResolution": "Bundler",
-    "lib": ["ES2022", "DOM"],
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true
@@ -258,4 +258,3 @@ We value determinism, strict typing, and small, composable APIs. See [Contribute
 ## License
 
 MIT © Orkestrel
-

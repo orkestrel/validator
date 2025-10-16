@@ -1,4 +1,15 @@
-import type { FromSchema, Guard, SchemaSpec, AssertOptions, DeepEqualOptions, DeepCloneCheckOptions, HttpMethod, HexColorOptions, HexStringOptions } from './types.js'
+import type {
+	FromSchema,
+	Guard,
+	SchemaSpec,
+	AssertOptions,
+	DeepEqualOptions,
+	DeepCloneCheckOptions,
+	HttpMethod,
+	HexColorOptions,
+	HexStringOptions,
+	ValidationPath,
+} from './types.js'
 import { createTypeError, extendPath } from './diagnostics.js'
 import { isArray } from './arrays.js'
 import { isAsyncFunction, isBoolean, isDefined, isFunction, isNumber, isString } from './primitives.js'
@@ -292,7 +303,7 @@ export function assertRecordOf<T>(x: unknown, valueGuard: Guard<T>, options?: As
 	}
 }
 
-function findSchemaViolation(obj: unknown, schema: SchemaSpec, path: (import('./types.js').ValidationPath) = []): { expected: string, received: unknown, path: (import('./types.js').ValidationPath) } | undefined {
+function findSchemaViolation(obj: unknown, schema: SchemaSpec, path: ValidationPath = []): { expected: string, received: unknown, path: (import('./types.js').ValidationPath) } | undefined {
 	if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
 		return { expected: 'object matching schema', received: obj, path }
 	}

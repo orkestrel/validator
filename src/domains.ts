@@ -1,5 +1,60 @@
 import { numberInRange, isInteger } from './primitives.js'
 import type { JsonValue, HttpMethod, HexStringOptions } from './types.js'
+import { parseAbsoluteUrl } from './helpers.js'
+import { isIPv4String, isHostnameString, isIPv6String } from './strings.js'
+
+/**
+ * Determine whether a string is a valid JavaScript identifier (simple heuristic).
+ *
+ * Overloads:
+ * - When called with `string`, returns `boolean`.
+ * - When called with `unknown`, returns a type predicate narrowing to `string` when valid.
+ *
+ * @example
+ * ```ts
+ * isValidIdent('name') // true
+ * isValidIdent('weird key') // false
+ * ```
+ */
+export function isValidIdent(s: string): boolean
+export function isValidIdent(s: unknown): s is string
+export function isValidIdent(s: unknown): boolean {
+	return typeof s === 'string' && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(s)
+}
+
+/**
+ * Lightly validate a host token.
+ *
+ * Accepts bracketed IPv6 literals (e.g., "[::1]") and non-empty hostname/IPv4 strings.
+ *
+ * Overloads:
+ * - When called with `string`, returns `boolean`.
+ * - When called with `unknown`, returns a type predicate narrowing to `string` when valid.
+ *
+ * @param text - Host text to validate
+ * @returns `true` when the host looks valid enough for parsing
+ * @example
+ * ```ts
+ * isValidHost('example.com') // true
+ * isValidHost('[::1]') // true
+ * isValidHost('') // false
+ * ```
+ */
+export function isValidHost(text: string): boolean
+export function isValidHost(text: unknown): text is string
+export function isValidHost(text: unknown): boolean {
+	if (typeof text !== 'string') return false
+	if (text.length === 0) return false
+	// Bracketed IPv6 literal
+	if (text.startsWith('[') && text.endsWith(']')) {
+		const inner = text.slice(1, -1)
+		return isIPv6String(inner)
+	}
+	// Plain IPv4
+	if (isIPv4String(text)) return true
+	// Hostname per RFC1123-ish rules
+	return isHostnameString(text)
+}
 
 /**
  * Determine whether a value is a UUID v4 string.
@@ -102,14 +157,7 @@ export function isEmailString(s: unknown): boolean {
 export function isURLString(s: string): boolean
 export function isURLString(s: unknown): s is string
 export function isURLString(s: unknown): boolean {
-	if (typeof s !== 'string') return false
-	try {
-		new URL(s)
-		return true
-	}
-	catch {
-		return false
-	}
+	return typeof s === 'string' && parseAbsoluteUrl(s) !== undefined
 }
 
 /**
@@ -127,9 +175,9 @@ export function isURLString(s: unknown): boolean {
 export function isHttpUrlString(s: string): boolean
 export function isHttpUrlString(s: unknown): s is string
 export function isHttpUrlString(s: unknown): boolean {
-	if (!isURLString(s)) return false
-	const u = new URL(s)
-	return u.protocol === 'http:' || u.protocol === 'https:'
+	if (typeof s !== 'string') return false
+	const p = parseAbsoluteUrl(s)
+	return p !== undefined && (p.protocol === 'http:' || p.protocol === 'https:')
 }
 
 /**
