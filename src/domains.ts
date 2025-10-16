@@ -1,4 +1,4 @@
-import { numberInRange, isInteger } from './primitives.js'
+import { isInteger, isRange } from './numbers.js'
 import type { JsonValue, HttpMethod, HexStringOptions } from './types.js'
 import { parseAbsoluteUrl } from './helpers.js'
 import { isIPv4String, isHostnameString, isIPv6String } from './strings.js'
@@ -45,14 +45,11 @@ export function isValidHost(text: unknown): text is string
 export function isValidHost(text: unknown): boolean {
 	if (typeof text !== 'string') return false
 	if (text.length === 0) return false
-	// Bracketed IPv6 literal
 	if (text.startsWith('[') && text.endsWith(']')) {
 		const inner = text.slice(1, -1)
 		return isIPv6String(inner)
 	}
-	// Plain IPv4
 	if (isIPv4String(text)) return true
-	// Hostname per RFC1123-ish rules
 	return isHostnameString(text)
 }
 
@@ -195,7 +192,7 @@ export function isHttpUrlString(s: unknown): boolean {
 export function isPortNumber(x: number): boolean
 export function isPortNumber(x: unknown): x is number
 export function isPortNumber(x: unknown): boolean {
-	return isInteger(x) && numberInRange(1, 65535)(x)
+	return isInteger(x) && isRange(x, 1, 65535)
 }
 
 /**
@@ -239,6 +236,15 @@ export function isSlug(s: unknown): boolean {
 /**
  * Determine whether a value is a Base64-encoded string.
  *
+ * Overloads:
+ * - When called with `string`, returns `boolean` (no type narrowing).
+ * - When called with `unknown`, returns a type predicate narrowing to `string`.
+ *
+ * @example
+ * ```ts
+ * isBase64String('TWFu') // true
+ * isBase64String('TQ==') // true
+ * ```
  * Overloads:
  * - When called with `string`, returns `boolean` (no type narrowing).
  * - When called with `unknown`, returns a type predicate narrowing to `string`.

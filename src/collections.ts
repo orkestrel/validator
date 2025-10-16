@@ -1,5 +1,3 @@
-import type { Guard } from './types.js'
-
 /**
  * Determine whether a value is a Map.
  *
@@ -84,67 +82,60 @@ export function isWeakSet(x: unknown): boolean {
 	return x instanceof WeakSet
 }
 
+// --------------------------------------------
+// Size helpers
+// --------------------------------------------
+
 /**
- * Create a guard for a Map whose keys and values satisfy the given guards.
+ * Check the exact size of Map and Set collections.
  *
- * @param keyGuard - Guard that validates map keys
- * @param valueGuard - Guard that validates map values
- * @returns A guard that checks a ReadonlyMap with validated keys and values
+ * Overloads:
+ * - When called with `ReadonlySet<T>`, preserves `T`.
+ * - When called with `ReadonlyMap<K, V>`, preserves `K` and `V`.
+ * - When called with `unknown`, narrows to `ReadonlyMap<unknown, unknown> | ReadonlySet<unknown>`.
+ *
+ * @param x - Value to test (Map or Set)
+ * @param n - Exact required size (integer ≥ 0)
+ * @returns True when `size(x) === n`
  * @example
  * ```ts
- * const g = mapOf(isString, isNumber)
- * g(new Map([['a', 1]])) // true
+ * isSize(new Set([1,2]), 2) // true
+ * isSize(new Map([[1,'a']]), 1) // true
+ * isSize(new Set(), 3) // false
  * ```
  */
-export function mapOf<K, V>(keyGuard: Guard<K>, valueGuard: Guard<V>): Guard<ReadonlyMap<K, V>> {
-	return (x: unknown): x is ReadonlyMap<K, V> => {
-		if (!(x instanceof Map)) return false
-		for (const [k, v] of x as Map<unknown, unknown>) {
-			if (!keyGuard(k) || !valueGuard(v)) return false
-		}
-		return true
-	}
+export function isSize<T>(x: ReadonlySet<T>, n: number): x is ReadonlySet<T>
+export function isSize<K, V>(x: ReadonlyMap<K, V>, n: number): x is ReadonlyMap<K, V>
+export function isSize(x: unknown, n: number): x is ReadonlyMap<unknown, unknown> | ReadonlySet<unknown>
+export function isSize(x: unknown, n: number): boolean {
+	if (x instanceof Map) return x.size === n
+	if (x instanceof Set) return x.size === n
+	return false
 }
 
 /**
- * Create a guard for a Set whose elements satisfy the given guard.
+ * Check whether Map and Set collections have a size within the inclusive range [min, max].
  *
- * @param elemGuard - Guard that validates set elements
- * @returns A guard that checks a ReadonlySet with validated elements
+ * Overloads:
+ * - When called with `ReadonlySet<T>`, preserves `T`.
+ * - When called with `ReadonlyMap<K,V>`, preserves `K` and `V`.
+ * - When called with `unknown`, narrows to `ReadonlyMap<unknown, unknown> | ReadonlySet<unknown>`.
+ *
+ * @param x - Value to test (Map or Set)
+ * @param min - Minimum inclusive size
+ * @param max - Maximum inclusive size
+ * @returns True when `min <= size(x) <= max`
  * @example
  * ```ts
- * const g = setOf(isNumber)
- * g(new Set([1, 2])) // true
+ * isSizeRange(new Set([1]), 1, 3) // true
+ * isSizeRange(new Map([[1,'a']]), 2, 3) // false
  * ```
  */
-export function setOf<T>(elemGuard: Guard<T>): Guard<ReadonlySet<T>> {
-	return (x: unknown): x is ReadonlySet<T> => {
-		if (!(x instanceof Set)) return false
-		for (const v of x as Set<unknown>) {
-			if (!elemGuard(v)) return false
-		}
-		return true
-	}
-}
-
-/**
- * Create a guard for a non-empty Set whose elements satisfy the given guard.
- *
- * @param elemGuard - Guard that validates set elements
- * @returns A guard that checks a non-empty ReadonlySet with validated elements
- * @example
- * ```ts
- * const g = nonEmptySetOf(isString)
- * g(new Set(['a'])) // true
- * g(new Set()) // false
- * ```
- */
-export function nonEmptySetOf<T>(elemGuard: Guard<T>): Guard<ReadonlySet<T>> {
-	return (x: unknown): x is ReadonlySet<T> => {
-		if (!(x instanceof Set) || x.size === 0) return false
-		for (const v of x as Set<unknown>) {
-			if (!elemGuard(v)) return false
-		}
-		return true
-	}
+export function isSizeRange<T>(x: ReadonlySet<T>, min: number, max: number): x is ReadonlySet<T>
+export function isSizeRange<K, V>(x: ReadonlyMap<K, V>, min: number, max: number): x is ReadonlyMap<K, V>
+export function isSizeRange(x: unknown, min: number, max: number): x is ReadonlyMap<unknown, unknown> | ReadonlySet<unknown>
+export function isSizeRange(x: unknown, min: number, max: number): boolean {
+	if (x instanceof Map) return x.size >= min && x.size <= max
+	if (x instanceof Set) return x.size >= min && x.size <= max
+	return false
 }

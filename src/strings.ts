@@ -1,67 +1,4 @@
-import type { Guard, HexColorOptions } from './types.js'
-import { isString } from './primitives.js'
-
-/**
- * Create a guard that accepts strings matching the provided regular expression.
- *
- * @param re - Regular expression to test against
- * @returns Guard that checks string values
- * @example
- * ```ts
- * // Only lowercase letters
- * const lower = stringMatching(/^[a-z]+$/)
- * lower('abc') // true
- * ```
- */
-export function stringMatching(re: RegExp): Guard<string> {
-	return (x: unknown): x is string => isString(x) && re.test(x)
-}
-
-/**
- * Create a guard that enforces a minimum string length.
- *
- * @param min - Minimum allowed length
- * @returns Guard that checks min length
- * @example
- * ```ts
- * const atLeast2 = stringMinLength(2)
- * atLeast2('a') // false
- * ```
- */
-export function stringMinLength(min: number): Guard<string> {
-	return (x: unknown): x is string => isString(x) && x.length >= min
-}
-
-/**
- * Create a guard that enforces a maximum string length.
- *
- * @param max - Maximum allowed length
- * @returns Guard that checks max length
- * @example
- * ```ts
- * const atMost3 = stringMaxLength(3)
- * atMost3('abcd') // false
- * ```
- */
-export function stringMaxLength(max: number): Guard<string> {
-	return (x: unknown): x is string => isString(x) && x.length <= max
-}
-
-/**
- * Create a guard for a string whose length is between min and max (inclusive).
- *
- * @param min - Minimum length
- * @param max - Maximum length
- * @returns Guard that checks a length range
- * @example
- * ```ts
- * const between = stringLengthBetween(2, 4)
- * between('ab') // true
- * ```
- */
-export function stringLengthBetween(min: number, max: number): Guard<string> {
-	return (x: unknown): x is string => isString(x) && x.length >= min && x.length <= max
-}
+import type { HexColorOptions } from './types.js'
 
 /**
  * Determine whether a string is all lowercase.
@@ -224,6 +161,8 @@ export function isIPv6String(s: unknown): boolean {
 		const rightRaw = parts[1]
 		// If left side ends with ':' or right side starts with ':', then there are ':::' sequences
 		if ((leftRaw.length > 0 && leftRaw.endsWith(':')) || (rightRaw.length > 0 && rightRaw.startsWith(':'))) return false
+		// Also reject stray single ':' at the very start of left or end of right (e.g., ':...::...' or '...::...:')
+		if ((leftRaw.length > 0 && leftRaw.startsWith(':')) || (rightRaw.length > 0 && rightRaw.endsWith(':'))) return false
 	}
 	const left = parts[0] ? parts[0].split(':').filter(p => p.length > 0) : []
 	const right = parts.length === 2 ? (parts[1] ? parts[1].split(':').filter(p => p.length > 0) : []) : []

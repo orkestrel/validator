@@ -12,14 +12,6 @@ import {
 	isNonEmptySet,
 	isNonEmptyString,
 } from '../src/emptiness.js'
-import {
-	assertEmpty,
-	assertEmptyArray,
-	assertEmptyMap,
-	assertEmptyObject,
-	assertEmptySet,
-	assertEmptyString,
-} from '../src/assert.js'
 
 describe('emptiness', () => {
 	describe('isEmpty', () => {
@@ -89,46 +81,6 @@ describe('emptiness', () => {
 
 		test('isNonEmptyObject returns true for non-empty objects', () => {
 			expect(isNonEmptyObject({ a: 1 })).toBe(true)
-		})
-	})
-
-	describe('emptiness assertions', () => {
-		test('assertEmpty does not throw for empty values', () => {
-			expect(() => assertEmpty('')).not.toThrow()
-		})
-
-		test('assertEmptyArray does not throw for empty arrays', () => {
-			expect(() => assertEmptyArray([])).not.toThrow()
-		})
-
-		test('assertEmptySet does not throw for empty sets', () => {
-			expect(() => assertEmptySet(new Set())).not.toThrow()
-		})
-
-		test('assertEmptyMap does not throw for empty maps', () => {
-			expect(() => assertEmptyMap(new Map())).not.toThrow()
-		})
-
-		test('assertEmptyObject does not throw for empty objects', () => {
-			expect(() => assertEmptyObject({})).not.toThrow()
-		})
-
-		test('assertEmptyString does not throw for empty strings', () => {
-			expect(() => assertEmptyString('')).not.toThrow()
-		})
-
-		test('assertEmpty throws with diagnostic path for non-empty values', () => {
-			let threw = false
-			try {
-				assertEmpty(['x'], { path: ['root', 'arr'] })
-			}
-			catch (e) {
-				threw = true
-				const err = e as Error
-				expect(err.message).toMatch(/empty value/i)
-				expect(err.message).toMatch(/root\.arr/)
-			}
-			expect(threw).toBe(true)
 		})
 	})
 })

@@ -9,13 +9,13 @@ Where it fits
 
 Interoperability
 - Works with any bundler that supports ESM and modern TypeScript targets
-- Guards/assertions are runtime-only; no code generation required
-- Diagnostics integrate with logs and error pipelines via structured error metadata
-- Results can guide UI or API responses (e.g., mapping `path` to form fields)
+- Guards are runtime-only; no code generation required
+- Deep diagnostics (via `deepCompare` or small wrappers) integrate with logs and error pipelines
+- Results can guide UI or API responses (e.g., mapping mismatch `path` to form fields)
 
 Typical integrations
-- API servers: validate request bodies/params/headers at the edge, emit precise errors
-- Worker/CLI tools: validate config/env upfront; exit early with fix hints
+- API servers: validate request bodies/params/headers at the edge; log mismatch paths when useful
+- Worker/CLI tools: validate config/env upfront; exit early with actionable messages
 - Libraries: export guards as public contracts alongside TypeScript types
 
 Out of scope

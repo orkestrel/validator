@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'vitest'
 import { isDeepEqual, isDeepClone } from '../src/deep.js'
-import { assertDeepEqual, assertDeepClone } from '../src/assert.js'
 
 describe('deep', () => {
 	describe('isDeepEqual', () => {
@@ -171,48 +170,6 @@ describe('deep', () => {
 			const f = { e: err, k: { v: 1 } }
 			const g = { e: err, k: { v: 1 } }
 			expect(isDeepClone(f, g, { allowSharedErrors: false })).toBe(false)
-		})
-	})
-
-	describe('assertDeepEqual', () => {
-		test('does not throw for equal values', () => {
-			expect(() => assertDeepEqual({ a: [1] }, { a: [1] }, { path: ['root'] })).not.toThrow()
-			expect(() => assertDeepEqual([1, 2], [1, 2])).not.toThrow()
-		})
-
-		test('throws with diagnostic path for unequal values', () => {
-			let threw = false
-			try {
-				assertDeepEqual({ a: [1, 2] }, { a: [1, 3] }, { path: ['root'] })
-			}
-			catch (e) {
-				threw = true
-				const err = e as Error
-				expect(err.message).toContain('deep equality')
-				expect(err.message).toContain('root.a[1]')
-			}
-			expect(threw).toBe(true)
-		})
-	})
-
-	describe('assertDeepClone', () => {
-		test('does not throw for deep clones', () => {
-			const a = { x: { y: 1 } }
-			const b = { x: { y: 1 } }
-			expect(() => assertDeepClone(a, b, { path: ['obj'] })).not.toThrow()
-		})
-
-		test('throws for shared references', () => {
-			const c = { x: 1 }
-			let threw = false
-			try {
-				assertDeepClone(c, c)
-			}
-			catch (e) {
-				threw = true
-				expect((e as Error).message).toContain('deep clone')
-			}
-			expect(threw).toBe(true)
 		})
 	})
 })

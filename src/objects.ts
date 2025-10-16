@@ -1,5 +1,3 @@
-import type { Guard } from './types.js'
-
 /**
  * Determine whether a value is a non-null object (arrays allowed).
  *
@@ -88,21 +86,6 @@ export function hasOnlyKeys<Ks extends readonly PropertyKey[]>(obj: unknown, ...
 }
 
 /**
- * Create a guard that tests membership in the keys of a provided object literal.
- *
- * @param obj - Object to derive keys from
- * @returns A guard that returns true for values that are keys of `obj`
- * @example
- * ```ts
- * const g = keyOf({ a: 1, b: 2 })
- * g('a') // true
- * ```
- */
-export function keyOf<const O extends Readonly<Record<PropertyKey, unknown>>>(obj: O): Guard<keyof O> {
-	return (x: unknown): x is keyof O => (typeof x === 'string' || typeof x === 'symbol' || typeof x === 'number') && x in obj
-}
-
-/**
  * Opposite of hasOwn: returns true if object owns none of the provided keys.
  *
  * @param obj - Value to check
@@ -120,30 +103,67 @@ export function hasNo(obj: unknown, ...keys: readonly PropertyKey[]): boolean {
 	return true
 }
 
+// --------------------------------------------
+// Count helpers
+// --------------------------------------------
+
 /**
- * Create a guard for a plain-object record whose values match a guard.
+ * Check the exact count of own enumerable properties on a plain object.
  *
- * Note: This checks that the input is a non-array object and that all own
- * enumerable string keys have values accepted by `valueGuard`.
+ * Counts enumerable string keys and enumerable symbol keys. Arrays and non-objects are rejected.
  *
- * @param valueGuard - Guard for property values
- * @returns Guard that accepts records of `T`
+ * Overloads:
+ * - When called with `Record<string | symbol, unknown>`, preserves the object type.
+ * - When called with `unknown`, narrows to `Record<string | symbol, unknown>`.
+ *
+ * @param x - Value to test (plain object)
+ * @param n - Exact required count (integer ≥ 0)
+ * @returns True when `ownEnumerableCount(x) === n`
  * @example
  * ```ts
- * import { recordOf } from '@orkestrel/validator'
- * import { isString } from './primitives.js'
- *
- * const record = recordOf(isString)
- * record({ a: 'x', b: 'y' }) // true
- * record({ a: 1 }) // false
+ * const s = Symbol('s')
+ * const o: Record<string | symbol, unknown> = { a: 1 }
+ * Object.defineProperty(o, s, { value: 1, enumerable: true })
+ * isCount(o, 2) // true
  * ```
  */
-export function recordOf<T>(valueGuard: Guard<T>): Guard<Record<string, T>> {
-	return (x: unknown): x is Record<string, T> => {
-		if (!isRecord(x)) return false
-		for (const k of Object.keys(x)) {
-			if (!valueGuard((x as Record<string, unknown>)[k])) return false
-		}
-		return true
-	}
+export function isCount<T extends Record<string | symbol, unknown>>(x: T, n: number): x is T
+export function isCount(x: unknown, n: number): x is Record<string | symbol, unknown>
+export function isCount(x: unknown, n: number): boolean {
+	if (!isRecord(x)) return false
+	const keysLen = Object.keys(x as Record<string, unknown>).length
+	const symsLen = Object.getOwnPropertySymbols(x as object).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x as object, s)?.enumerable ? 1 : 0), 0)
+	return keysLen + symsLen === n
+}
+
+/**
+ * Check whether a plain object owns a number of enumerable properties within the inclusive range [min, max].
+ *
+ * Counts enumerable string keys and enumerable symbol keys. Arrays and non-objects are rejected.
+ *
+ * Overloads:
+ * - When called with `Record<string | symbol, unknown>`, preserves the object type.
+ * - When called with `unknown`, narrows to `Record<string | symbol, unknown>`.
+ *
+ * @param x - Value to test (plain object)
+ * @param min - Minimum inclusive count
+ * @param max - Maximum inclusive count
+ * @returns True when `min <= ownEnumerableCount(x) <= max`
+ * @example
+ * ```ts
+ * const sym = Symbol('s')
+ * const obj: Record<string | symbol, unknown> = { a: 1 }
+ * Object.defineProperty(obj, sym, { value: 1, enumerable: true })
+ * isCountRange(obj, 2, 3) // true
+ * isCountRange(obj, 3, 3) // false
+ * ```
+ */
+export function isCountRange<T extends Record<string | symbol, unknown>>(x: T, min: number, max: number): x is T
+export function isCountRange(x: unknown, min: number, max: number): x is Record<string | symbol, unknown>
+export function isCountRange(x: unknown, min: number, max: number): boolean {
+	if (!isRecord(x)) return false
+	const keysLen = Object.keys(x as Record<string, unknown>).length
+	const symsLen = Object.getOwnPropertySymbols(x as object).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x as object, s)?.enumerable ? 1 : 0), 0)
+	const c = keysLen + symsLen
+	return c >= min && c <= max
 }

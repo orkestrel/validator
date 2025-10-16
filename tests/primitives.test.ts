@@ -5,21 +5,19 @@ import {
 	isDefined,
 	isString,
 	isNumber,
-	isInteger,
-	isSafeInteger,
-	numberInRange,
-	isNonNegativeNumber,
-	isPositiveNumber,
 	isBoolean,
 	isBigInt,
 	isSymbol,
 	isFunction,
-	isAsyncFunction,
-	isZeroArg,
 	isDate,
 	isRegExp,
 	isError,
+	isIterable,
+	isAsyncIterator,
+	isPromise,
 	isPromiseLike,
+	isArrayBuffer,
+	isSharedArrayBuffer,
 } from '../src/primitives.js'
 
 describe('primitives', () => {
@@ -73,87 +71,19 @@ describe('primitives', () => {
 	})
 
 	describe('isNumber', () => {
-		test('returns true for finite numbers', () => {
+		test('returns true for numbers (typeof)', () => {
 			expect(isNumber(1)).toBe(true)
 			expect(isNumber(0)).toBe(true)
 			expect(isNumber(-1)).toBe(true)
 			expect(isNumber(3.14)).toBe(true)
-		})
-
-		test('returns false for NaN', () => {
-			expect(isNumber(NaN)).toBe(false)
-		})
-
-		test('returns false for Infinity', () => {
-			expect(isNumber(Infinity)).toBe(false)
-			expect(isNumber(-Infinity)).toBe(false)
+			expect(isNumber(NaN)).toBe(true)
+			expect(isNumber(Infinity)).toBe(true)
+			expect(isNumber(-Infinity)).toBe(true)
 		})
 
 		test('returns false for non-numbers', () => {
 			expect(isNumber('1')).toBe(false)
 			expect(isNumber(null)).toBe(false)
-		})
-	})
-
-	describe('isInteger', () => {
-		test('returns true for integers', () => {
-			expect(isInteger(3)).toBe(true)
-			expect(isInteger(0)).toBe(true)
-			expect(isInteger(-5)).toBe(true)
-		})
-
-		test('returns false for non-integers', () => {
-			expect(isInteger(3.1)).toBe(false)
-			expect(isInteger(3.9)).toBe(false)
-		})
-	})
-
-	describe('isSafeInteger', () => {
-		test('returns true for safe integers', () => {
-			expect(isSafeInteger(Number.MAX_SAFE_INTEGER)).toBe(true)
-			expect(isSafeInteger(Number.MIN_SAFE_INTEGER)).toBe(true)
-			expect(isSafeInteger(0)).toBe(true)
-		})
-
-		test('returns false for unsafe integers', () => {
-			expect(isSafeInteger(Number.MAX_SAFE_INTEGER + 1)).toBe(false)
-		})
-	})
-
-	describe('numberInRange', () => {
-		test('returns true for numbers in range', () => {
-			expect(numberInRange(1, 3)(2)).toBe(true)
-			expect(numberInRange(1, 3)(1)).toBe(true)
-			expect(numberInRange(1, 3)(3)).toBe(true)
-		})
-
-		test('returns false for numbers outside range', () => {
-			expect(numberInRange(1, 3)(0)).toBe(false)
-			expect(numberInRange(1, 3)(4)).toBe(false)
-		})
-	})
-
-	describe('isNonNegativeNumber', () => {
-		test('returns true for non-negative numbers', () => {
-			expect(isNonNegativeNumber(0)).toBe(true)
-			expect(isNonNegativeNumber(1)).toBe(true)
-			expect(isNonNegativeNumber(100)).toBe(true)
-		})
-
-		test('returns false for negative numbers', () => {
-			expect(isNonNegativeNumber(-1)).toBe(false)
-		})
-	})
-
-	describe('isPositiveNumber', () => {
-		test('returns true for positive numbers', () => {
-			expect(isPositiveNumber(1)).toBe(true)
-			expect(isPositiveNumber(0.1)).toBe(true)
-		})
-
-		test('returns false for zero and negative numbers', () => {
-			expect(isPositiveNumber(0)).toBe(false)
-			expect(isPositiveNumber(-1)).toBe(false)
 		})
 	})
 
@@ -203,74 +133,115 @@ describe('primitives', () => {
 		})
 	})
 
-	describe('isZeroArg', () => {
-		test('returns true for zero-argument functions', () => {
-			expect(isZeroArg(() => 1)).toBe(true)
-			expect(isZeroArg(function () {
-				return 1
-			})).toBe(true)
-		})
-
-		test('returns false for functions with arguments', () => {
-			expect(isZeroArg(((x: number) => x) as (...args: unknown[]) => unknown)).toBe(false)
-		})
-	})
-
-	describe('isAsyncFunction', () => {
-		test('returns true for async functions', () => {
-			expect(isAsyncFunction(async () => {})).toBe(true)
-		})
-
-		test('returns false for regular functions returning promises', () => {
-			expect(isAsyncFunction(() => Promise.resolve(1))).toBe(false)
-		})
-	})
-
 	describe('isDate', () => {
 		test('returns true for Date objects', () => {
 			expect(isDate(new Date())).toBe(true)
 		})
 
 		test('returns false for non-Date objects', () => {
-			expect(isDate(Date.now())).toBe(false)
+			expect(isDate({})).toBe(false)
 		})
 	})
 
 	describe('isRegExp', () => {
 		test('returns true for RegExp objects', () => {
-			expect(isRegExp(/x/)).toBe(true)
-			expect(isRegExp(new RegExp('x'))).toBe(true)
+			expect(isRegExp(/a/)).toBe(true)
 		})
 
 		test('returns false for non-RegExp objects', () => {
-			expect(isRegExp('/x/')).toBe(false)
+			expect(isRegExp({})).toBe(false)
 		})
 	})
 
 	describe('isError', () => {
-		test('returns true for Error objects', () => {
-			expect(isError(new Error('x'))).toBe(true)
-			expect(isError(new TypeError('x'))).toBe(true)
+		test('returns true for Error instances', () => {
+			expect(isError(new Error('e'))).toBe(true)
 		})
 
-		test('returns false for non-Error objects', () => {
-			expect(isError({ message: 'x' })).toBe(false)
+		test('returns false for non-Error values', () => {
+			expect(isError({})).toBe(false)
+		})
+	})
+
+	describe('isIterable', () => {
+		test('returns true for arrays', () => {
+			expect(isIterable([1, 2, 3])).toBe(true)
+		})
+
+		test('returns true for strings', () => {
+			expect(isIterable('abc')).toBe(true)
+		})
+
+		test('returns true for Sets', () => {
+			expect(isIterable(new Set([1, 2]))).toBe(true)
+		})
+
+		test('returns false for non-iterables', () => {
+			expect(isIterable(123)).toBe(false)
+			expect(isIterable({})).toBe(false)
+		})
+	})
+
+	describe('isAsyncIterator', () => {
+		test('returns true for async generators', () => {
+			async function* agen() {
+				yield 1
+			}
+			expect(isAsyncIterator(agen())).toBe(true)
+		})
+		test('returns false for non-async-iterables', () => {
+			function* gen() {
+				yield 1
+			}
+			expect(isAsyncIterator(gen())).toBe(false)
+			expect(isAsyncIterator([1, 2, 3])).toBe(false)
+		})
+	})
+
+	describe('isPromise', () => {
+		test('returns true for native Promise instances', () => {
+			expect(isPromise(Promise.resolve(1))).toBe(true)
+		})
+		test('returns false for thenables and non-promises', () => {
+			const thenable = { then() { /* noop */ } }
+			expect(isPromise(thenable as unknown)).toBe(false)
+			expect(isPromise({} as unknown)).toBe(false)
 		})
 	})
 
 	describe('isPromiseLike', () => {
-		test('returns true for promises', () => {
+		test('returns true for native Promise instances', () => {
 			expect(isPromiseLike(Promise.resolve(1))).toBe(true)
 		})
-
-		test('returns true for thenables', () => {
-			const thenable = { then: (r: (v: number) => void) => r(1) }
-			expect(isPromiseLike(thenable)).toBe(true)
+		test('returns true for objects with then/catch/finally', () => {
+			const obj = {
+				then() { /* noop */ },
+				catch() { /* noop */ },
+				finally() { /* noop */ },
+			}
+			expect(isPromiseLike(obj)).toBe(true)
 		})
+		test('returns false when missing catch or finally', () => {
+			expect(isPromiseLike({ then() { /* noop */ } } as unknown)).toBe(false)
+			expect(isPromiseLike({ then() { /* noop */ }, catch() { /* noop */ } } as unknown)).toBe(false)
+		})
+	})
 
-		test('returns false for non-thenable values', () => {
-			expect(isPromiseLike(1)).toBe(false)
-			expect(isPromiseLike({})).toBe(false)
+	describe('isArrayBuffer', () => {
+		test('returns true for ArrayBuffer', () => {
+			expect(isArrayBuffer(new ArrayBuffer(8))).toBe(true)
+		})
+		test('returns false for non-ArrayBuffer', () => {
+			expect(isArrayBuffer({})).toBe(false)
+			expect(isArrayBuffer(new Uint8Array(4) as unknown)).toBe(false)
+		})
+	})
+
+	describe('isSharedArrayBuffer', () => {
+		test('matches only when supported and instance is provided', () => {
+			const hasSAB = typeof SharedArrayBuffer !== 'undefined'
+			const value = hasSAB ? new SharedArrayBuffer(8) : (undefined as unknown)
+			expect(isSharedArrayBuffer(value)).toBe(hasSAB)
 		})
 	})
 })

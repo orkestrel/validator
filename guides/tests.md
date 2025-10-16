@@ -33,31 +33,19 @@ describe('arrays', () => {
 })
 ```
 
-Path-aware assertion diagnostics
+Path-aware deep diagnostics
 ```ts
 import { describe, test, expect } from 'vitest'
-import { assertArrayOf } from '../src/assert.js'
-import { isString } from '../src/primitives.js'
-
-describe('assert', () => {
-  describe('assertArrayOf', () => {
-    test('pinpoints failing index in error message', () => {
-      expect(() => assertArrayOf(['a', 1], isString, { path: ['payload','tags'] }))
-        .toThrow(/payload\.tags\[1\]/)
-    })
-  })
-})
-```
-
-Deep checks
-```ts
-import { describe, test, expect } from 'vitest'
-import { assertDeepEqual } from '../src/deep.js'
+import { deepCompare } from '../src/deep.js'
 
 describe('deep', () => {
-  describe('assertDeepEqual', () => {
-    test('does not throw for equal values', () => {
-      expect(() => assertDeepEqual({ a:[1] }, { a:[1] }, { path: ['state'] })).not.toThrow()
+  describe('deepCompare', () => {
+    test('pinpoints failing index and reason', () => {
+      const r = deepCompare({ a: [1, 2] }, { a: [1, 3] }, { identityMustDiffer: false, opts: {} })
+      expect(r.equal).toBe(false)
+      if (!r.equal) {
+        expect(r.path).toEqual(['a', 1])
+      }
     })
   })
 })
@@ -68,5 +56,3 @@ Policy
 - Use descriptive test names that explain what is being tested
 - Cover happy path + key edge cases (NaN/+0/-0, cycles, Map/Set order, TypedArrays)
 - Ensure typecheck is clean alongside tests and build
-
-

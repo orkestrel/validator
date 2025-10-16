@@ -19,11 +19,18 @@ Intermediate
 - `hasSchema` vs `objectOf`?
   - `hasSchema` is a declarative check with primitive tags and nested guards; `objectOf` is a builder with optional/exact/rest options and strong static types.
 
-- Why do “not” combinators return `Guard<unknown>`?
-  - TypeScript cannot express the exact set complement. Use `assertNot` for fail-fast negatives or explicit positive guards for narrowing.
+- Why do “not” combinators return `Guard<unknown>` in the simple form?
+  - TypeScript cannot express the exact set complement. Use `not(base, exclude)` to get a precise `Exclude<Base, Excluded>` when you know the base set.
 
-- What path shows up when assertions fail?
-  - The nearest failing index/key (array index, object key, Map “@key/@value”, Set index in ordered mode) appended to your provided `path`.
+- How do I exclude multiple variants?
+  - Compose the excluded variants with `unionOf` and pass that to `not(base, exclude)`:
+    ```ts
+    const notCircleOrRect = not(isShape, unionOf(isCircle, isRect))
+    ```
+    This keeps the API minimal and one-liner friendly without a separate `exclude` helper.
+
+- How can I get a path to the failing location?
+  - Use `deepCompare(a, b, { identityMustDiffer, opts })` for deep diagnostics. It returns `{ equal: false, path, reason, detail? }` on first mismatch.
 
 Advanced
 
@@ -45,8 +52,7 @@ Advanced
 Troubleshooting
 
 - I need richer error objects:
-  - Use `AssertOptions` fields: path, label, hint, helpUrl. Errors carry structured metadata for programmatic handling.
+  - Compose a small assertion helper around guards or `deepCompare` that throws `TypeError` with the context you need (path, label, hint). For deep structures, use `deepCompare` to capture `path` and `reason`.
 
 - My Set/Map comparisons are slow:
   - Prefer “ordered” options when you can; it’s O(n) instead of O(n²) matching.
-

@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { isMap, isSet, isWeakMap, isWeakSet, mapOf, setOf, nonEmptySetOf } from '../src/collections.js'
-import { isString, isNumber } from '../src/primitives.js'
+import { isMap, isSet, isWeakMap, isWeakSet, isSizeRange } from '../src/collections.js'
 
 describe('collections', () => {
 	describe('isMap', () => {
@@ -45,49 +44,16 @@ describe('collections', () => {
 		})
 	})
 
-	describe('mapOf', () => {
-		test('validates Map entries with key and value guards', () => {
-			const m = new Map<unknown, unknown>([[1, 'a'], [2, 'b']])
-			const g = mapOf(isNumber, isString)
-			expect(g(m)).toBe(true)
+	describe('isSizeRange (value-first size range validator)', () => {
+		test('Set size within inclusive range', () => {
+			const s = new Set([1, 2])
+			expect(isSizeRange(s, 2, 3)).toBe(true)
+			expect(isSizeRange(s, 3, 4)).toBe(false)
 		})
-
-		test('returns false when entries fail guards', () => {
-			const bad = new Map<unknown, unknown>([[1, 2]])
-			const g = mapOf(isNumber, isString)
-			expect(g(bad)).toBe(false)
-		})
-
-		test('returns true for empty Maps', () => {
-			const g = mapOf(isNumber, isString)
-			expect(g(new Map())).toBe(true)
-		})
-	})
-
-	describe('setOf', () => {
-		test('validates Set values with guard', () => {
-			const s = new Set<unknown>(['a', 'b'])
-			expect(setOf(isString)(s)).toBe(true)
-		})
-
-		test('returns false when values fail guard', () => {
-			const s = new Set<unknown>(['a', 1])
-			expect(setOf(isString)(s)).toBe(false)
-		})
-
-		test('returns true for empty Sets', () => {
-			expect(setOf(isString)(new Set())).toBe(true)
-		})
-	})
-
-	describe('nonEmptySetOf', () => {
-		test('validates non-empty Sets', () => {
-			const s = new Set<unknown>(['a', 'b'])
-			expect(nonEmptySetOf(isString)(s)).toBe(true)
-		})
-
-		test('returns false for empty Sets', () => {
-			expect(nonEmptySetOf(isString)(new Set())).toBe(false)
+		test('Map size within inclusive range', () => {
+			const m = new Map<number, string>([[1, 'a']])
+			expect(isSizeRange(m, 1, 2)).toBe(true)
+			expect(isSizeRange(m, 2, 3)).toBe(false)
 		})
 	})
 })

@@ -1,10 +1,8 @@
 import { describe, test, expect } from 'vitest'
 import {
 	isArray,
-	arrayOf,
-	nonEmptyArrayOf,
-	tupleOf,
 	isDataView,
+	isArrayBufferView,
 	isTypedArray,
 	isInt8Array,
 	isUint8Array,
@@ -17,8 +15,9 @@ import {
 	isFloat64Array,
 	isBigInt64Array,
 	isBigUint64Array,
+	isLength,
+	isLengthRange,
 } from '../src/arrays.js'
-import { isString, isNumber } from '../src/primitives.js'
 
 describe('arrays', () => {
 	describe('isArray', () => {
@@ -31,65 +30,6 @@ describe('arrays', () => {
 			expect(isArray('x')).toBe(false)
 			expect(isArray({})).toBe(false)
 			expect(isArray(null)).toBe(false)
-		})
-	})
-
-	describe('arrayOf', () => {
-		test('validates array elements with guard', () => {
-			const isStringArray = arrayOf(isString)
-			expect(isStringArray(['a', 'b'])).toBe(true)
-			expect(isStringArray([])).toBe(true)
-		})
-
-		test('returns false when element fails guard', () => {
-			const isStringArray = arrayOf(isString)
-			expect(isStringArray(['a', 1] as unknown[])).toBe(false)
-		})
-
-		test('returns false for non-arrays', () => {
-			const isStringArray = arrayOf(isString)
-			expect(isStringArray('not an array' as unknown)).toBe(false)
-		})
-	})
-
-	describe('nonEmptyArrayOf', () => {
-		test('validates non-empty arrays', () => {
-			const isNonEmptyNumArray = nonEmptyArrayOf(isNumber)
-			expect(isNonEmptyNumArray([1])).toBe(true)
-			expect(isNonEmptyNumArray([1, 2, 3])).toBe(true)
-		})
-
-		test('returns false for empty arrays', () => {
-			const isNonEmptyNumArray = nonEmptyArrayOf(isNumber)
-			expect(isNonEmptyNumArray([])).toBe(false)
-		})
-
-		test('returns false when element fails guard', () => {
-			const isNonEmptyNumArray = nonEmptyArrayOf(isNumber)
-			expect(isNonEmptyNumArray([1, 'x'] as unknown[])).toBe(false)
-		})
-	})
-
-	describe('tupleOf', () => {
-		test('validates fixed-length tuples with correct types', () => {
-			const isPoint = tupleOf(isNumber, isNumber)
-			expect(isPoint([1, 2])).toBe(true)
-		})
-
-		test('returns false for wrong element types', () => {
-			const isPoint = tupleOf(isNumber, isNumber)
-			expect(isPoint([1, '2'] as unknown[])).toBe(false)
-		})
-
-		test('returns false for wrong tuple length', () => {
-			const isPoint = tupleOf(isNumber, isNumber)
-			expect(isPoint([1])).toBe(false)
-			expect(isPoint([1, 2, 3])).toBe(false)
-		})
-
-		test('returns false for non-arrays', () => {
-			const isPoint = tupleOf(isNumber, isNumber)
-			expect(isPoint({ 0: 1, 1: 2 } as unknown)).toBe(false)
 		})
 	})
 
@@ -107,6 +47,22 @@ describe('arrays', () => {
 		test('returns false for non-view objects', () => {
 			expect(isDataView([])).toBe(false)
 			expect(isDataView({})).toBe(false)
+		})
+	})
+
+	describe('isArrayBufferView', () => {
+		test('returns true for TypedArrays', () => {
+			expect(isArrayBufferView(new Uint8Array(4))).toBe(true)
+			expect(isArrayBufferView(new Int32Array(2))).toBe(true)
+		})
+		test('returns true for DataView', () => {
+			const buf = new ArrayBuffer(8)
+			expect(isArrayBufferView(new DataView(buf))).toBe(true)
+		})
+		test('returns false for non-views', () => {
+			expect(isArrayBufferView([] as unknown)).toBe(false)
+			expect(isArrayBufferView({} as unknown)).toBe(false)
+			expect(isArrayBufferView(null as unknown)).toBe(false)
 		})
 	})
 
@@ -258,6 +214,31 @@ describe('arrays', () => {
 			if (typeof BigUint64Array === 'undefined') {
 				expect(isBigUint64Array({} as unknown)).toBe(false)
 			}
+		})
+	})
+
+	describe('isLength (exact length for strings/arrays)', () => {
+		test('matches exact string length', () => {
+			expect(isLength('ab', 2)).toBe(true)
+			expect(isLength('ab', 3)).toBe(false)
+		})
+		test('matches exact array length', () => {
+			expect(isLength([], 0)).toBe(true)
+			expect(isLength(['a', 'b'], 2)).toBe(true)
+			expect(isLength(['a', 'b'], 1)).toBe(false)
+		})
+	})
+
+	describe('isLengthRange (value-first length range validator)', () => {
+		test('string length within inclusive range', () => {
+			expect(isLengthRange('ab', 2, 3)).toBe(true)
+			expect(isLengthRange('abc', 2, 3)).toBe(true)
+			expect(isLengthRange('a', 2, 3)).toBe(false)
+		})
+		test('array length within inclusive range', () => {
+			expect(isLengthRange([1, 2], 2, 3)).toBe(true)
+			expect(isLengthRange([1, 2, 3], 2, 3)).toBe(true)
+			expect(isLengthRange([1], 2, 3)).toBe(false)
 		})
 	})
 })

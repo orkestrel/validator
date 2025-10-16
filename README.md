@@ -1,11 +1,11 @@
 # @orkestrel/validator
 
-Tiny, composable runtime validators and assertion helpers for TypeScript with LLM‑friendly diagnostics.
+Tiny, composable runtime validators for TypeScript with deterministic deep checks.
 
 - TypeScript‑first, ESM‑only, strict by default
 - Honest types: no `any`, no non‑null assertions, narrow from `unknown`
 - Portable: browser + Node compatible; tests use Vitest
-- Diagnostics that help humans and LLMs debug quickly (paths, previews, metadata)
+- Deterministic helpers and stable options; same inputs → same outputs
 
 Repository: https://github.com/orkestrel/validator
 
@@ -13,13 +13,12 @@ Contents
 - [Install](#install)
 - [Why this library](#why-this-library)
 - [Quick start](#quick-start)
-- [Guards and assertions](#guards-and-assertions)
+- [Guards](#guards)
 - [Combinators](#combinators)
 - [Schema and object builders](#schema-and-object-builders)
 - [Domain guards](#domain-guards)
 - [Deep checks](#deep-checks)
 - [Emptiness and “opposites”](#emptiness-and-opposites)
-- [Diagnostics](#diagnostics)
 - [TypeScript and build](#typescript-and-build)
 - [Testing](#testing)
 - [Guides](#guides)
@@ -40,7 +39,6 @@ Requirements
 
 - Validate at the edges, keep internals typed: accept `unknown`, then narrow precisely.
 - Small, composable helpers instead of a monolithic schema DSL.
-- Rich, path‑aware assertion errors with machine‑readable metadata for tooling and UIs.
 - Predictable semantics for deep equality and clone checks with cycle safety.
 
 ## Quick start
@@ -48,7 +46,6 @@ Requirements
 ```ts
 import {
   isRecord, isString, arrayOf,
-  assertRecord, assertArrayOf, assertSchema,
 } from '@orkestrel/validator'
 
 const input: unknown = JSON.parse('{"id":"u1","tags":["x","y"],"count":1}')
@@ -58,10 +55,6 @@ if (isRecord(input) && isString(input.id) && arrayOf(isString)(input.tags)) {
   console.log(input.id, input.tags.join(','))
 }
 
-// Or fail-fast with path-aware diagnostics
-assertRecord(input, { path: ['payload'] })
-assertArrayOf(input.tags, isString, { path: ['payload','tags'] })
-
 // Declarative schema with nested guard
 const schema = {
   id: 'string',
@@ -69,31 +62,17 @@ const schema = {
   count: 'number',
 } as const
 
-assertSchema(input, schema, { path: ['payload'] })
+// Use your preferred error strategy if narrowing fails (throw, return Result, etc.)
 ```
 
-## Guards and assertions
+## Guards
 
 - Primitives: `isString`, `isNumber` (finite), `isBoolean`, `isFunction`, `isAsyncFunction`, `isDate`, `isRegExp`, `isError`, `isPromiseLike`
 - Objects & keys: `isObject`, `isRecord`, `hasOwn`, `hasOnlyKeys`, `hasNo`, `keyOf`
 - Arrays/collections: `isArray`, `arrayOf`, `nonEmptyArrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`
 - Strings/numbers: `stringMatching`, `stringMinLength/MaxLength/LengthBetween`, `isLowercase/Uppercase`, `isAlphanumeric`, `isAscii`, `isHexColor`, `isIPv4String`, `isHostnameString`, `intInRange`, `isMultipleOf`
 
-Each guard has matching assert variants that throw `TypeError` with rich context:
-- `assertString`, `assertNumber`, `assertArrayOf`, `assertTupleOf`, `assertRecordOf`, `assertSchema`, `assertDefined`, …
-- Opposites: `assertNot` (fail if guard passes), `assertHasNo` (object owns none of keys)
-
-Example (pinpoint failing index):
-
-```ts
-import { assertArrayOf, isString } from '@orkestrel/validator'
-
-try {
-  assertArrayOf(['a', 1, 'c'], isString, { path: ['payload','tags'] })
-} catch (e) {
-  // Error message includes "payload.tags[1]" and attaches metadata
-}
-```
+Each guard accepts `unknown` and returns a precise `x is T` predicate. Helpers are pure and do not mutate inputs.
 
 ## Combinators
 
@@ -101,7 +80,7 @@ Build complex shapes from small parts:
 
 ```ts
 import {
-  literalOf, and, or, isNot, unionOf, intersectionOf,
+  literalOf, and, or, not, unionOf, intersectionOf,
   optionalOf, nullableOf, lazy, refine, fromNativeEnum, discriminatedUnion,
   isString, isNumber, objectOf,
 } from '@orkestrel/validator'
@@ -110,10 +89,14 @@ import {
 const isId = refine(isString, (s): s is string => s.length > 0)
 const isLevel = literalOf('info','warn','error' as const)
 
-// Discriminated unions
+// Negation
+const notString = not(isString) // Guard<unknown>
+
+// Typed exclusion using a base guard (precise Exclude)
 const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
 const isRect   = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
-const isShape  = discriminatedUnion('kind', { circle: isCircle, rect: isRect } as const)
+const isShape  = unionOf(isCircle, isRect)
+const notCircle = not(isShape, isCircle) // Guard<{ kind: 'rect', w: number, h: number }>
 ```
 
 ## Schema and object builders
@@ -148,46 +131,37 @@ Pragmatic, ecosystem‑friendly checks:
 
 ## Deep checks
 
-Two complementary validators and assert‑style throwers (cycle‑safe):
+Two complementary validators (cycle‑safe):
 
 ```ts
-import {
-  isDeepEqual, isDeepClone,
-  assertDeepEqual, assertDeepClone,
-} from '@orkestrel/validator'
+import { isDeepEqual, isDeepClone, deepCompare } from '@orkestrel/validator'
 
 const a = { x: [{ v: 1 }], s: new Set([1,2,3]) }
 const b = { x: [{ v: 1 }], s: new Set([3,2,1]) }
 
 isDeepEqual(a, b) // true (unordered Set/Map by default)
-assertDeepEqual(a, b)
 
 const shared = { v: 1 }
 isDeepClone({ x: shared }, { x: shared }) // false (shared ref)
+
+// Need diagnostics? Use deepCompare for the first mismatch path/reason.
+const r = deepCompare({ a: [1, 2] }, { a: [1, 3] }, { identityMustDiffer: false, opts: {} })
+if (!r.equal) console.log(r.path, r.reason)
 ```
 
 Options:
 - `strictNumbers` (default true): distinguish `+0`/`-0`; `NaN` equals `NaN`
 - `compareSetOrder` / `compareMapOrder`: order‑sensitive comparisons
+- `allowSharedFunctions` / `allowSharedErrors` for clone checks
 
 ## Emptiness and “opposites”
 
 - `isEmpty` for strings/arrays/maps/sets/objects; specific variants: `isEmptyString/Array/Object/Map/Set`
 - Non‑empty counterparts: `isNonEmptyString/Array/Object/Map/Set`
 - Opposites:
-    - `isNot(guard)` — negate a guard (returns `Guard<unknown>`)
+    - `not(guard)` — simple negation (returns `Guard<unknown>`)
+    - `not(base, exclude)` — typed exclusion: `Exclude<Base, Excluded>`
     - `hasNo(obj, ...keys)` — object owns none of these keys
-    - Assertions: `assertEmpty`, `assertHasNo`, `assertNot`
-
-## Diagnostics
-
-All assertions throw `TypeError` created by `createTypeError(expected, received, options)`:
-
-- Message includes: expected condition, path (e.g., `payload.tags[1]`), optional label, received type/tag/preview, optional hint/helpUrl.
-- The error also carries enumerable metadata:
-    - `expected`, `path`, `label?`, `receivedType`, `receivedTag`, `receivedPreview`, `hint?`, `helpUrl?`.
-
-This makes errors easy to display and easy for tools/LLMs to reason about.
 
 ## TypeScript and build
 
@@ -224,15 +198,16 @@ Run:
 npm test
 ```
 
-Example:
+Example (pinpoint deep mismatch path using `deepCompare`):
 
 ```ts
 import { test, expect } from 'vitest'
-import { assertArrayOf, isString } from '@orkestrel/validator'
+import { deepCompare } from '@orkestrel/validator'
 
 test('pinpoints failing index', () => {
-  expect(() => assertArrayOf(['a', 1], isString, { path: ['payload','tags'] }))
-    .toThrow(/payload\.tags\[1\]/)
+  const r = deepCompare({ a: [1, 2] }, { a: [1, 3] }, { identityMustDiffer: false, opts: {} })
+  expect(r.equal).toBe(false)
+  expect(r.path).toEqual(['a', 1])
 })
 ```
 
@@ -243,7 +218,6 @@ test('pinpoints failing index', () => {
 - Concepts: https://github.com/orkestrel/validator/blob/HEAD/guides/concepts.md
 - Examples: https://github.com/orkestrel/validator/blob/HEAD/guides/examples.md
 - Deep checks: https://github.com/orkestrel/validator/blob/HEAD/guides/deep.md
-- Diagnostics: https://github.com/orkestrel/validator/blob/HEAD/guides/diagnostics.md
 - Domain guards: https://github.com/orkestrel/validator/blob/HEAD/guides/domains.md
 - Tips: https://github.com/orkestrel/validator/blob/HEAD/guides/tips.md
 - Tests: https://github.com/orkestrel/validator/blob/HEAD/guides/tests.md
@@ -253,7 +227,7 @@ test('pinpoints failing index', () => {
 
 ## Contributing
 
-We value determinism, strict typing, and small, composable APIs. See [Contribute](https://github.com/orkestrel/validator/blob/HEAD/guides/contribute.md) for principles and workflow. For issues and feature requests, visit https://github.com/orkestrel/validator/issues.
+We value determinism, strict typing, and small, composable APIs. See Contribute for principles and workflow. For issues and feature requests, visit https://github.com/orkestrel/validator/issues.
 
 ## License
 

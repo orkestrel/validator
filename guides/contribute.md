@@ -18,16 +18,35 @@ Quick workflow (how to work)
    - `npm run format` — ESLint autofix
 
 Project organization
-- All assertion helpers live in `src/assert.ts` and are tested in `tests/assert.test.ts`
+- Public helpers live in focused modules under `src/` (primitives, objects, arrays, collections, combinators, schema, domains, deep, etc.)
+- Shared public types are centralized in `src/types.ts`
 
 Typing ethos (strict, helpful, honest)
 - No `any`. No non‑null assertions (`!`). Avoid unsafe casts; prefer narrowing
 - Validate at the edges: accept `unknown`, check, then type
 - Prefer `readonly` for public outputs; avoid mutating returned values
 - Keep helpers small and well‑typed; document invariants where helpful
-- All shared public types live in `src/types.ts` and are exported/imported from there
 - Do not define new `type`/`interface` declarations outside `src/types.ts`
 - When adding options to a function, create a named `...Options` interface in `src/types.ts` and import it
+- Type predicate design (preserving overloads)
+  - Public validators that return type predicates must preserve original subtypes via generic, preserving overloads (do not widen to a generic type and lose information).
+  - Provide two overloads:
+      - a generic preserving overload: `fn is F` for `F extends <shape>`
+      - a general/narrowing overload from `unknown`/broad input to the canonical function shape
+  - Keep a single runtime implementation; do not duplicate logic.
+  - TSDoc: describe behavior concisely; overload signatures themselves get a single‑line comment.
+
+Example
+```ts
+// Preserve the original async function subtype when validation succeeds
+export function isAsyncFunction<F extends (...args: unknown[]) => Promise<unknown>>(fn: F): fn is F
+export function isAsyncFunction(fn: unknown): fn is (...args: unknown[]) => Promise<unknown>
+export function isAsyncFunction(fn: unknown): boolean {
+  if (typeof fn !== 'function') return false
+  const name = (fn as { constructor?: { name?: unknown } }).constructor?.name
+  return typeof name === 'string' && name === 'AsyncFunction'
+}
+```
 
 TSDoc policy (what to document)
 - Public exported classes and their public methods: full TSDoc
@@ -75,7 +94,7 @@ Example
 ````
 
 Consistency
-- Diagnostics should be clear, path-aware, and include structured metadata
+- Diagnostics should be clear; deep mismatches can be collected with `deepCompare`
 - Mirror test files and cover golden paths + key edge cases
 
 API and change control
@@ -85,7 +104,6 @@ API and change control
 
 Testing conventions and QA
 - Tests mirror source files: `tests/[file].test.ts`
-- Assertion helpers: add/adjust coverage in `tests/assert.test.ts`
 - Use built-ins only where appropriate; prefer direct values over heavy mocks
 - Cover edge cases: NaN/+0/-0, cycles, Map/Set order, path diagnostics
 - Keep tests fast (seconds, not minutes)

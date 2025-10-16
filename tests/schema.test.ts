@@ -1,36 +1,36 @@
 import { describe, test, expect } from 'vitest'
-import { hasSchema, hasPartialSchema, objectOf } from '../src/schema.js'
+import { isSchema, isPartialSchema } from '../src/schema.js'
+import { objectOf, stringMatchOf } from '../src/combinators.js'
 import { isString, isNumber } from '../src/primitives.js'
-import { stringMatching } from '../src/strings.js'
 
 describe('schema', () => {
-	describe('hasSchema', () => {
+	describe('isSchema', () => {
 		test('validates nested schemas', () => {
 			const schema = { id: 'string', age: 'number', meta: { note: 'string' } } as const
-			expect(hasSchema({ id: 'a', age: 1, meta: { note: 'x' } }, schema)).toBe(true)
+			expect(isSchema({ id: 'a', age: 1, meta: { note: 'x' } }, schema)).toBe(true)
 		})
 
 		test('returns false when schema validation fails', () => {
 			const schema = { id: 'string', age: 'number', meta: { note: 'string' } } as const
-			expect(hasSchema({ id: 'a', age: '1', meta: { note: 'x' } }, schema)).toBe(false)
+			expect(isSchema({ id: 'a', age: '1', meta: { note: 'x' } }, schema)).toBe(false)
 		})
 	})
 
-	describe('hasPartialSchema', () => {
+	describe('isPartialSchema', () => {
 		test('allows missing keys', () => {
-			const schema = { id: 'string', tag: stringMatching(/^[a-z]+$/) } as const
-			expect(hasPartialSchema({}, schema)).toBe(true)
+			const schema = { id: 'string', tag: stringMatchOf(/^[a-z]+$/) } as const
+			expect(isPartialSchema({}, schema)).toBe(true)
 		})
 
 		test('validates present keys', () => {
-			const schema = { id: 'string', tag: stringMatching(/^[a-z]+$/) } as const
-			expect(hasPartialSchema({ id: 'x' }, schema)).toBe(true)
-			expect(hasPartialSchema({ tag: 'ok' }, schema)).toBe(true)
+			const schema = { id: 'string', tag: stringMatchOf(/^[a-z]+$/) } as const
+			expect(isPartialSchema({ id: 'x' }, schema)).toBe(true)
+			expect(isPartialSchema({ tag: 'ok' }, schema)).toBe(true)
 		})
 
 		test('returns false when present keys fail validation', () => {
-			const schema = { id: 'string', tag: stringMatching(/^[a-z]+$/) } as const
-			expect(hasPartialSchema({ tag: 'NotOk' }, schema)).toBe(false)
+			const schema = { id: 'string', tag: stringMatchOf(/^[a-z]+$/) } as const
+			expect(isPartialSchema({ tag: 'NotOk' }, schema)).toBe(false)
 		})
 	})
 

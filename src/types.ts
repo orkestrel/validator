@@ -52,28 +52,6 @@ export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never
 // Extract the element union from a tuple/readonly array type.
 export type TupleTypes<T extends readonly unknown[]> = T[number]
 
-// Validation path metadata used by diagnostics.
-export type PathSegment = string | number | symbol
-export type ValidationPath = ReadonlyArray<PathSegment>
-
-// Options for creating rich TypeErrors.
-export interface CreateTypeErrorOptions {
-	readonly path?: ValidationPath // path to the failing property
-	readonly label?: string // human label for the value (e.g., "user.age")
-	readonly message?: string // custom message override
-	readonly hint?: string // short hint for remediation
-	readonly helpUrl?: string // optional link for more docs
-}
-
-// Common assert options accepted by assertion helpers.
-export interface AssertOptions {
-	readonly path?: ValidationPath // path to the failing property
-	readonly label?: string // human label for the value (e.g., "user.age")
-	readonly message?: string // custom message override
-	readonly hint?: string // short hint for remediation
-	readonly helpUrl?: string // optional link for more docs
-}
-
 // Deep comparison options.
 export type DeepEqualOptions = {
 	readonly compareSetOrder?: boolean // when true, Set order matters
@@ -131,4 +109,27 @@ export type AnyTypedArray
 		| Float32Array | Float64Array
 		| BigInt64Array | BigUint64Array
 
-export type AnyTypedArrayElement = number | bigint
+// Function helper types for reusable signatures.
+export type AnyFunction = (...args: unknown[]) => unknown
+export type AnyAsyncFunction = (...args: unknown[]) => Promise<unknown>
+export type ZeroArgFunction = () => unknown
+export type ZeroArgAsyncFunction = () => Promise<unknown>
+export type PromiseFunction = AnyAsyncFunction // User‑friendly alias: any function that returns a Promise (non‑strict return type).
+export type ZeroArgPromiseFunction = ZeroArgAsyncFunction // User‑friendly alias: zero‑argument function that returns a Promise.
+
+/**
+ * Empty variant type for common "empty-able" shapes.
+ *
+ * - `string` → '' (empty string literal)
+ * - `ReadonlyArray<T>` → readonly []
+ * - `ReadonlyMap<K, V>` → `ReadonlyMap<K, V>` (size not tracked in the type system)
+ * - `ReadonlySet<T>` → `ReadonlySet<T>` (size not tracked in the type system)
+ * - `Record<string | symbol, unknown>` → `Record<string | symbol, never>`
+ */
+export type EmptyOf<T>
+	= T extends string ? ''
+		: T extends ReadonlyArray<unknown> ? readonly []
+			: T extends ReadonlyMap<infer K, infer V> ? ReadonlyMap<K, V>
+				: T extends ReadonlySet<infer U> ? ReadonlySet<U>
+					: T extends Record<string | symbol, unknown> ? Record<string | symbol, never>
+						: never

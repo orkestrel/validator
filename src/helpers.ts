@@ -1,11 +1,6 @@
 import type { ParsedAbsoluteUrl } from './types.js'
-import { isInteger, numberInRange } from './primitives.js'
-import { isValidHost } from './domains.js'
-
-/**
- * Shared tiny helpers used across modules. These are intentionally generic
- * and environment-agnostic.
- */
+import { isInteger, isRange } from './numbers.js'
+import { isIPv4String, isIPv6String, isHostnameString } from './strings.js'
 
 /** Internal conservative absolute URL regex */
 const ABS_URL_RE = /^(?<scheme>[A-Za-z][A-Za-z0-9+.-]*):\/\/(?<authority>[^/?#]*)(?<rest>[/?#].*)?$/
@@ -25,60 +20,10 @@ export function getTag(x: unknown): string {
 }
 
 /**
- * Compute primitive type and [[Class]] tag for a value.
- *
- * @param x - Value to describe
- * @returns Object with `type` and `tag` fields
- * @example
- * ```ts
- * typeAndTag(1) // { type: 'number', tag: '[object Number]' }
- * ```
- */
-export function typeAndTag(x: unknown): { type: string, tag: string } {
-	const type = x === null ? 'null' : typeof x
-	const tag = getTag(x)
-	return { type, tag }
-}
-
-/**
- * Produce a short, stable preview string for a value suitable for diagnostics.
- *
- * @param x - Value to preview
- * @returns Human-friendly preview string
- * @example
- * ```ts
- * previewValue({ a: 1 }) // '{"a":1}' or similar short summary
- * ```
- */
-export function previewValue(x: unknown): string {
-	try {
-		if (x === null) return 'null'
-		if (x === undefined) return 'undefined'
-		const t = typeof x
-		if (t === 'string') {
-			const str = x as string
-			return str.length > 100 ? `${str.slice(0, 100)}\u2026` : str
-		}
-		if (t === 'number' || t === 'boolean' || t === 'bigint' || t === 'symbol' || t === 'function') return String(x)
-		if (t === 'object') {
-			const tag = getTag(x)
-			if (Array.isArray(x)) return `${tag} length=${(x as unknown[]).length}`
-			const json = JSON.stringify(x as Record<string, unknown>, (_, v) => (typeof v === 'bigint' ? String(v) : v))
-			if (json && json.length <= 200) return json
-			return tag
-		}
-		return String(x)
-	}
-	catch {
-		return '[unprintable]'
-	}
-}
-
-/**
  * Parse a decimal port number text into a number within [1, 65535].
  *
  * Returns `undefined` when the input is empty, non-numeric, or out of range.
- * Uses numeric guards (`isInteger` and `numberInRange`) to validate the result.
+ * Uses numeric guards (`isInteger`) and `inRange` to validate the result.
  *
  * @param portText - Raw port text (without a leading colon)
  * @returns A valid port number or `undefined`
@@ -93,7 +38,7 @@ export function parsePort(portText: string | undefined): number | undefined {
 	if (portText === undefined || portText.length === 0) return undefined
 	if (!/^\d+$/.test(portText)) return undefined
 	const n = Number(portText)
-	return isInteger(n) && numberInRange(1, 65535)(n) ? n : undefined
+	return isInteger(n) && isRange(n, 1, 65535) ? n : undefined
 }
 
 /**
@@ -138,7 +83,16 @@ export function parseAbsoluteUrl(input: string): ParsedAbsoluteUrl | undefined {
 		}
 	}
 
-	if (!isValidHost(host)) return undefined
+	// Host validation (inline to avoid circular dependency)
+	let hostOk: boolean
+	if (host.startsWith('[') && host.endsWith(']')) {
+		const inner = host.slice(1, -1)
+		hostOk = isIPv6String(inner)
+	}
+	else {
+		hostOk = isIPv4String(host) || isHostnameString(host)
+	}
+	if (!hostOk) return undefined
 
 	const port = parsePort(portText)
 	if (portText !== undefined && port === undefined) return undefined

@@ -1,5 +1,9 @@
-import type { Guard, Result, UnionToIntersection } from './types.js'
-import { isRecord } from './objects.js'
+import type { Guard, Result, UnionToIntersection, GuardsShape, FromGuards, ObjectOfOptions, EmptyOf } from './types.js'
+import { isRecord, isCount } from './objects.js'
+import { isString, isNumber, isIterable } from './primitives.js'
+import { isLength } from './arrays.js'
+import { isSize } from './collections.js'
+import { isEmpty } from './emptiness.js'
 
 /**
  * Create a guard that accepts one of the provided literal values.
@@ -24,14 +28,15 @@ export function literalOf<const Literals extends readonly (string | number | boo
  *
  * @param a - First guard
  * @param b - Second guard
- * @returns A guard that validates both `a` and `b`
+ * @returns Guard that validates both `a` and `b`
  * @example
  * ```ts
- * const g = and(isRecord, hasId)
- * g({ id: 1 }) // depends on hasId
+ * const g = andOf(isString, (s: string): s is string => s.length > 0)
+ * g('x') // true
+ * g('') // false
  * ```
  */
-export function and<A, B>(a: Guard<A>, b: Guard<B>): Guard<A & B> {
+export function andOf<A, B>(a: Guard<A>, b: Guard<B>): Guard<A & B> {
 	return (x: unknown): x is A & B => a(x) && b(x)
 }
 
@@ -40,48 +45,59 @@ export function and<A, B>(a: Guard<A>, b: Guard<B>): Guard<A & B> {
  *
  * @param a - First guard
  * @param b - Second guard
- * @returns A guard that validates `a` or `b`
+ * @returns Guard that validates `a` or `b`
  * @example
  * ```ts
- * const g = or(isString, isNumber)
+ * const g = orOf(isString, isNumber)
  * g(1) // true
+ * g('a') // true
+ * g(true) // false
  * ```
  */
-export function or<A, B>(a: Guard<A>, b: Guard<B>): Guard<A | B> {
+export function orOf<A, B>(a: Guard<A>, b: Guard<B>): Guard<A | B> {
 	return (x: unknown): x is A | B => a(x) || b(x)
 }
 
 /**
- * Negate a guard. Exact complement types are not representable in TypeScript,
- * so the returned guard is typed as `Guard<unknown>`.
+ * Negate a guard.
  *
- * @param _g - Guard to negate
- * @returns A guard that returns the negation of `_g`
+ * Overloads:
+ * - `notOf(exclude)` → `Guard<unknown>`
+ * - `notOf(base, exclude)` → `Guard<Exclude<Base, Excluded>>`
+ *
+ * @param a - Exclude guard or base guard when two-arg form
+ * @param b - Excluded guard when two-arg form
+ * @returns Negated guard
  * @example
  * ```ts
- * const g = not(isString)
- * g(1) // true
+ * const notString = notOf(isString)
+ * notString(123) // true
+ * notString('abc') // false
  * ```
  */
-export function not(_g: Guard<unknown>): Guard<unknown> {
-	const g = _g as Guard<unknown>
-	return (x: unknown): x is unknown => !g(x)
+export function notOf(a: Guard<unknown>, b?: undefined): Guard<unknown>
+export function notOf<TBase, TExclude extends TBase>(a: Guard<TBase>, b: Guard<TExclude>): Guard<Exclude<TBase, TExclude>>
+export function notOf<TBase, TExclude extends TBase>(a: Guard<TBase> | Guard<unknown>, b?: Guard<TExclude>): Guard<Exclude<TBase, TExclude>> | Guard<unknown> {
+	if (b) {
+		const base = a as Guard<TBase>
+		const exclude = b
+		return (x: unknown): x is Exclude<TBase, TExclude> => base(x) && !exclude(x)
+	}
+	const exclude = a as Guard<unknown>
+	return (x: unknown): x is unknown => !exclude(x)
 }
-
-/**
- * Alias for `not` exposed as `isNot`.
- */
-export const isNot = not
 
 /**
  * Create a union guard from multiple guards.
  *
  * @param guards - Guards to union
- * @returns A guard that accepts values matching any of the provided guards
+ * @returns Guard that accepts values matching any provided guard
  * @example
  * ```ts
  * const g = unionOf(isString, isNumber)
  * g('a') // true
+ * g(1) // true
+ * g(true) // false
  * ```
  */
 export function unionOf<const Gs extends readonly Guard<unknown>[]>(...guards: Gs): Guard<Gs[number] extends Guard<infer T> ? T : never> {
@@ -92,10 +108,12 @@ export function unionOf<const Gs extends readonly Guard<unknown>[]>(...guards: G
  * Create an intersection guard from multiple guards.
  *
  * @param guards - Guards to intersect
- * @returns A guard that accepts values matching all provided guards
+ * @returns Guard that accepts values matching all provided guards
  * @example
  * ```ts
- * const g = intersectionOf(hasId, hasName)
+ * const g = intersectionOf(isString as (x: unknown) => x is string, (s: string): s is string => s.length > 0)
+ * g('x') // true
+ * g('') // false
  * ```
  */
 export function intersectionOf<const Gs extends readonly Guard<unknown>[]>(...guards: Gs): Guard<UnionToIntersection<Gs[number] extends Guard<infer T> ? T : never>> {
@@ -106,11 +124,12 @@ export function intersectionOf<const Gs extends readonly Guard<unknown>[]>(...gu
  * Create a guard that accepts `undefined` or a value validated by `g`.
  *
  * @param g - Guard for the non-undefined value
- * @returns A guard that allows `undefined` or `T`
+ * @returns Guard allowing `undefined` or `T`
  * @example
  * ```ts
- * const g = optionalOf(isNumber)
- * g(undefined) // true
+ * optionalOf(isNumber)(undefined) // true
+ * optionalOf(isNumber)(123) // true
+ * optionalOf(isNumber)('abc') // false
  * ```
  */
 export function optionalOf<T>(g: Guard<T>): Guard<T | undefined> {
@@ -121,11 +140,12 @@ export function optionalOf<T>(g: Guard<T>): Guard<T | undefined> {
  * Create a guard that accepts `null` or a value validated by `g`.
  *
  * @param g - Guard for the non-null value
- * @returns A guard that allows `null` or `T`
+ * @returns Guard allowing `null` or `T`
  * @example
  * ```ts
- * const g = nullableOf(isString)
- * g(null) // true
+ * nullableOf(isString)(null) // true
+ * nullableOf(isString)('hello') // true
+ * nullableOf(isString)(123) // false
  * ```
  */
 export function nullableOf<T>(g: Guard<T>): Guard<T | null> {
@@ -135,14 +155,15 @@ export function nullableOf<T>(g: Guard<T>): Guard<T | null> {
 /**
  * Lazy guard that defers creation until first use. Useful for recursive types.
  *
- * @param thunk - Function that returns the actual guard
- * @returns A guard which calls `thunk()` when invoked
+ * @param thunk - Function producing the guard
+ * @returns Guard that invokes `thunk()` on call
  * @example
  * ```ts
- * const node = lazy(() => object({ next: optionalOf(node) }))
+ * type Node = { value: number, next?: Node }
+ * const isNode = lazyOf(() => objectOf({ value: isNumber, next: optionalOf(isNode) }))
  * ```
  */
-export function lazy<T>(thunk: () => Guard<T>): Guard<T> {
+export function lazyOf<T>(thunk: () => Guard<T>): Guard<T> {
 	return (x: unknown): x is T => thunk()(x)
 }
 
@@ -151,33 +172,26 @@ export function lazy<T>(thunk: () => Guard<T>): Guard<T> {
  *
  * @param base - Base guard for `T`
  * @param refineFn - Type predicate that narrows `T` to `U`
- * @returns A guard for `U`
+ * @returns Guard for `U`
  * @example
  * ```ts
- * const g = refine(isNumber, (n): n is 1 | 2 => n === 1 || n === 2)
+ * const g = refineOf(isNumber, (n): n is 1 | 2 => n === 1 || n === 2)
  * ```
  */
-export function refine<T, U extends T>(base: Guard<T>, refineFn: (x: T) => x is U): Guard<U> {
+export function refineOf<T, U extends T>(base: Guard<T>, refineFn: (x: T) => x is U): Guard<U> {
 	return (x: unknown): x is U => (base(x) ? refineFn(x) : false)
 }
 
 /**
- * Safely parse a value with a guard, returning a Result with either the value
- * or an Error.
+ * Safely parse a value with a guard, returning a Result with either the value or an Error.
  *
  * @param x - Value to validate
  * @param g - Guard to apply
- * @param onError - Optional function to produce a custom error when validation fails
+ * @param onError - Optional error factory
  * @returns Result containing the validated value or an error
  * @example
  * ```ts
- * import { safeParse } from '@orkestrel/validator'
- * import { isNumber } from './primitives.js'
- *
  * const ok = safeParse(1, isNumber)
- * if (ok.ok) {
- *   ok.value // number
- * }
  * ```
  */
 export function safeParse<T, E extends Error = TypeError>(
@@ -186,7 +200,7 @@ export function safeParse<T, E extends Error = TypeError>(
 	onError?: (x: unknown) => E,
 ): Result<T, E> {
 	if (g(x)) return { ok: true, value: x }
-	return { ok: false, error: onError ? onError(x) : new TypeError('Validation failed') as E }
+	return { ok: false, error: (onError ? onError(x) : new TypeError('Validation failed')) as E }
 }
 
 /**
@@ -194,13 +208,13 @@ export function safeParse<T, E extends Error = TypeError>(
  *
  * @param disc - Property name used as discriminator
  * @param mapping - Record mapping discriminator values to guards
- * @returns A guard that validates the discriminated union
+ * @returns Guard that validates the discriminated union
  * @example
  * ```ts
- * const g = discriminatedUnion('type', { a: isA, b: isB })
+ * const g = discriminatedUnionOf('type', { a: A, b: B })
  * ```
  */
-export function discriminatedUnion<
+export function discriminatedUnionOf<
 	K extends string,
 	const M extends Readonly<Record<string, Guard<unknown>>>,
 >(disc: K, mapping: M): Guard<M[keyof M] extends Guard<infer T> ? T : never> {
@@ -208,7 +222,6 @@ export function discriminatedUnion<
 	return (x: unknown): x is M[keyof M] extends Guard<infer T> ? T : never => {
 		if (!isRecord(x)) return false
 		const v = x[disc]
-		// Avoid typeof check; rely on key membership in mapping
 		if (!keys.has(v as string)) return false
 		const g = mapping[v as keyof M]
 		return g ? g(x) : false
@@ -219,14 +232,533 @@ export function discriminatedUnion<
  * Create a guard from a native enum (object of string/number values).
  *
  * @param e - Enum-like object
- * @returns A guard that validates values in the enum
+ * @returns Guard for the enum values
  * @example
  * ```ts
  * enum E { A = 'a' }
- * fromNativeEnum(E)('a') // true
+ * nativeEnumOf(E)('a') // true
  * ```
  */
-export function fromNativeEnum<E extends Record<string, string | number>>(e: E): Guard<E[keyof E]> {
+export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E[keyof E]> {
 	const values = new Set(Object.values(e) as (string | number)[])
 	return (x: unknown): x is E[keyof E] => values.has(x as string | number)
+}
+
+/**
+ * Build an object guard from a shape of property guards.
+ *
+ * @param props - Mapping of property names to guard functions
+ * @param options - Optional configuration (optional/exact/rest)
+ * @remarks
+ * Options:
+ * - optional — readonly array of keys from `props` that may be missing
+ * - exact — when true, additional keys on the object are disallowed
+ * - rest — guard applied to additional property values when `exact` is false
+ * @returns Guard validating objects that satisfy the provided shape
+ * @example
+ * ```ts
+ * const User = objectOf({ id: isString, age: isNumber }, { optional: ['age' as const], exact: true })
+ * ```
+ */
+export function objectOf<const P extends GuardsShape, Opt extends readonly PropertyKey[] = readonly PropertyKey[]>(
+	props: P,
+	options: ObjectOfOptions<Opt> = {},
+): Guard<FromGuards<P>> {
+	const keys = Object.keys(props) as readonly (keyof P & string)[]
+	const opt = new Set<PropertyKey>(options.optional as readonly PropertyKey[] | undefined)
+	const exact = options.exact === true
+	const rest = options.rest
+
+	return (x: unknown): x is FromGuards<P> => {
+		if (!isRecord(x)) return false
+
+		for (const k of keys) {
+			const has = Object.prototype.hasOwnProperty.call(x, k)
+			if (!has) {
+				if (!opt || !opt.has(k)) return false
+				continue
+			}
+			const g = props[k]
+			const v = (x as Record<string, unknown>)[k as string]
+			if (!(g as Guard<unknown>)(v)) return false
+		}
+
+		for (const k in x as Record<string, unknown>) {
+			if (!Object.prototype.hasOwnProperty.call(x, k)) continue
+			if (!Object.prototype.hasOwnProperty.call(props, k)) {
+				if (exact) return false
+				if (rest && !(rest as Guard<unknown>)((x as Record<string, unknown>)[k])) return false
+			}
+		}
+		return true
+	}
+}
+
+// ------------------------------------------------------------
+// Emptiness-aware combinators
+// ------------------------------------------------------------
+
+/**
+ * Create a guard that allows an "empty" value for common empty-able shapes or a value validated by `g`.
+ *
+ * Emptiness semantics match `isEmpty` (empty string, empty array, empty Map/Set, object with no own enumerable keys/symbols).
+ * For other types (e.g., numbers), emptiness never applies and this behaves like `g`.
+ *
+ * @param g - Base guard for the non-empty value
+ * @returns Guard allowing an empty shape or `T`
+ * @example
+ * ```ts
+ * const isNumbers = arrayOf(isNumber)
+ * const isNumbersOrEmpty = allowEmptyOf(isNumbers)
+ * isNumbersOrEmpty([]) // true
+ * isNumbersOrEmpty([1, 2]) // true
+ * isNumbersOrEmpty(['x'] as unknown) // false
+ * ```
+ */
+export function emptyOf<T>(g: Guard<T>): Guard<T | EmptyOf<T>> {
+	return (x: unknown): x is T | EmptyOf<T> => isEmpty(x) || g(x)
+}
+
+/**
+ * Create a guard that requires non-emptiness for common empty-able shapes, in addition to passing `g`.
+ *
+ * For non empty-able types (e.g., numbers), this reduces to `g`.
+ *
+ * @param g - Base guard for the value
+ * @returns Guard that accepts values passing `g` and not empty when emptiness applies
+ * @example
+ * ```ts
+ * const nonEmptyNumbers = nonEmptyOf(arrayOf(isNumber))
+ * nonEmptyNumbers([]) // false
+ * nonEmptyNumbers([1]) // true
+ * nonEmptyNumbers(['x'] as unknown) // false
+ * ```
+ */
+export function nonEmptyOf<T>(g: Guard<T>): Guard<T> {
+	return (x: unknown): x is T => {
+		// Arrays
+		if (Array.isArray(x)) return x.length > 0 && g(x)
+		// Strings (also Iterable, but treat specially)
+		if (typeof x === 'string') return x.length > 0 && g(x)
+		// Maps/Sets
+		if (x instanceof Map || x instanceof Set) return x.size > 0 && g(x)
+		// Generic Iterables (e.g., generators). Handle before record to avoid classifying generators as objects.
+		if (isIterable(x)) {
+			const it = (x as Iterable<unknown>)[Symbol.iterator]()
+			const first = it.next()
+			if (first.done) return false
+			const replay: Iterable<unknown> = {
+				[Symbol.iterator](): Iterator<unknown> {
+					let yieldedFirst = false
+					return {
+						next(): IteratorResult<unknown> {
+							if (!yieldedFirst) {
+								yieldedFirst = true
+								return { value: first.value, done: false }
+							}
+							return it.next()
+						},
+					}
+				},
+			}
+			return g(replay as unknown as T)
+		}
+		// Plain objects
+		if (isRecord(x)) {
+			if (Object.keys(x).length === 0) {
+				const syms = Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable)
+				if (syms.length === 0) return false
+			}
+			return g(x)
+		}
+		// Other types: non-empty constraint does not apply; rely on base guard
+		return g(x)
+	}
+}
+
+// ------------------------------------------------------------
+// Consolidated element/collection/string/number/object combinators
+// ------------------------------------------------------------
+
+/**
+ * Create a guard for an array whose elements satisfy the provided element guard.
+ *
+ * @param elem - Guard to validate each element
+ * @returns Guard that accepts arrays of `T`
+ * @example
+ * ```ts
+ * const g = arrayOf(isNumber)
+ * g([1, 2, 3]) // true
+ * g([1, 'a']) // false
+ * ```
+ */
+export function arrayOf<T>(elem: Guard<T>): Guard<ReadonlyArray<T>> {
+	return (x: unknown): x is ReadonlyArray<T> => Array.isArray(x) && x.every(elem)
+}
+
+/**
+ * Create a guard for a fixed-length tuple with per-index guards.
+ *
+ * @param guards - Guards for each tuple element
+ * @returns Guard that accepts tuples matching the provided guards
+ * @example
+ * ```ts
+ * const g = tupleOf(isString, isNumber)
+ * g(['a', 1]) // true
+ * g(['a']) // false
+ * ```
+ */
+export function tupleOf<const Gs extends readonly Guard<unknown>[]>(
+	...guards: Gs
+): Guard<{ readonly [K in keyof Gs]: Gs[K] extends Guard<infer T> ? T : never }> {
+	return (x: unknown): x is { readonly [K in keyof Gs]: Gs[K] extends Guard<infer T> ? T : never } => {
+		if (!Array.isArray(x) || x.length !== guards.length) return false
+		for (let i = 0; i < guards.length; i++) {
+			const guard = guards[i]
+			if (!guard || !guard(x[i])) return false
+		}
+		return true
+	}
+}
+
+/**
+ * Create a guard that accepts strings matching the provided regular expression.
+ *
+ * @param re - Regular expression to test against
+ * @returns Guard that checks string values
+ * @example
+ * ```ts
+ * const g = stringMatchOf(/^a/)
+ * g('abc') // true
+ * g('xbc') // false
+ * ```
+ */
+export function stringMatchOf(re: RegExp): Guard<string> {
+	return (x: unknown): x is string => isString(x) && re.test(x)
+}
+
+/**
+ * Create a guard that matches an exact string value.
+ *
+ * @param s - Exact string to match
+ * @returns Guard that accepts only the exact string `s`
+ * @example
+ * ```ts
+ * const g = stringOf('ok')
+ * g('ok') // true
+ * g('nope') // false
+ * ```
+ */
+export function stringOf<const S extends string>(s: S): Guard<S> {
+	return (x: unknown): x is S => x === s
+}
+
+/**
+ * Create a guard that matches an exact number value.
+ *
+ * @param n - Exact number to match
+ * @returns Guard that accepts only the exact number `n`
+ * @example
+ * ```ts
+ * const g = numberOf(42)
+ * g(42) // true
+ * g(41) // false
+ * ```
+ */
+export function numberOf<const N extends number>(n: N): Guard<N> {
+	return (x: unknown): x is N => typeof x === 'number' && x === n
+}
+
+// ------------------------------------------------------------
+// Unified range/limit comparators (length/size/count aware)
+// ------------------------------------------------------------
+
+/**
+ * Validate the exact length of strings and arrays.
+ *
+ * @param n - Exact required length
+ * @returns Guard for strings/arrays with length exactly `n`
+ * @example
+ * ```ts
+ * lengthOf(2)('ab') // true
+ * lengthOf(3)(['a','b','c']) // true
+ * lengthOf(2)('abc') // false
+ * ```
+ */
+export function lengthOf(n: number): Guard<string | ReadonlyArray<unknown>> {
+	return (x: unknown): x is string | ReadonlyArray<unknown> => isLength(x, n)
+}
+
+/**
+ * Validate the exact size of Maps and Sets.
+ *
+ * @param n - Exact required size
+ * @returns Guard for Map/Set with size exactly `n`
+ * @example
+ * ```ts
+ * sizeOf(2)(new Set([1,2])) // true
+ * sizeOf(1)(new Map([[1, 'a']])) // true
+ * ```
+ */
+export function sizeOf(n: number): Guard<ReadonlyMap<unknown, unknown> | ReadonlySet<unknown>> {
+	return (x: unknown): x is ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> => isSize(x, n)
+}
+
+/**
+ * Validate the exact property count of plain objects (own enumerable keys + enumerable symbols).
+ *
+ * @param n - Exact required count
+ * @returns Guard for plain objects with count exactly `n`
+ * @example
+ * ```ts
+ * const o = { a: 1 }
+ * countOf(1)(o) // true
+ * ```
+ */
+export function countOf(n: number): Guard<Record<string | symbol, unknown>> {
+	return (x: unknown): x is Record<string | symbol, unknown> => isCount(x, n)
+}
+
+// Remove shared measure; implement comparators directly per-shape
+
+/**
+ * Guard enforcing a minimum value/size across supported shapes:
+ * - number → value
+ * - string/array → length
+ * - Map/Set → size
+ * - plain object → own enumerable keys + enumerable symbols count
+ *
+ * @param min - Minimum inclusive boundary
+ * @returns Guard that accepts values whose measure is `>= min`
+ * @example
+ * ```ts
+ * const atLeast2 = minOf(2)
+ * atLeast2(5) // true
+ * atLeast2('a') // false
+ * atLeast2([1, 2]) // true
+ * ```
+ */
+export function minOf(min: number): Guard<number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>> {
+	return (x: unknown): x is number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown> => {
+		if (typeof x === 'number') return x >= min
+		if (typeof x === 'string') return x.length >= min
+		if (Array.isArray(x)) return x.length >= min
+		if (x instanceof Map) return x.size >= min
+		if (x instanceof Set) return x.size >= min
+		if (isRecord(x)) {
+			const keysLen = Object.keys(x).length
+			const symsLen = Object.getOwnPropertySymbols(x).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0), 0)
+			return keysLen + symsLen >= min
+		}
+		return false
+	}
+}
+
+/**
+ * Guard enforcing a maximum value/size across supported shapes (see {@link minOf}).
+ *
+ * @param max - Maximum inclusive boundary
+ * @returns Guard that accepts values whose measure is `<= max`
+ * @example
+ * ```ts
+ * const atMost3 = maxOf(3)
+ * atMost3(2) // true
+ * atMost3('abcd') // false
+ * atMost3(new Set([1,2,3])) // true
+ * ```
+ */
+export function maxOf(max: number): Guard<number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>> {
+	return (x: unknown): x is number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown> => {
+		if (typeof x === 'number') return x <= max
+		if (typeof x === 'string') return x.length <= max
+		if (Array.isArray(x)) return x.length <= max
+		if (x instanceof Map) return x.size <= max
+		if (x instanceof Set) return x.size <= max
+		if (isRecord(x)) {
+			const keysLen = Object.keys(x).length
+			const symsLen = Object.getOwnPropertySymbols(x).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0), 0)
+			return keysLen + symsLen <= max
+		}
+		return false
+	}
+}
+
+/**
+ * Guard enforcing an inclusive range across supported shapes (see {@link minOf}).
+ *
+ * @param min - Minimum inclusive boundary
+ * @param max - Maximum inclusive boundary
+ * @returns Guard that accepts values whose measure is within `[min, max]`
+ * @example
+ * ```ts
+ * const between2and4 = rangeOf(2, 4)
+ * between2and4('abc') // true
+ * between2and4(5) // false
+ * between2and4(new Map([[1, 'a'], [2, 'b']])) // true
+ * ```
+ */
+export function rangeOf(min: number, max: number): Guard<number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>> {
+	return (x: unknown): x is number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown> => {
+		if (typeof x === 'number') return x >= min && x <= max
+		if (typeof x === 'string') return x.length >= min && x.length <= max
+		if (Array.isArray(x)) return x.length >= min && x.length <= max
+		if (x instanceof Map) return x.size >= min && x.size <= max
+		if (x instanceof Set) return x.size >= min && x.size <= max
+		if (isRecord(x)) {
+			const keysLen = Object.keys(x).length
+			const symsLen = Object.getOwnPropertySymbols(x).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0), 0)
+			const c = keysLen + symsLen
+			return c >= min && c <= max
+		}
+		return false
+	}
+}
+
+/**
+ * Create a guard that checks whether a number is a multiple of `m`.
+ *
+ * @param m - The non-zero finite modulus to test against
+ * @returns Guard that returns true when `x` is a number and `x % m === 0`
+ * @example
+ * ```ts
+ * const g = multipleOf(3)
+ * g(9) // true
+ * g(10) // false
+ * ```
+ */
+export function multipleOf(m: number): Guard<number> {
+	return (x: unknown): x is number => isNumber(x) && Number.isFinite(m) && m !== 0 && x % m === 0
+}
+
+/**
+ * Create a guard for a Map whose keys and values satisfy the given guards.
+ *
+ * @param keyGuard - Guard that validates map keys
+ * @param valueGuard - Guard that validates map values
+ * @returns Guard that checks a ReadonlyMap with validated keys and values
+ * @example
+ * ```ts
+ * const g = mapOf(isString, isNumber)
+ * g(new Map([["a", 1]])) // true
+ * g(new Map([["a", "b"]])) // false
+ * ```
+ */
+export function mapOf<K, V>(keyGuard: Guard<K>, valueGuard: Guard<V>): Guard<ReadonlyMap<K, V>> {
+	return (x: unknown): x is ReadonlyMap<K, V> => {
+		if (!(x instanceof Map)) return false
+		for (const [k, v] of x as Map<unknown, unknown>) {
+			if (!keyGuard(k) || !valueGuard(v)) return false
+		}
+		return true
+	}
+}
+
+/**
+ * Create a guard for a Set whose elements satisfy the given guard.
+ *
+ * @param elemGuard - Guard that validates set elements
+ * @returns Guard that checks a ReadonlySet with validated elements
+ * @example
+ * ```ts
+ * const g = setOf(isNumber)
+ * g(new Set([1, 2])) // true
+ * g(new Set([1, 'a'])) // false
+ * ```
+ */
+export function setOf<T>(elemGuard: Guard<T>): Guard<ReadonlySet<T>> {
+	return (x: unknown): x is ReadonlySet<T> => {
+		if (!(x instanceof Set)) return false
+		for (const v of x as Set<unknown>) {
+			if (!elemGuard(v)) return false
+		}
+		return true
+	}
+}
+
+/**
+ * Create a guard that tests membership in the keys of a provided object literal.
+ *
+ * @param obj - Object to derive keys from
+ * @returns Guard that returns true for values that are keys of `obj`
+ * @example
+ * ```ts
+ * const g = keyOf({ a: 1, b: 2 } as const)
+ * g('a') // true
+ * g('c') // false
+ * ```
+ */
+export function keyOf<const O extends Readonly<Record<PropertyKey, unknown>>>(obj: O): Guard<keyof O> {
+	return (x: unknown): x is keyof O => (typeof x === 'string' || typeof x === 'symbol' || typeof x === 'number') && x in obj
+}
+
+/**
+ * Create a guard for a plain-object record whose values match a guard.
+ *
+ * @param valueGuard - Guard for property values
+ * @returns Guard that accepts records of `T`
+ * @example
+ * ```ts
+ * const g = recordOf(isNumber)
+ * g({ a: 1, b: 2 }) // true
+ * g({ a: 1, b: 'x' }) // false
+ * ```
+ */
+export function recordOf<T>(valueGuard: Guard<T>): Guard<Record<string, T>> {
+	return (x: unknown): x is Record<string, T> => {
+		if (!isRecord(x)) return false
+		for (const k of Object.keys(x)) {
+			if (!valueGuard((x as Record<string, unknown>)[k])) return false
+		}
+		return true
+	}
+}
+
+// Iterables
+/**
+ * Create a guard that validates every element of an iterable using the provided element guard.
+ *
+ * @param elemGuard - Guard used to validate each element
+ * @returns Guard that accepts iterables whose elements all pass `elemGuard`
+ * @example
+ * ```ts
+ * const g = iterableOf(isNumber)
+ * g([1, 2, 3].values()) // true
+ * g([1, 'a'].values()) // false
+ * ```
+ */
+export function iterableOf<T>(elemGuard: Guard<T>): Guard<Iterable<T>> {
+	return (x: unknown): x is Iterable<T> => {
+		if (!isIterable(x)) return false
+		for (const v of x) {
+			if (!elemGuard(v)) return false
+		}
+		return true
+	}
+}
+
+/**
+ * Create a guard that accepts values whose unified measure equals `n`.
+ *
+ * Measure rules:
+ * - number → value
+ * - string/array → length
+ * - Map/Set → size
+ * - plain object → own enumerable keys + enumerable symbols count
+ *
+ * @param n - Exact required measure
+ * @returns Guard across supported shapes whose measure equals `n`
+ * @example
+ * ```ts
+ * measureOf(2)('ab') // true
+ * measureOf(3)(new Set([1,2,3])) // true
+ * measureOf(1)({ a: 1 }) // true
+ * ```
+ */
+export function measureOf(n: number): Guard<number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>> {
+	const byNum = numberOf(n)
+	const byLen = lengthOf(n)
+	const bySize = sizeOf(n)
+	const byCount = countOf(n)
+	return (x: unknown): x is number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown> =>
+		byNum(x) || byLen(x) || bySize(x) || byCount(x)
 }

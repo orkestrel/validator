@@ -9,36 +9,31 @@ Prerequisites
 - Node.js 18+ (for tests) and TypeScript 5+
 - ESM-only; bundlers or modern Node resolve “moduleResolution: bundler”
 
-Quick try: narrow unknown JSON and assert
+Quick try: narrow unknown JSON
 ```ts
 import {
   isRecord, isString, arrayOf,
-  assertRecord, assertArrayOf, assertSchema,
 } from '@orkestrel/validator'
 
 const input: unknown = JSON.parse('{"id":"u1","tags":["x","y"],"count":1}')
 
 if (isRecord(input) && isString(input.id) && arrayOf(isString)(input.tags)) {
   console.log(input.id, input.tags.join(','))
+} else {
+  // Choose your preferred error strategy (throw, return Result, etc.)
 }
-
-assertRecord(input, { path: ['payload'] })
-assertArrayOf(input.tags, isString, { path: ['payload','tags'] })
 
 const schema = {
   id: 'string',
   tags: (x: unknown): x is readonly string[] => Array.isArray(x) && x.every(isString),
   count: 'number',
 } as const
-
-assertSchema(input, schema, { path: ['payload'] })
 ```
 
-Deep checks: equality and clone verification
+Deep checks: equality, clone, and diagnostics
 ```ts
 import {
-  isDeepEqual, isDeepClone,
-  assertDeepEqual, assertDeepClone,
+  isDeepEqual, isDeepClone, deepCompare,
 } from '@orkestrel/validator'
 
 const a = { x: [1, { y: 2 }] }
@@ -47,8 +42,11 @@ const b = { x: [1, { y: 2 }] }
 console.log(isDeepEqual(a, b)) // true
 console.log(isDeepClone(a, b)) // true
 
-assertDeepEqual(a, b, { path: ['state'] })
-assertDeepClone(a, b, { path: ['state'] })
+// Need the first mismatch path and reason? Use deepCompare
+const r = deepCompare({ a: [1, 2] }, { a: [1, 3] }, { identityMustDiffer: false, opts: {} })
+if (!r.equal) {
+  console.log(r.path, r.reason)
+}
 ```
 
 Zero-boilerplate combinators
@@ -67,14 +65,10 @@ console.log(isLevel('warn'), isMaybeCount(undefined)) // true true
 Emptiness and opposite checks
 ```ts
 import {
-  isEmpty, isNot, isString,
-  assertEmpty, assertNot, assertHasNo
+  isEmpty, not, isString,
 } from '@orkestrel/validator'
 
-console.log(isEmpty([]), isNot(isString)(123)) // true true
-assertEmpty('', { path: ['input','name'] })
-assertNot('x', isString, { path: ['should','not','be','string'] }) // throws
-assertHasNo({ a: 1 }, 'b', 'c') // ok; owns none of them
+console.log(isEmpty([]), not(isString)(123)) // true true
 ```
 
 Where next
@@ -82,4 +76,3 @@ Where next
 - Examples for realistic snippets
 - Tips for composition patterns and troubleshooting
 - Tests to mirror your source and stay fast/deterministic
-

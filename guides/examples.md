@@ -2,7 +2,7 @@
 
 Parse JSON safely and narrow deeply
 ```ts
-import { isRecord, isString, arrayOf, assertSchema } from '@orkestrel/validator'
+import { isRecord, isString, arrayOf } from '@orkestrel/validator'
 
 const raw = '{"user":{"id":"u1","tags":["pro","beta"],"age":41}}'
 const input: unknown = JSON.parse(raw)
@@ -15,21 +15,35 @@ const schema = {
   },
 } as const
 
-assertSchema(input, schema, { path: ['payload'] })
-// input now typed; TS understands input.user.id is string, etc.
+if (
+  isRecord(input)
+  && isRecord(input.user)
+  && isString(input.user.id)
+  && Array.isArray(input.user.tags) && input.user.tags.every(isString)
+  && typeof input.user.age === 'number'
+) {
+  // input is now safely usable
+} else {
+  // handle invalid structure (throw, return Result, etc.)
+}
 ```
 
 Environment variables
 ```ts
-import { isNumber, intInRange, assertSchema } from '@orkestrel/validator'
+import { isNumber, intInRange } from '@orkestrel/validator'
 
 const env: unknown = { PORT: 8080, ALLOWED: ['a','b'] }
-const schema = {
-  PORT: (x: unknown): x is number => isNumber(x) && intInRange(1, 65535)(x),
-  ALLOWED: (x: unknown): x is readonly string[] => Array.isArray(x) && x.every(s => typeof s === 'string'),
-} as const
+const isValidPort = (x: unknown): x is number => isNumber(x) && intInRange(1, 65535)(x)
 
-assertSchema(env, schema, { path: ['env'] }) // throws with precise path if invalid
+if (
+  isRecord(env)
+  && isValidPort(env.PORT)
+  && Array.isArray(env.ALLOWED) && env.ALLOWED.every(isString)
+) {
+  // env is valid
+} else {
+  // invalid env
+}
 ```
 
 Discriminated unions
@@ -60,18 +74,23 @@ console.log(Config({ name: 'svc', port: 8080 })) // true
 
 Deep equality and clone checks
 ```ts
-import { isDeepEqual, isDeepClone, assertDeepEqual, assertDeepClone } from '@orkestrel/validator'
+import { isDeepEqual, isDeepClone, deepCompare } from '@orkestrel/validator'
 
 const a = { x: [{ v: 1 }], s: new Set([1,2,3]) }
 const b = { x: [{ v: 1 }], s: new Set([3,2,1]) }
 
 isDeepEqual(a, b) // true (Set order ignored)
-assertDeepEqual(a, b)
 
 const shared = { v: 1 }
 const c = { x: shared }
 const d = { x: shared }
 isDeepClone(c, d) // false
+
+// Diagnostics
+const r = deepCompare({ a: [1, 2] }, { a: [1, 3] }, { identityMustDiffer: false, opts: {} })
+if (!r.equal) {
+  console.log(r.path) // ['a', 1]
+}
 ```
 
 HTTP request guard
@@ -89,90 +108,37 @@ declare const input: unknown
 if (!isRequest(input)) throw new TypeError('Invalid request')
 ```
 
-Using assertions for fail-fast validation
+Pragmatic fail-fast pattern
 ```ts
-import {
-  assertString,
-  assertNumber,
-  assertArrayOf,
-  assertNonEmptyString,
-  assertPositiveNumber,
-  assertEmailString,
-  assertUUIDv4,
-  assertRecord,
-  isString,
-} from '@orkestrel/validator'
+import { arrayOf, isString } from '@orkestrel/validator'
 
-function processUser(data: unknown) {
-  // Throws TypeError with rich diagnostics if validation fails
-  assertRecord(data, { path: ['user'] })
-  
-  const { id, email, age, tags } = data
-  
-  assertUUIDv4(id, { path: ['user', 'id'], label: 'User ID' })
-  assertEmailString(email, { path: ['user', 'email'], label: 'Email' })
-  assertPositiveNumber(age, { path: ['user', 'age'], hint: 'Age must be > 0' })
-  assertArrayOf(tags, isString, { path: ['user', 'tags'] })
-  
-  // All assertions passed - data is now validated
-  return { id, email, age, tags }
-}
-```
-
-Comprehensive type narrowing with assertions
-```ts
-import {
-  assertInteger,
-  assertNonEmptyArray,
-  assertMap,
-  assertSet,
-  assertDate,
-  assertIterable,
-  assertUint8Array,
-} from '@orkestrel/validator'
-
-// Type narrowing: value goes from unknown to specific types
-function processData(value: unknown) {
-  assertInteger(value) // value is now number (integer)
-  // or
-  assertNonEmptyArray(value) // value is now readonly [unknown, ...unknown[]]
-  // or
-  assertMap(value) // value is now ReadonlyMap<unknown, unknown>
-  // or
-  assertSet(value) // value is now ReadonlySet<unknown>
-  // or
-  assertDate(value) // value is now Date
-  // or
-  assertIterable(value) // value is now Iterable<unknown>
+function assertArrayOfStrings(x: unknown, ctx: string): asserts x is readonly string[] {
+  if (!arrayOf(isString)(x)) {
+    throw new TypeError(`${ctx}: expected array of strings`)
+  }
 }
 
-// Typed array assertions
-function processBuffer(data: unknown) {
-  assertUint8Array(data) // data is now Uint8Array
-  // Work with typed data
-  return data.slice(0, 10)
-}
+// Usage
+const tags: unknown = ['a', 'b']
+assertArrayOfStrings(tags, 'payload.tags')
 ```
 
 Emptiness and non-emptiness checks
 ```ts
 import {
-  assertNonEmptyString,
-  assertNonEmptyArray,
-  assertNonEmptyObject,
-  assertEmptySet,
-  assertRecord,
+  isNonEmptyString,
+  isNonEmptyArray,
+  isNonEmptyObject,
+  isEmpty,
 } from '@orkestrel/validator'
 
 function validateInput(input: unknown) {
-  assertRecord(input)
-  
+  if (!isRecord(input)) throw new TypeError('object required')
   const { name, items, metadata, processed } = input
-  
-  assertNonEmptyString(name) // Ensures name is not ''
-  assertNonEmptyArray(items) // Ensures items has at least one element
-  assertNonEmptyObject(metadata) // Ensures metadata has at least one key
-  assertEmptySet(processed) // Ensures Set is empty
+
+  if (!isNonEmptyString(name)) throw new TypeError('name required')
+  if (!isNonEmptyArray(items)) throw new TypeError('items must be non-empty')
+  if (!isNonEmptyObject(metadata)) throw new TypeError('metadata must be non-empty')
+  if (!isEmpty(processed)) throw new TypeError('processed must be empty')
 }
 ```
-

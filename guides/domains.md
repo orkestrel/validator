@@ -1,6 +1,6 @@
 # Domain guards
 
-Pragmatic, ecosystem-friendly validators (not vendor-specific). Each returns boolean and has an assertion counterpart.
+Pragmatic, ecosystem-friendly validators (not vendor-specific). Each returns boolean. For fail-fast behavior, compose tiny wrappers that throw with context when a guard fails.
 
 Included
 - isUUIDv4 — canonical v4 format

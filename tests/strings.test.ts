@@ -1,9 +1,5 @@
 import { describe, test, expect } from 'vitest'
 import {
-	stringMatching,
-	stringMinLength,
-	stringMaxLength,
-	stringLengthBetween,
 	isLowercase,
 	isUppercase,
 	isAlphanumeric,
@@ -13,49 +9,49 @@ import {
 	isIPv6String,
 	isHostnameString,
 } from '../src/strings.js'
+import {
+	stringMatchOf,
+	lengthOf,
+	rangeOf,
+	minOf,
+} from '../src/combinators.js'
 
 describe('strings', () => {
 	describe('stringMatching', () => {
 		test('returns true when string matches regex', () => {
-			expect(stringMatching(/^[a-z]+$/)('abc')).toBe(true)
+			expect(stringMatchOf(/^[a-z]+$/)('abc')).toBe(true)
 		})
 
 		test('returns false when string does not match regex', () => {
-			expect(stringMatching(/^\d+$/)('abc')).toBe(false)
+			expect(stringMatchOf(/^\d+$/)('abc')).toBe(false)
 		})
 	})
 
-	describe('stringMinLength', () => {
-		test('returns true when string meets minimum length', () => {
-			expect(stringMinLength(2)('ab')).toBe(true)
-			expect(stringMinLength(2)('abc')).toBe(true)
+	describe('string length via lengthOf (exact)', () => {
+		test('returns true when string has exact length', () => {
+			expect(lengthOf(2)('ab')).toBe(true)
+			expect(lengthOf(3)('abc')).toBe(true)
 		})
 
-		test('returns false when string is too short', () => {
-			expect(stringMinLength(2)('x')).toBe(false)
+		test('returns false when string length differs', () => {
+			expect(lengthOf(2)('x')).toBe(false)
+			expect(lengthOf(2)('abc')).toBe(false)
 		})
 	})
 
-	describe('stringMaxLength', () => {
-		test('returns true when string is within max length', () => {
-			expect(stringMaxLength(3)('abc')).toBe(true)
-			expect(stringMaxLength(3)('ab')).toBe(true)
+	describe('string length via rangeOf/minOf', () => {
+		test('returns true when string length is within range', () => {
+			expect(rangeOf(0, 3)('abc')).toBe(true)
+			expect(rangeOf(0, 3)('ab')).toBe(true)
 		})
 
 		test('returns false when string is too long', () => {
-			expect(stringMaxLength(3)('xxxx')).toBe(false)
-		})
-	})
-
-	describe('stringLengthBetween', () => {
-		test('returns true when string length is in range', () => {
-			expect(stringLengthBetween(2, 3)('ab')).toBe(true)
-			expect(stringLengthBetween(2, 3)('abc')).toBe(true)
+			expect(rangeOf(0, 3)('xxxx')).toBe(false)
 		})
 
-		test('returns false when string length is out of range', () => {
-			expect(stringLengthBetween(2, 3)('x')).toBe(false)
-			expect(stringLengthBetween(2, 3)('abcd')).toBe(false)
+		test('minOf works on string length', () => {
+			expect(minOf(2)('ab')).toBe(true)
+			expect(minOf(2)('x')).toBe(false)
 		})
 	})
 
@@ -122,40 +118,44 @@ describe('strings', () => {
 	})
 
 	describe('isIPv4String', () => {
-		test('returns true for valid IPv4 addresses', () => {
+		test('returns true for valid IPv4 strings', () => {
 			expect(isIPv4String('127.0.0.1')).toBe(true)
 			expect(isIPv4String('192.168.1.1')).toBe(true)
 		})
 
-		test('returns false for invalid IPv4 addresses', () => {
+		test('returns false for invalid IPv4 strings', () => {
 			expect(isIPv4String('256.0.0.1')).toBe(false)
-			expect(isIPv4String('01.2.3.4')).toBe(false)
+			expect(isIPv4String('abc.def.ghi.jkl')).toBe(false)
 		})
 	})
 
 	describe('isIPv6String', () => {
-		test('returns true for valid IPv6 addresses', () => {
+		test('returns true for valid IPv6 strings', () => {
 			expect(isIPv6String('::1')).toBe(true)
 			expect(isIPv6String('2001:db8::1')).toBe(true)
 			expect(isIPv6String('::ffff:192.0.2.128')).toBe(true)
 		})
 
-		test('returns false for invalid IPv6 addresses', () => {
+		test('returns false for invalid IPv6 strings', () => {
 			expect(isIPv6String(':::1')).toBe(false)
+			// adjacent extra colon rejection around '::'
 			expect(isIPv6String('2001:db8:::1')).toBe(false)
-			expect(isIPv6String('fe80::1%eth0')).toBe(false)
+			expect(isIPv6String('2001:db8::1:')).toBe(false)
+			expect(isIPv6String(':2001:db8::1')).toBe(false)
+			expect(isIPv6String('2001:db8::ff::1')).toBe(false)
 		})
 	})
 
 	describe('isHostnameString', () => {
 		test('returns true for valid hostnames', () => {
 			expect(isHostnameString('example.com')).toBe(true)
-			expect(isHostnameString('sub.example.com')).toBe(true)
+			expect(isHostnameString('sub.domain.co')).toBe(true)
 		})
 
 		test('returns false for invalid hostnames', () => {
-			expect(isHostnameString('-bad.com')).toBe(false)
-			expect(isHostnameString('this-label-is-way-too-long-and-exceeds-sixty-three-characters-limit.com')).toBe(false)
+			expect(isHostnameString('')).toBe(false)
+			expect(isHostnameString('-invalid.com')).toBe(false)
+			expect(isHostnameString('toolonglabeltoolonglabeltoolonglabeltoolonglabeltoolonglabeltoolonglabeltoolonglabeltoolonglabel.com')).toBe(false)
 		})
 	})
 })

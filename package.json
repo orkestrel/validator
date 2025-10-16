@@ -1,7 +1,7 @@
 {
   "name": "@orkestrel/validator",
   "version": "1.1.0",
-  "description": "Tiny, composable runtime type guards and assertions for TypeScript with LLM-friendly diagnostics",
+  "description": "Tiny, composable runtime guards and deterministic deep checks for TypeScript (ESM-only)",
   "type": "module",
   "license": "MIT",
   "publishConfig": {
@@ -41,7 +41,7 @@
   "devDependencies": {
     "@orkestrel/docs": "^0.1.0",
     "@orkestrel/llms-txt": "^1.1.0",
-    "@types/node": "^24.7.2",
+    "@types/node": "^24.8.0",
     "eslint": "^9.37.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",

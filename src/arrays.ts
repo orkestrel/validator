@@ -1,4 +1,4 @@
-import type { Guard, AnyTypedArray } from './types.js'
+import type { AnyTypedArray } from './types.js'
 
 /**
  * Determine whether a value is an array.
@@ -43,9 +43,30 @@ export function isDataView(x: unknown): boolean {
 }
 
 /**
+ * Determine whether a value is an ArrayBuffer view (TypedArray or DataView).
+ *
+ * Uses `ArrayBuffer.isView(x)` to detect whether `x` is any view over an ArrayBuffer.
+ * This returns true for both TypedArray instances and DataView.
+ *
+ * @param x - Value to test
+ * @returns True if `x` is an ArrayBuffer view
+ * @example
+ * ```ts
+ * isArrayBufferView(new Uint8Array()) // true
+ * isArrayBufferView(new DataView(new ArrayBuffer(8))) // true
+ * isArrayBufferView([]) // false
+ * ```
+ */
+export function isArrayBufferView(x: ArrayBufferView): boolean
+export function isArrayBufferView(x: unknown): x is ArrayBufferView
+export function isArrayBufferView(x: unknown): boolean {
+	return ArrayBuffer.isView(x)
+}
+
+/**
  * Determine whether a value is any TypedArray (Int8Array, Uint8Array, Float32Array, BigInt64Array, etc.).
  *
- * Uses `ArrayBuffer.isView(x)` to gate out non-views, then excludes `DataView` and finally
+ * Uses `isArrayBufferView(x)` to gate out non-views, then excludes `DataView` and finally
  * checks the presence of a numeric `constructor.BYTES_PER_ELEMENT` to positively identify
  * TypedArray instances in a portable way.
  *
@@ -59,8 +80,8 @@ export function isDataView(x: unknown): boolean {
  * ```
  */
 export function isTypedArray(x: unknown): x is AnyTypedArray {
-	if (!ArrayBuffer.isView(x)) return false
-	if (x instanceof DataView) return false
+	if (!isArrayBufferView(x)) return false
+	if (isDataView(x)) return false
 	const ctor = (x as { constructor?: { BYTES_PER_ELEMENT?: unknown } }).constructor
 	return typeof ctor?.BYTES_PER_ELEMENT === 'number'
 }
@@ -260,69 +281,57 @@ export function isBigUint64Array(x: unknown): boolean {
 	return typeof BigUint64Array !== 'undefined' && x instanceof BigUint64Array
 }
 
+// --------------------------------------------
+// Length helpers
+// --------------------------------------------
+
 /**
- * Create a guard for an array whose elements satisfy the provided element guard.
+ * Check the exact length of strings and arrays.
  *
- * @param elem - Guard to validate each element
- * @returns Guard that accepts arrays of `T`
+ * Overloads:
+ * - When called with `ReadonlyArray<T>`, returns a type predicate preserving `T`.
+ * - When called with `unknown`, narrows to `string | readonly unknown[]`.
+ *
+ * @param x - Value to test (string or array)
+ * @param n - Exact required length (integer ≥ 0)
+ * @returns True when `length(x) === n`
  * @example
  * ```ts
- * import { arrayOf } from '@orkestrel/validator'
- * import { isString } from './primitives.js'
- *
- * const strings = arrayOf(isString)
- * strings(['a', 'b']) // true
- * strings([1, 'b']) // false
+ * isLength('ab', 2) // true
+ * isLength(['a','b','c'], 3) // true
+ * isLength([], 1) // false
  * ```
  */
-export function arrayOf<T>(elem: Guard<T>): Guard<ReadonlyArray<T>> {
-	return (x: unknown): x is ReadonlyArray<T> => Array.isArray(x) && x.every(elem)
+export function isLength<T>(x: ReadonlyArray<T>, n: number): x is ReadonlyArray<T>
+export function isLength(x: unknown, n: number): x is string | ReadonlyArray<unknown>
+export function isLength(x: unknown, n: number): boolean {
+	if (typeof x === 'string') return x.length === n
+	if (Array.isArray(x)) return x.length === n
+	return false
 }
 
 /**
- * Create a guard for a non-empty array whose elements satisfy the provided element guard.
+ * Check whether strings and arrays have a length within the inclusive range [min, max].
  *
- * @param elem - Guard to validate each element
- * @returns Guard that accepts non-empty arrays of `T`
+ * Overloads:
+ * - When called with `ReadonlyArray<T>`, returns a type predicate preserving `T`.
+ * - When called with `unknown`, narrows to `string | readonly unknown[]`.
+ *
+ * @param x - Value to test (string or array)
+ * @param min - Minimum inclusive length
+ * @param max - Maximum inclusive length
+ * @returns True when `min <= length(x) <= max`
  * @example
  * ```ts
- * import { nonEmptyArrayOf } from '@orkestrel/validator'
- * import { isNumber } from './primitives.js'
- *
- * const onePlus = nonEmptyArrayOf(isNumber)
- * onePlus([1]) // true
- * onePlus([]) // false
+ * isLengthRange('ab', 2, 3) // true
+ * isLengthRange([1, 2, 3], 2, 3) // true
+ * isLengthRange('a', 2, 3) // false
  * ```
  */
-export function nonEmptyArrayOf<T>(elem: Guard<T>): Guard<readonly [T, ...T[]]> {
-	return (x: unknown): x is readonly [T, ...T[]] => Array.isArray(x) && x.length > 0 && x.every(elem)
-}
-
-/**
- * Create a guard for a fixed-length tuple with per-index guards.
- *
- * @param guards - Guards for each tuple element
- * @returns Guard that accepts tuples matching the provided guards
- * @example
- * ```ts
- * import { tupleOf } from '@orkestrel/validator'
- * import { isNumber, isString } from './primitives.js'
- *
- * const isPoint = tupleOf(isNumber, isNumber)
- * isPoint([1, 2]) // true
- * isPoint([1, '2']) // false
- *
- * const pair = tupleOf(isNumber, isString)
- * pair([3, 'x']) // true
- * ```
- */
-export function tupleOf<const Gs extends readonly Guard<unknown>[]>(...guards: Gs): Guard<{ readonly [K in keyof Gs]: Gs[K] extends Guard<infer T> ? T : never }> {
-	return (x: unknown): x is { readonly [K in keyof Gs]: Gs[K] extends Guard<infer T> ? T : never } => {
-		if (!Array.isArray(x) || x.length !== guards.length) return false
-		for (let i = 0; i < guards.length; i++) {
-			const guard = guards[i]
-			if (!guard || !guard(x[i])) return false
-		}
-		return true
-	}
+export function isLengthRange<T>(x: ReadonlyArray<T>, min: number, max: number): x is ReadonlyArray<T>
+export function isLengthRange(x: unknown, min: number, max: number): x is string | ReadonlyArray<unknown>
+export function isLengthRange(x: unknown, min: number, max: number): boolean {
+	if (typeof x === 'string') return x.length >= min && x.length <= max
+	if (Array.isArray(x)) return x.length >= min && x.length <= max
+	return false
 }
