@@ -1,5 +1,5 @@
 import type { Guard, Result, UnionToIntersection, GuardsShape, FromGuards, ObjectOfOptions, EmptyOf } from './types.js'
-import { isRecord, isCount } from './objects.js'
+import { isRecord, isCount, ownEnumerableCount } from './objects.js'
 import { isString, isNumber, isIterable } from './primitives.js'
 import { isLength } from './arrays.js'
 import { isSize } from './collections.js'
@@ -247,6 +247,10 @@ export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E
 /**
  * Build an object guard from a shape of property guards.
  *
+ * Use `objectOf` for powerful, composable object validation with options for
+ * optional fields, exact key validation, and rest property validation.
+ * For simple declarative validation with type strings, use {@link isSchema} instead.
+ *
  * @param props - Mapping of property names to guard functions
  * @param options - Optional configuration (optional/exact/rest)
  * @remarks
@@ -258,6 +262,12 @@ export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E
  * @example
  * ```ts
  * const User = objectOf({ id: isString, age: isNumber }, { optional: ['age' as const], exact: true })
+ * ```
+ * @example
+ * ```ts
+ * // For simple type string validation, use isSchema instead:
+ * import { isSchema } from '@orkestrel/validator'
+ * isSchema({ id: 'x', age: 1 }, { id: 'string', age: 'number' })
  * ```
  */
 export function objectOf<const P extends GuardsShape, Opt extends readonly PropertyKey[] = readonly PropertyKey[]>(
@@ -545,11 +555,7 @@ export function minOf(min: number): Guard<number | string | ReadonlyArray<unknow
 		if (Array.isArray(x)) return x.length >= min
 		if (x instanceof Map) return x.size >= min
 		if (x instanceof Set) return x.size >= min
-		if (isRecord(x)) {
-			const keysLen = Object.keys(x).length
-			const symsLen = Object.getOwnPropertySymbols(x).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0), 0)
-			return keysLen + symsLen >= min
-		}
+		if (isRecord(x)) return ownEnumerableCount(x) >= min
 		return false
 	}
 }
@@ -574,11 +580,7 @@ export function maxOf(max: number): Guard<number | string | ReadonlyArray<unknow
 		if (Array.isArray(x)) return x.length <= max
 		if (x instanceof Map) return x.size <= max
 		if (x instanceof Set) return x.size <= max
-		if (isRecord(x)) {
-			const keysLen = Object.keys(x).length
-			const symsLen = Object.getOwnPropertySymbols(x).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0), 0)
-			return keysLen + symsLen <= max
-		}
+		if (isRecord(x)) return ownEnumerableCount(x) <= max
 		return false
 	}
 }
@@ -605,9 +607,7 @@ export function rangeOf(min: number, max: number): Guard<number | string | Reado
 		if (x instanceof Map) return x.size >= min && x.size <= max
 		if (x instanceof Set) return x.size >= min && x.size <= max
 		if (isRecord(x)) {
-			const keysLen = Object.keys(x).length
-			const symsLen = Object.getOwnPropertySymbols(x).reduce((acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0), 0)
-			const c = keysLen + symsLen
+			const c = ownEnumerableCount(x)
 			return c >= min && c <= max
 		}
 		return false
