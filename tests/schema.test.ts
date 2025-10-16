@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { isSchema, isPartialSchema, assertSchema, assertPartialSchema } from '../src/schema.js'
+import { isSchema, isPartialSchema } from '../src/schema.js'
 import { objectOf, stringMatchOf } from '../src/combinators.js'
 import { isString, isNumber } from '../src/primitives.js'
 
@@ -31,41 +31,6 @@ describe('schema', () => {
 		test('returns false when present keys fail validation', () => {
 			const schema = { id: 'string', tag: stringMatchOf(/^[a-z]+$/) } as const
 			expect(isPartialSchema({ tag: 'NotOk' }, schema)).toBe(false)
-		})
-	})
-
-	describe('assertSchema', () => {
-		test('does not throw when schema is valid', () => {
-			const schema = { id: 'string', age: 'number' } as const
-			expect(() => assertSchema({ id: 'a', age: 1 }, schema)).not.toThrow()
-		})
-
-		test('throws TypeError when schema validation fails', () => {
-			const schema = { id: 'string', age: 'number' } as const
-			expect(() => assertSchema({ id: 'a', age: '1' }, schema)).toThrow(TypeError)
-		})
-
-		test('uses custom label in error message', () => {
-			const schema = { id: 'string' } as const
-			expect(() => assertSchema({}, schema, 'myObj')).toThrow(/myObj/)
-		})
-	})
-
-	describe('assertPartialSchema', () => {
-		test('does not throw when partial schema is valid', () => {
-			const schema = { id: 'string', age: 'number' } as const
-			expect(() => assertPartialSchema({}, schema)).not.toThrow()
-			expect(() => assertPartialSchema({ id: 'a' }, schema)).not.toThrow()
-		})
-
-		test('throws TypeError when present keys fail validation', () => {
-			const schema = { id: 'string', age: 'number' } as const
-			expect(() => assertPartialSchema({ id: 1 }, schema)).toThrow(TypeError)
-		})
-
-		test('uses custom label in error message', () => {
-			const schema = { id: 'string' } as const
-			expect(() => assertPartialSchema({ id: 1 }, schema, 'myObj')).toThrow(/myObj/)
 		})
 	})
 

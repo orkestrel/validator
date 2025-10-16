@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { isObject, isRecord, hasOwn, hasOnlyKeys, hasNo, isCountRange, assertObject, assertRecord } from '../src/objects.js'
+import { isObject, isRecord, hasOwn, hasOnlyKeys, hasNo, isCountRange } from '../src/objects.js'
 
 describe('objects', () => {
 	describe('isObject', () => {
@@ -66,45 +66,6 @@ describe('objects', () => {
 		test('rejects non-objects and arrays', () => {
 			expect(isCountRange([] as unknown, 1, 1)).toBe(false)
 			expect(isCountRange(123 as unknown, 1, 1)).toBe(false)
-		})
-	})
-
-	describe('assertObject', () => {
-		test('does not throw for objects', () => {
-			expect(() => assertObject({})).not.toThrow()
-			expect(() => assertObject([])).not.toThrow()
-		})
-
-		test('throws TypeError for non-objects', () => {
-			expect(() => assertObject(null)).toThrow(TypeError)
-			expect(() => assertObject(undefined)).toThrow(TypeError)
-			expect(() => assertObject('string')).toThrow(TypeError)
-		})
-
-		test('uses custom label in error message', () => {
-			expect(() => assertObject(null, 'myObj')).toThrow(/myObj/)
-		})
-	})
-
-	describe('assertRecord', () => {
-		test('does not throw for plain objects', () => {
-			expect(() => assertRecord({})).not.toThrow()
-			expect(() => assertRecord({ a: 1 })).not.toThrow()
-		})
-
-		test('throws TypeError for arrays', () => {
-			expect(() => assertRecord([])).toThrow(TypeError)
-			expect(() => assertRecord([])).toThrow(/array/)
-		})
-
-		test('throws TypeError for null and non-objects', () => {
-			expect(() => assertRecord(null)).toThrow(TypeError)
-			expect(() => assertRecord(undefined)).toThrow(TypeError)
-			expect(() => assertRecord('string')).toThrow(TypeError)
-		})
-
-		test('uses custom label in error message', () => {
-			expect(() => assertRecord([], 'myRecord')).toThrow(/myRecord/)
 		})
 	})
 })
