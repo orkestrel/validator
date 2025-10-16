@@ -7,44 +7,66 @@ Principles
 - Use Vitest for test runner and assertions
 - No mocks/fakes/spies; use real values and small scenarios
 - Prefer short timers and deterministic paths when timing matters
+- Each test file uses a single top-level `describe()` suite named after the base file
+- Tests within the suite use nested `describe()` blocks for each function/feature
+- Split tests into focused, individual test cases rather than bundling multiple assertions
 
 Patterns
 
-Mirroring source
+Mirroring source with describe structure
 ```ts
 // src/arrays.ts -> tests/arrays.test.ts
-import { test, expect } from 'vitest'
-import { arrayOf, isString } from '@orkestrel/validator'
+import { describe, test, expect } from 'vitest'
+import { arrayOf } from '../src/arrays.js'
+import { isString } from '../src/primitives.js'
 
-test('arrayOf', () => {
-  expect(arrayOf(isString)(['a','b'])).toBe(true)
-  expect(arrayOf(isString)(['a', 1] as unknown[])).toBe(false)
+describe('arrays', () => {
+  describe('arrayOf', () => {
+    test('validates array elements with guard', () => {
+      expect(arrayOf(isString)(['a','b'])).toBe(true)
+    })
+
+    test('returns false when element fails guard', () => {
+      expect(arrayOf(isString)(['a', 1] as unknown[])).toBe(false)
+    })
+  })
 })
 ```
 
 Path-aware assertion diagnostics
 ```ts
-import { test, expect } from 'vitest'
-import { assertArrayOf, isString } from '@orkestrel/validator'
+import { describe, test, expect } from 'vitest'
+import { assertArrayOf } from '../src/assert.js'
+import { isString } from '../src/primitives.js'
 
-test('pinpoints failing index', () => {
-  expect(() => assertArrayOf(['a', 1], isString, { path: ['payload','tags'] }))
-    .toThrow(/payload\.tags\[1\]/)
+describe('assert', () => {
+  describe('assertArrayOf', () => {
+    test('pinpoints failing index in error message', () => {
+      expect(() => assertArrayOf(['a', 1], isString, { path: ['payload','tags'] }))
+        .toThrow(/payload\.tags\[1\]/)
+    })
+  })
 })
 ```
 
 Deep checks
 ```ts
-import { test, expect } from 'vitest'
-import { assertDeepEqual } from '@orkestrel/validator'
+import { describe, test, expect } from 'vitest'
+import { assertDeepEqual } from '../src/deep.js'
 
-test('deep equality', () => {
-  expect(() => assertDeepEqual({ a:[1] }, { a:[1] }, { path: ['state'] })).not.toThrow()
+describe('deep', () => {
+  describe('assertDeepEqual', () => {
+    test('does not throw for equal values', () => {
+      expect(() => assertDeepEqual({ a:[1] }, { a:[1] }, { path: ['state'] })).not.toThrow()
+    })
+  })
 })
 ```
 
 Policy
-- Keep tests short and focused
-- Cover happy path + key edge cases (NaN/+0/-0, cycles, Map/Set order)
+- Keep tests short and focused on single behaviors
+- Use descriptive test names that explain what is being tested
+- Cover happy path + key edge cases (NaN/+0/-0, cycles, Map/Set order, TypedArrays)
 - Ensure typecheck is clean alongside tests and build
+
 

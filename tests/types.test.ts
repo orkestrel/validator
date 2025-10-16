@@ -1,5 +1,7 @@
-import { test, expect } from 'vitest'
+import { describe, test, expect } from 'vitest'
 
-test('types.ts: placeholder (compile-time only)', () => {
-	expect(true).toBe(true)
+describe('types', () => {
+	test('is compile-time only placeholder', () => {
+		expect(true).toBe(true)
+	})
 })
