@@ -8,17 +8,20 @@ import type {
 	HttpMethod,
 	HexColorOptions,
 	HexStringOptions,
-	ValidationPath,
+	ValidationPath, AnyTypedArray, JsonValue,
 } from './types.js'
 import { createTypeError, extendPath } from './diagnostics.js'
-import { isArray } from './arrays.js'
-import { isAsyncFunction, isBoolean, isDefined, isFunction, isNumber, isString } from './primitives.js'
+import { isArray, isDataView, isTypedArray, isInt8Array, isUint8Array, isUint8ClampedArray, isInt16Array, isUint16Array, isInt32Array, isUint32Array, isFloat32Array, isFloat64Array, isBigInt64Array, isBigUint64Array } from './arrays.js'
+import { isAsyncFunction, isBoolean, isDefined, isFunction, isNumber, isString, isNull, isUndefined, isBigInt, isSymbol, isInteger, isSafeInteger, isDate, isRegExp, isError, isPromiseLike, isZeroArg, isNonNegativeNumber, isPositiveNumber } from './primitives.js'
 import { hasSchema } from './schema.js'
 import { isObject, isRecord, hasNo } from './objects.js'
 import { deepCompare } from './deep.js'
-import { isEmpty, isEmptyArray, isEmptyMap, isEmptyObject, isEmptySet, isEmptyString } from './emptiness.js'
-import { isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isHostnameString } from './strings.js'
-import { isUUIDv4, isISODateString, isISODateTimeString, isEmailString, isURLString, isHttpUrlString, isPortNumber, isMimeType, isSlug, isBase64String, isHexString, isSemver, isJsonString, isHttpMethod } from './domains.js'
+import { isEmpty, isEmptyArray, isEmptyMap, isEmptyObject, isEmptySet, isEmptyString, isNonEmptyString, isNonEmptyArray, isNonEmptyObject, isNonEmptyMap, isNonEmptySet } from './emptiness.js'
+import { isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isIPv6String, isHostnameString } from './strings.js'
+import { isUUIDv4, isISODateString, isISODateTimeString, isEmailString, isURLString, isHttpUrlString, isPortNumber, isMimeType, isSlug, isBase64String, isHexString, isSemver, isJsonString, isJsonValue, isHttpMethod, isValidHost, isValidIdent } from './domains.js'
+import { isMap, isSet, isWeakMap, isWeakSet } from './collections.js'
+import { isNegativeNumber, isMultipleOf } from './numbers.js'
+import { isIterable } from './iterables.js'
 
 function fail(expected: string, received: unknown, options?: AssertOptions): never {
 	throw createTypeError(expected, received, options)
@@ -897,4 +900,735 @@ export function assertJsonString(x: unknown, options?: AssertOptions): asserts x
  */
 export function assertHttpMethod(x: unknown, options?: AssertOptions): asserts x is HttpMethod {
 	if (!isHttpMethod(x)) fail('HTTP method string', x, options)
+}
+
+/**
+ * Assert that a value is null.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertNull } from '@orkestrel/validator'
+ *
+ * const value: unknown = null
+ * assertNull(value)
+ * // value is now null
+ * ```
+ */
+export function assertNull(x: unknown, options?: AssertOptions): asserts x is null {
+	if (!isNull(x)) fail('null', x, options)
+}
+
+/**
+ * Assert that a value is undefined.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertUndefined } from '@orkestrel/validator'
+ *
+ * const value: unknown = undefined
+ * assertUndefined(value)
+ * // value is now undefined
+ * ```
+ */
+export function assertUndefined(x: unknown, options?: AssertOptions): asserts x is undefined {
+	if (!isUndefined(x)) fail('undefined', x, options)
+}
+
+/**
+ * Assert that a value is a bigint.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertBigInt } from '@orkestrel/validator'
+ *
+ * const value: unknown = 1n
+ * assertBigInt(value)
+ * // value is now bigint
+ * ```
+ */
+export function assertBigInt(x: unknown, options?: AssertOptions): asserts x is bigint {
+	if (!isBigInt(x)) fail('bigint', x, options)
+}
+
+/**
+ * Assert that a value is a symbol.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertSymbol } from '@orkestrel/validator'
+ *
+ * const value: unknown = Symbol('x')
+ * assertSymbol(value)
+ * // value is now symbol
+ * ```
+ */
+export function assertSymbol(x: unknown, options?: AssertOptions): asserts x is symbol {
+	if (!isSymbol(x)) fail('symbol', x, options)
+}
+
+/**
+ * Assert that a value is an integer.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertInteger } from '@orkestrel/validator'
+ *
+ * const value: unknown = 42
+ * assertInteger(value)
+ * // value is now number (integer)
+ * ```
+ */
+export function assertInteger(x: unknown, options?: AssertOptions): asserts x is number {
+	if (!isInteger(x)) fail('integer', x, options)
+}
+
+/**
+ * Assert that a value is a safe integer.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertSafeInteger } from '@orkestrel/validator'
+ *
+ * const value: unknown = 123
+ * assertSafeInteger(value)
+ * // value is now number (safe integer)
+ * ```
+ */
+export function assertSafeInteger(x: unknown, options?: AssertOptions): asserts x is number {
+	if (!isSafeInteger(x)) fail('safe integer', x, options)
+}
+
+/**
+ * Assert that a value is a non-negative finite number.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertNonNegativeNumber } from '@orkestrel/validator'
+ *
+ * const value: unknown = 0
+ * assertNonNegativeNumber(value)
+ * // value is now number (>= 0)
+ * ```
+ */
+export function assertNonNegativeNumber(x: unknown, options?: AssertOptions): asserts x is number {
+	if (!isNonNegativeNumber(x)) fail('non-negative number', x, options)
+}
+
+/**
+ * Assert that a value is a positive finite number.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertPositiveNumber } from '@orkestrel/validator'
+ *
+ * const value: unknown = 1
+ * assertPositiveNumber(value)
+ * // value is now number (> 0)
+ * ```
+ */
+export function assertPositiveNumber(x: unknown, options?: AssertOptions): asserts x is number {
+	if (!isPositiveNumber(x)) fail('positive number', x, options)
+}
+
+/**
+ * Assert that a value is a negative finite number.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertNegativeNumber } from '@orkestrel/validator'
+ *
+ * const value: unknown = -1
+ * assertNegativeNumber(value)
+ * // value is now number (< 0)
+ * ```
+ */
+export function assertNegativeNumber(x: unknown, options?: AssertOptions): asserts x is number {
+	if (!isNegativeNumber(x)) fail('negative number', x, options)
+}
+
+/**
+ * Assert that a value is a Date object.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertDate } from '@orkestrel/validator'
+ *
+ * const value: unknown = new Date()
+ * assertDate(value)
+ * // value is now Date
+ * ```
+ */
+export function assertDate(x: unknown, options?: AssertOptions): asserts x is Date {
+	if (!isDate(x)) fail('Date object', x, options)
+}
+
+/**
+ * Assert that a value is a RegExp object.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertRegExp } from '@orkestrel/validator'
+ *
+ * const value: unknown = /abc/
+ * assertRegExp(value)
+ * // value is now RegExp
+ * ```
+ */
+export function assertRegExp(x: unknown, options?: AssertOptions): asserts x is RegExp {
+	if (!isRegExp(x)) fail('RegExp object', x, options)
+}
+
+/**
+ * Assert that a value is an Error instance.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertError } from '@orkestrel/validator'
+ *
+ * const value: unknown = new Error('test')
+ * assertError(value)
+ * // value is now Error
+ * ```
+ */
+export function assertError(x: unknown, options?: AssertOptions): asserts x is Error {
+	if (!isError(x)) fail('Error instance', x, options)
+}
+
+/**
+ * Assert that a value is thenable (Promise-like).
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertPromiseLike } from '@orkestrel/validator'
+ *
+ * const value: unknown = Promise.resolve(1)
+ * assertPromiseLike(value)
+ * // value is now PromiseLike<unknown>
+ * ```
+ */
+export function assertPromiseLike<T = unknown>(x: unknown, options?: AssertOptions): asserts x is PromiseLike<T> {
+	if (!isPromiseLike<T>(x)) fail('Promise-like (thenable)', x, options)
+}
+
+/**
+ * Assert that a function takes no declared arguments.
+ *
+ * @param fn - Function to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertZeroArg } from '@orkestrel/validator'
+ *
+ * const fn: unknown = () => 42
+ * assertZeroArg(fn)
+ * // fn is now () => unknown
+ * ```
+ */
+export function assertZeroArg(fn: unknown, options?: AssertOptions): asserts fn is () => unknown {
+	if (!isZeroArg(fn as (...args: unknown[]) => unknown)) fail('zero-argument function', fn, options)
+}
+
+/**
+ * Assert that a value is a DataView.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertDataView } from '@orkestrel/validator'
+ *
+ * const buf = new ArrayBuffer(8)
+ * const view: unknown = new DataView(buf)
+ * assertDataView(view)
+ * // view is now DataView<ArrayBufferLike>
+ * ```
+ */
+export function assertDataView(x: unknown, options?: AssertOptions): asserts x is DataView<ArrayBufferLike> {
+	if (!isDataView(x)) fail('DataView', x, options)
+}
+
+/**
+ * Assert that a value is a typed array (any variant).
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertTypedArray } from '@orkestrel/validator'
+ *
+ * const arr: unknown = new Uint8Array(4)
+ * assertTypedArray(arr)
+ * // arr is now AnyTypedArray
+ * ```
+ */
+export function assertTypedArray(x: unknown, options?: AssertOptions): asserts x is AnyTypedArray {
+	if (!isTypedArray(x)) fail('typed array', x, options)
+}
+
+/**
+ * Assert that a value is an Int8Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new Int8Array(4)
+ * assertInt8Array(v)
+ * // v: Int8Array
+ * ```
+ */
+export function assertInt8Array(x: unknown, options?: AssertOptions): asserts x is Int8Array {
+	if (!isInt8Array(x)) fail('Int8Array', x, options)
+}
+
+/**
+ * Assert that a value is a Uint8Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new Uint8Array(4)
+ * assertUint8Array(v)
+ * // v: Uint8Array
+ * ```
+ */
+export function assertUint8Array(x: unknown, options?: AssertOptions): asserts x is Uint8Array {
+	if (!isUint8Array(x)) fail('Uint8Array', x, options)
+}
+
+/**
+ * Assert that a value is a Uint8ClampedArray.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new Uint8ClampedArray(4)
+ * assertUint8ClampedArray(v)
+ * // v: Uint8ClampedArray
+ * ```
+ */
+export function assertUint8ClampedArray(x: unknown, options?: AssertOptions): asserts x is Uint8ClampedArray {
+	if (!isUint8ClampedArray(x)) fail('Uint8ClampedArray', x, options)
+}
+
+/**
+ * Assert that a value is an Int16Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new Int16Array(4)
+ * assertInt16Array(v)
+ * // v: Int16Array
+ * ```
+ */
+export function assertInt16Array(x: unknown, options?: AssertOptions): asserts x is Int16Array {
+	if (!isInt16Array(x)) fail('Int16Array', x, options)
+}
+
+/**
+ * Assert that a value is a Uint16Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new Uint16Array(4)
+ * assertUint16Array(v)
+ * // v: Uint16Array
+ * ```
+ */
+export function assertUint16Array(x: unknown, options?: AssertOptions): asserts x is Uint16Array {
+	if (!isUint16Array(x)) fail('Uint16Array', x, options)
+}
+
+/**
+ * Assert that a value is an Int32Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new Int32Array(4)
+ * assertInt32Array(v)
+ * // v: Int32Array
+ * ```
+ */
+export function assertInt32Array(x: unknown, options?: AssertOptions): asserts x is Int32Array {
+	if (!isInt32Array(x)) fail('Int32Array', x, options)
+}
+
+/**
+ * Assert that a value is a Uint32Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new Uint32Array(4)
+ * assertUint32Array(v)
+ * // v: Uint32Array
+ * ```
+ */
+export function assertUint32Array(x: unknown, options?: AssertOptions): asserts x is Uint32Array {
+	if (!isUint32Array(x)) fail('Uint32Array', x, options)
+}
+
+/**
+ * Assert that a value is a Float32Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new Float32Array(4)
+ * assertFloat32Array(v)
+ * // v: Float32Array
+ * ```
+ */
+export function assertFloat32Array(x: unknown, options?: AssertOptions): asserts x is Float32Array {
+	if (!isFloat32Array(x)) fail('Float32Array', x, options)
+}
+
+/**
+ * Assert that a value is a Float64Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new Float64Array(4)
+ * assertFloat64Array(v)
+ * // v: Float64Array
+ * ```
+ */
+export function assertFloat64Array(x: unknown, options?: AssertOptions): asserts x is Float64Array {
+	if (!isFloat64Array(x)) fail('Float64Array', x, options)
+}
+
+/**
+ * Assert that a value is a BigInt64Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new BigInt64Array(4)
+ * assertBigInt64Array(v)
+ * // v: BigInt64Array
+ * ```
+ */
+export function assertBigInt64Array(x: unknown, options?: AssertOptions): asserts x is BigInt64Array {
+	if (!isBigInt64Array(x)) fail('BigInt64Array', x, options)
+}
+
+/**
+ * Assert that a value is a BigUint64Array.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = new BigUint64Array(4)
+ * assertBigUint64Array(v)
+ * // v: BigUint64Array
+ * ```
+ */
+export function assertBigUint64Array(x: unknown, options?: AssertOptions): asserts x is BigUint64Array {
+	if (!isBigUint64Array(x)) fail('BigUint64Array', x, options)
+}
+
+/**
+ * Assert that a value is a Map.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertMap } from '@orkestrel/validator'
+ *
+ * const value: unknown = new Map()
+ * assertMap(value)
+ * // value is now ReadonlyMap<unknown, unknown>
+ * ```
+ */
+export function assertMap<K = unknown, V = unknown>(x: unknown, options?: AssertOptions): asserts x is ReadonlyMap<K, V> {
+	if (!isMap<K, V>(x)) fail('Map', x, options)
+}
+
+/**
+ * Assert that a value is a Set.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertSet } from '@orkestrel/validator'
+ *
+ * const value: unknown = new Set()
+ * assertSet(value)
+ * // value is now ReadonlySet<unknown>
+ * ```
+ */
+export function assertSet<T = unknown>(x: unknown, options?: AssertOptions): asserts x is ReadonlySet<T> {
+	if (!isSet<T>(x)) fail('Set', x, options)
+}
+
+/**
+ * Assert that a value is a WeakMap.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertWeakMap } from '@orkestrel/validator'
+ *
+ * const value: unknown = new WeakMap()
+ * assertWeakMap(value)
+ * // value is now WeakMap<object, unknown>
+ * ```
+ */
+export function assertWeakMap(x: unknown, options?: AssertOptions): asserts x is WeakMap<object, unknown> {
+	if (!isWeakMap(x)) fail('WeakMap', x, options)
+}
+
+/**
+ * Assert that a value is a WeakSet.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertWeakSet } from '@orkestrel/validator'
+ *
+ * const value: unknown = new WeakSet()
+ * assertWeakSet(value)
+ * // value is now WeakSet<object>
+ * ```
+ */
+export function assertWeakSet(x: unknown, options?: AssertOptions): asserts x is WeakSet<object> {
+	if (!isWeakSet(x)) fail('WeakSet', x, options)
+}
+
+/**
+ * Assert that a value is a non-empty string.
+ *
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertNonEmptyString } from '@orkestrel/validator'
+ *
+ * const s: unknown = 'hello'
+ * assertNonEmptyString(s)
+ * // s is now string (non-empty)
+ * ```
+ */
+export function assertNonEmptyString(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isNonEmptyString(x)) fail('non-empty string', x, options)
+}
+
+/**
+ * Assert that a value is a non-empty array.
+ *
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertNonEmptyArray } from '@orkestrel/validator'
+ *
+ * const a: unknown = [1, 2]
+ * assertNonEmptyArray(a)
+ * // a is now readonly [unknown, ...unknown[]]
+ * ```
+ */
+export function assertNonEmptyArray<T = unknown>(x: unknown, options?: AssertOptions): asserts x is readonly [T, ...T[]] {
+	if (!isNonEmptyArray<T>(x)) fail('non-empty array', x, options)
+}
+
+/**
+ * Assert that a value is a non-empty object (has at least one own enumerable key).
+ *
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertNonEmptyObject } from '@orkestrel/validator'
+ *
+ * const o: unknown = { a: 1 }
+ * assertNonEmptyObject(o)
+ * // o is now Record<string, unknown>
+ * ```
+ */
+export function assertNonEmptyObject(x: unknown, options?: AssertOptions): asserts x is Record<string, unknown> {
+	if (!isNonEmptyObject(x)) fail('non-empty object', x, options)
+}
+
+/**
+ * Assert that a value is a non-empty Map.
+ *
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertNonEmptyMap } from '@orkestrel/validator'
+ *
+ * const m: unknown = new Map([['a', 1]])
+ * assertNonEmptyMap(m)
+ * // m is now ReadonlyMap<unknown, unknown>
+ * ```
+ */
+export function assertNonEmptyMap<K = unknown, V = unknown>(x: unknown, options?: AssertOptions): asserts x is ReadonlyMap<K, V> {
+	if (!isNonEmptyMap<K, V>(x)) fail('non-empty Map', x, options)
+}
+
+/**
+ * Assert that a value is a non-empty Set.
+ *
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertNonEmptySet } from '@orkestrel/validator'
+ *
+ * const s: unknown = new Set([1, 2])
+ * assertNonEmptySet(s)
+ * // s is now ReadonlySet<unknown>
+ * ```
+ */
+export function assertNonEmptySet<T = unknown>(x: unknown, options?: AssertOptions): asserts x is ReadonlySet<T> {
+	if (!isNonEmptySet<T>(x)) fail('non-empty Set', x, options)
+}
+
+/**
+ * Assert that a value is an IPv6 address string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = '::1'
+ * assertIPv6String(v)
+ * // v: string
+ * ```
+ */
+export function assertIPv6String(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isIPv6String(x)) fail('IPv6 address string', x, options)
+}
+
+/**
+ * Assert that a value is an email address string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'user@example.com'
+ * assertEmailString(v)
+ * // v: string
+ * ```
+ */
+export function assertEmailString(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isEmailString(x)) fail('email address string', x, options)
+}
+
+/**
+ * Assert that a value is a valid host string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'example.com'
+ * assertValidHost(v)
+ * // v: string
+ * ```
+ */
+export function assertValidHost(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isValidHost(x)) fail('valid host string', x, options)
+}
+
+/**
+ * Assert that a value is a valid JavaScript identifier string.
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * const v: unknown = 'myVariable'
+ * assertValidIdent(v)
+ * // v: string
+ * ```
+ */
+export function assertValidIdent(x: unknown, options?: AssertOptions): asserts x is string {
+	if (!isValidIdent(x)) fail('valid JavaScript identifier', x, options)
+}
+
+/**
+ * Assert that a value is a valid JSON value.
+ *
+ * @param x - Value to check
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertJsonValue } from '@orkestrel/validator'
+ *
+ * const value: unknown = { a: [1, null, 'text'] }
+ * assertJsonValue(value)
+ * // value is now JsonValue
+ * ```
+ */
+export function assertJsonValue(x: unknown, options?: AssertOptions): asserts x is JsonValue {
+	if (!isJsonValue(x)) fail('valid JSON value', x, options)
+}
+
+/**
+ * Assert that a value is an iterable.
+ *
+ * @param x - Value to validate
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertIterable } from '@orkestrel/validator'
+ *
+ * const value: unknown = [1, 2, 3]
+ * assertIterable(value)
+ * // value is now Iterable<unknown>
+ * ```
+ */
+export function assertIterable<T = unknown>(x: unknown, options?: AssertOptions): asserts x is Iterable<T> {
+	if (!isIterable<T>(x)) fail('iterable', x, options)
+}
+
+/**
+ * Assert that a value is a number that is a multiple of `m`.
+ *
+ * @param x - Value to validate
+ * @param m - The modulus to check against
+ * @param options - Optional diagnostics configuration
+ * @example
+ * ```ts
+ * import { assertMultipleOf } from '@orkestrel/validator'
+ *
+ * const value: unknown = 9
+ * assertMultipleOf(value, 3)
+ * // value is now number (multiple of 3)
+ * ```
+ */
+export function assertMultipleOf(x: unknown, m: number, options?: AssertOptions): asserts x is number {
+	if (!isMultipleOf(m)(x)) fail(`multiple of ${m}`, x, options)
 }

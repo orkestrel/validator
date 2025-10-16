@@ -33,6 +33,49 @@ import {
 	assertSemver,
 	assertJsonString,
 	assertHttpMethod,
+	assertNull,
+	assertUndefined,
+	assertBigInt,
+	assertSymbol,
+	assertInteger,
+	assertSafeInteger,
+	assertPositiveNumber,
+	assertNegativeNumber,
+	assertNonNegativeNumber,
+	assertDate,
+	assertRegExp,
+	assertError,
+	assertPromiseLike,
+	assertZeroArg,
+	assertDataView,
+	assertTypedArray,
+	assertInt8Array,
+	assertUint8Array,
+	assertUint8ClampedArray,
+	assertInt16Array,
+	assertUint16Array,
+	assertInt32Array,
+	assertUint32Array,
+	assertFloat32Array,
+	assertFloat64Array,
+	assertBigInt64Array,
+	assertBigUint64Array,
+	assertMap,
+	assertSet,
+	assertWeakMap,
+	assertWeakSet,
+	assertNonEmptyString,
+	assertNonEmptyArray,
+	assertNonEmptyObject,
+	assertNonEmptyMap,
+	assertNonEmptySet,
+	assertIPv6String,
+	assertEmailString,
+	assertValidHost,
+	assertValidIdent,
+	assertJsonValue,
+	assertIterable,
+	assertMultipleOf,
 } from '../src/assert.js'
 import { isString, isNumber } from '../src/primitives.js'
 
@@ -445,4 +488,168 @@ test('assertISODateString and assertISODateTimeString', () => {
 		expect((e as Error).message).toMatch(/date-time/i)
 	}
 	expect(t2).toBe(true)
+})
+
+// Tests for newly added assert functions
+
+test('assertNull and assertUndefined', () => {
+	expect(() => assertNull(null)).not.toThrow()
+	expect(() => assertUndefined(undefined)).not.toThrow()
+	expect(() => assertNull(0)).toThrow(/null/i)
+	expect(() => assertUndefined(null)).toThrow(/undefined/i)
+})
+
+test('assertBigInt and assertSymbol', () => {
+	expect(() => assertBigInt(1n)).not.toThrow()
+	expect(() => assertSymbol(Symbol('x'))).not.toThrow()
+	expect(() => assertBigInt(1)).toThrow(/bigint/i)
+	expect(() => assertSymbol('sym')).toThrow(/symbol/i)
+})
+
+test('assertInteger and assertSafeInteger', () => {
+	expect(() => assertInteger(42)).not.toThrow()
+	expect(() => assertSafeInteger(123)).not.toThrow()
+	expect(() => assertInteger(3.14)).toThrow(/integer/i)
+	expect(() => assertSafeInteger(Number.MAX_SAFE_INTEGER + 1)).toThrow(/safe integer/i)
+})
+
+test('assertPositiveNumber, assertNegativeNumber, assertNonNegativeNumber', () => {
+	expect(() => assertPositiveNumber(1)).not.toThrow()
+	expect(() => assertNegativeNumber(-1)).not.toThrow()
+	expect(() => assertNonNegativeNumber(0)).not.toThrow()
+	expect(() => assertPositiveNumber(0)).toThrow(/positive/i)
+	expect(() => assertNegativeNumber(0)).toThrow(/negative/i)
+	expect(() => assertNonNegativeNumber(-1)).toThrow(/non-negative/i)
+})
+
+test('assertDate, assertRegExp, assertError', () => {
+	expect(() => assertDate(new Date())).not.toThrow()
+	expect(() => assertRegExp(/abc/)).not.toThrow()
+	expect(() => assertError(new Error('test'))).not.toThrow()
+	expect(() => assertDate(123)).toThrow(/date/i)
+	expect(() => assertRegExp('pattern')).toThrow(/regexp/i)
+	expect(() => assertError({ message: 'not error' })).toThrow(/error/i)
+})
+
+test('assertPromiseLike and assertZeroArg', () => {
+	expect(() => assertPromiseLike(Promise.resolve(1))).not.toThrow()
+	expect(() => assertZeroArg(() => 42)).not.toThrow()
+	expect(() => assertPromiseLike(42)).toThrow(/promise/i)
+	expect(() => assertZeroArg((x: number) => x)).toThrow(/zero-argument/i)
+})
+
+test('assertDataView and assertTypedArray', () => {
+	const buf = new ArrayBuffer(8)
+	expect(() => assertDataView(new DataView(buf))).not.toThrow()
+	expect(() => assertTypedArray(new Uint8Array(4))).not.toThrow()
+	expect(() => assertDataView(new Uint8Array(4))).toThrow(/dataview/i)
+	expect(() => assertTypedArray([1, 2, 3])).toThrow(/typed array/i)
+})
+
+test('assertInt8Array and assertUint8Array', () => {
+	expect(() => assertInt8Array(new Int8Array(4))).not.toThrow()
+	expect(() => assertUint8Array(new Uint8Array(4))).not.toThrow()
+	expect(() => assertInt8Array(new Uint8Array(4))).toThrow(/int8array/i)
+	expect(() => assertUint8Array(new Int8Array(4))).toThrow(/uint8array/i)
+})
+
+test('assertUint8ClampedArray', () => {
+	expect(() => assertUint8ClampedArray(new Uint8ClampedArray(4))).not.toThrow()
+	expect(() => assertUint8ClampedArray(new Uint8Array(4))).toThrow(/uint8clampedarray/i)
+})
+
+test('assertInt16Array and assertUint16Array', () => {
+	expect(() => assertInt16Array(new Int16Array(4))).not.toThrow()
+	expect(() => assertUint16Array(new Uint16Array(4))).not.toThrow()
+	expect(() => assertInt16Array(new Uint16Array(4))).toThrow(/int16array/i)
+	expect(() => assertUint16Array(new Int16Array(4))).toThrow(/uint16array/i)
+})
+
+test('assertInt32Array and assertUint32Array', () => {
+	expect(() => assertInt32Array(new Int32Array(4))).not.toThrow()
+	expect(() => assertUint32Array(new Uint32Array(4))).not.toThrow()
+	expect(() => assertInt32Array(new Uint32Array(4))).toThrow(/int32array/i)
+	expect(() => assertUint32Array(new Int32Array(4))).toThrow(/uint32array/i)
+})
+
+test('assertFloat32Array and assertFloat64Array', () => {
+	expect(() => assertFloat32Array(new Float32Array(4))).not.toThrow()
+	expect(() => assertFloat64Array(new Float64Array(4))).not.toThrow()
+	expect(() => assertFloat32Array(new Float64Array(4))).toThrow(/float32array/i)
+	expect(() => assertFloat64Array(new Float32Array(4))).toThrow(/float64array/i)
+})
+
+test('assertBigInt64Array and assertBigUint64Array', () => {
+	expect(() => assertBigInt64Array(new BigInt64Array(4))).not.toThrow()
+	expect(() => assertBigUint64Array(new BigUint64Array(4))).not.toThrow()
+	expect(() => assertBigInt64Array(new BigUint64Array(4))).toThrow(/bigint64array/i)
+	expect(() => assertBigUint64Array(new BigInt64Array(4))).toThrow(/biguint64array/i)
+})
+
+test('assertMap and assertSet', () => {
+	expect(() => assertMap(new Map())).not.toThrow()
+	expect(() => assertSet(new Set())).not.toThrow()
+	expect(() => assertMap({})).toThrow(/map/i)
+	expect(() => assertSet([])).toThrow(/set/i)
+})
+
+test('assertWeakMap and assertWeakSet', () => {
+	expect(() => assertWeakMap(new WeakMap())).not.toThrow()
+	expect(() => assertWeakSet(new WeakSet())).not.toThrow()
+	expect(() => assertWeakMap(new Map())).toThrow(/weakmap/i)
+	expect(() => assertWeakSet(new Set())).toThrow(/weakset/i)
+})
+
+test('assertNonEmptyString and assertNonEmptyArray', () => {
+	expect(() => assertNonEmptyString('hello')).not.toThrow()
+	expect(() => assertNonEmptyArray([1, 2])).not.toThrow()
+	expect(() => assertNonEmptyString('')).toThrow(/non-empty string/i)
+	expect(() => assertNonEmptyArray([])).toThrow(/non-empty array/i)
+})
+
+test('assertNonEmptyObject', () => {
+	expect(() => assertNonEmptyObject({ a: 1 })).not.toThrow()
+	expect(() => assertNonEmptyObject({})).toThrow(/non-empty object/i)
+})
+
+test('assertNonEmptyMap and assertNonEmptySet', () => {
+	expect(() => assertNonEmptyMap(new Map([['a', 1]]))).not.toThrow()
+	expect(() => assertNonEmptySet(new Set([1, 2]))).not.toThrow()
+	expect(() => assertNonEmptyMap(new Map())).toThrow(/non-empty map/i)
+	expect(() => assertNonEmptySet(new Set())).toThrow(/non-empty set/i)
+})
+
+test('assertIPv6String', () => {
+	expect(() => assertIPv6String('::1')).not.toThrow()
+	expect(() => assertIPv6String('2001:db8::1')).not.toThrow()
+	expect(() => assertIPv6String('invalid')).toThrow(/ipv6/i)
+})
+
+test('assertEmailString', () => {
+	expect(() => assertEmailString('user@example.com')).not.toThrow()
+	expect(() => assertEmailString('not-email')).toThrow(/email/i)
+})
+
+test('assertValidHost and assertValidIdent', () => {
+	expect(() => assertValidHost('example.com')).not.toThrow()
+	expect(() => assertValidIdent('myVariable')).not.toThrow()
+	expect(() => assertValidHost('')).toThrow(/host/i)
+	expect(() => assertValidIdent('123invalid')).toThrow(/identifier/i)
+})
+
+test('assertJsonValue', () => {
+	expect(() => assertJsonValue({ a: [1, null, 'text'] })).not.toThrow()
+	expect(() => assertJsonValue(null)).not.toThrow()
+	expect(() => assertJsonValue(undefined)).toThrow(/json value/i)
+})
+
+test('assertIterable', () => {
+	expect(() => assertIterable([1, 2, 3])).not.toThrow()
+	expect(() => assertIterable(new Set([1, 2]))).not.toThrow()
+	expect(() => assertIterable(123)).toThrow(/iterable/i)
+})
+
+test('assertMultipleOf', () => {
+	expect(() => assertMultipleOf(9, 3)).not.toThrow()
+	expect(() => assertMultipleOf(10, 3)).toThrow(/multiple of 3/i)
 })
