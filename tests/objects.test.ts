@@ -1,7 +1,38 @@
 import { describe, test, expect } from 'vitest'
-import { isObject, isRecord, hasOwn, hasOnlyKeys, hasNo, isCountRange } from '../src/objects.js'
+import { isObject, isRecord, hasOwn, hasOnlyKeys, hasNo, isCountRange, ownEnumerableCount } from '../src/objects.js'
 
 describe('objects', () => {
+	describe('ownEnumerableCount', () => {
+		test('counts enumerable string keys', () => {
+			expect(ownEnumerableCount({ a: 1, b: 2 })).toBe(2)
+			expect(ownEnumerableCount({})).toBe(0)
+		})
+
+		test('counts enumerable symbol keys', () => {
+			const sym1 = Symbol('s1')
+			const sym2 = Symbol('s2')
+			const obj: Record<string | symbol, unknown> = { a: 1 }
+			Object.defineProperty(obj, sym1, { value: 1, enumerable: true })
+			Object.defineProperty(obj, sym2, { value: 2, enumerable: true })
+			expect(ownEnumerableCount(obj)).toBe(3)
+		})
+
+		test('excludes non-enumerable properties', () => {
+			const obj: Record<string | symbol, unknown> = { a: 1 }
+			Object.defineProperty(obj, 'b', { value: 2, enumerable: false })
+			const sym = Symbol('s')
+			Object.defineProperty(obj, sym, { value: 3, enumerable: false })
+			expect(ownEnumerableCount(obj)).toBe(1)
+		})
+
+		test('counts both string and symbol keys', () => {
+			const sym = Symbol('s')
+			const obj: Record<string | symbol, unknown> = { a: 1, b: 2 }
+			Object.defineProperty(obj, sym, { value: 1, enumerable: true })
+			expect(ownEnumerableCount(obj)).toBe(3)
+		})
+	})
+
 	describe('isObject', () => {
 		test('returns true for objects and arrays', () => {
 			expect(isObject({})).toBe(true)
