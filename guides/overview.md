@@ -4,12 +4,14 @@ A tiny, TypeScript‑first library for runtime validation and narrowing with hel
 
 What it gives you
 - Strongly-typed guards that accept unknown and narrow precisely
-- Assert-style helpers that throw TypeError with rich, LLM-friendly context
+- Comprehensive assert-style helpers: every guard has a corresponding assert function
+- Assert helpers throw TypeError with rich, LLM-friendly context including path, label, hint, and help URL
 - Combinators to build complex shapes from small pieces
 - Schema and object builders for ergonomic shape checks
 - Domain guards for common ecosystem data (UUID, ISO dates, URLs, MIME, etc.)
 - Deep structural checks (equality and clone verification), cycle-safe
 - Emptiness and opposite predicates (isNot, hasNo) for crisp invariants
+- Full coverage: 80+ guards, 90+ assert functions, all with proper typing and TSDoc
 
 Highlights
 - TypeScript-first, ESM-only, strict by default
