@@ -426,17 +426,19 @@ describe('combinators', () => {
 	})
 
 	describe('stringOf/numberOf', () => {
-		test('stringOf matches exact string', () => {
-			const g = stringOf('ok')
-			expect(g('ok')).toBe(true)
-			expect(g('nope')).toBe(false)
+		test('stringOf validates any string', () => {
+			expect(stringOf('ok')).toBe(true)
+			expect(stringOf('nope')).toBe(true)
+			expect(stringOf('')).toBe(true)
+			expect(stringOf(123)).toBe(false)
 		})
-		test('numberOf matches exact number', () => {
-			const g = numberOf(42)
-			expect(g(42)).toBe(true)
-			expect(g(41)).toBe(false)
+		test('numberOf validates any number', () => {
+			expect(numberOf(42)).toBe(true)
+			expect(numberOf(41)).toBe(true)
+			expect(numberOf(0)).toBe(true)
+			expect(numberOf(NaN)).toBe(true)
 			// rejects non-numbers
-			expect(g('42' as unknown)).toBe(false)
+			expect(numberOf('42' as unknown)).toBe(false)
 		})
 	})
 
@@ -486,17 +488,10 @@ describe('combinators', () => {
 			expect(Guard({ age: 1 } as unknown)).toBe(false)
 		})
 
-		test('objectOf exact: rejects extra keys when exact is true', () => {
-			const Guard = objectOf({ id: isString }, { exact: true })
+		test('objectOf exact: rejects extra keys (default behavior)', () => {
+			const Guard = objectOf({ id: isString })
 			expect(Guard({ id: 'x' })).toBe(true)
 			expect(Guard({ id: 'x', extra: 1 } as unknown)).toBe(false)
-		})
-
-		test('objectOf rest: validates extra keys when provided', () => {
-			const Guard = objectOf({ id: isString }, { rest: isNumber })
-			expect(Guard({ id: 'x' })).toBe(true)
-			expect(Guard({ id: 'x', a: 1, b: 2 })).toBe(true)
-			expect(Guard({ id: 'x', a: 'nope' } as unknown)).toBe(false)
 		})
 
 		test('objectOf nested optional via optionalOf', () => {
@@ -504,13 +499,23 @@ describe('combinators', () => {
 			const isNode = lazyOf((): (x: unknown) => x is Node =>
 				objectOf(
 					{ value: isNumber, next: optionalOf((x: unknown): x is Node => isNode(x)) },
-					{ optional: ['next' as const], exact: true },
+					{ optional: ['next' as const] },
 				),
 			)
 			expect(isNode({ value: 1 })).toBe(true)
 			expect(isNode({ value: 1, next: { value: 2 } })).toBe(true)
 			expect(isNode({ value: 1, next: { value: 2, next: { value: 3 } } })).toBe(true)
 			expect(isNode({ value: 1, extra: 2 } as unknown)).toBe(false)
+		})
+
+		test('objectOf exact with optional keys', () => {
+			const Guard = objectOf(
+				{ id: isString, note: isString },
+				{ optional: ['note' as const] },
+			)
+			expect(Guard({ id: 'x' })).toBe(true)
+			expect(Guard({ id: 'x', note: 'hello' })).toBe(true)
+			expect(Guard({ id: 'x', note: 'hello', extra: 1 } as unknown)).toBe(false)
 		})
 
 		test('objectOf with multiple optional keys', () => {
@@ -523,28 +528,6 @@ describe('combinators', () => {
 			expect(Guard({ id: 'x', name: 'Alice' })).toBe(true)
 			expect(Guard({ id: 'x', age: 42, name: 'Alice' })).toBe(true)
 			expect(Guard({ age: 42, name: 'Alice' } as unknown)).toBe(false)
-		})
-
-		test('objectOf exact with optional keys', () => {
-			const Guard = objectOf(
-				{ id: isString, note: isString },
-				{ optional: ['note' as const], exact: true },
-			)
-			expect(Guard({ id: 'x' })).toBe(true)
-			expect(Guard({ id: 'x', note: 'hello' })).toBe(true)
-			expect(Guard({ id: 'x', note: 'hello', extra: 1 } as unknown)).toBe(false)
-		})
-
-		test('objectOf rest with optional keys', () => {
-			const Guard = objectOf(
-				{ id: isString, note: isString },
-				{ optional: ['note' as const], rest: isNumber },
-			)
-			expect(Guard({ id: 'x' })).toBe(true)
-			expect(Guard({ id: 'x', note: 'hi' })).toBe(true)
-			expect(Guard({ id: 'x', a: 1, b: 2 })).toBe(true)
-			expect(Guard({ id: 'x', note: 'hi', a: 1 })).toBe(true)
-			expect(Guard({ id: 'x', a: 'bad' } as unknown)).toBe(false)
 		})
 
 		test('objectOf validates present optional values', () => {
