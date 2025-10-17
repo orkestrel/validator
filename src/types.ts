@@ -87,12 +87,28 @@ export interface HexColorOptions { readonly allowHash?: boolean }
 // Option bag for hex string parsing.
 export interface HexStringOptions { readonly evenLength?: boolean, readonly allow0x?: boolean }
 
-// Options for objectOf; `optional` is a list of keys, `exact` disallows extras, `rest` validates extras.
+/**
+ * Options for objectOf; `optional` is a list of keys, `exact` disallows extras, `rest` validates extras.
+ */
 export interface ObjectOfOptions<Opt extends readonly PropertyKey[] = readonly PropertyKey[]> {
 	readonly optional?: Opt
 	readonly exact?: boolean
 	readonly rest?: Guard<unknown>
 }
+
+/**
+ * Resolve a GuardsShape to a readonly object type while marking keys listed in `Opt`
+ * as optional properties in the resulting type.
+ *
+ * When `Opt` includes all keys, this is effectively `Partial<FromGuards<P>>`.
+ */
+export type FromGuardsWithOptional<
+	P extends GuardsShape,
+	Opt extends readonly (keyof P)[],
+> = Readonly<
+	{ [K in Exclude<keyof P, Extract<keyof P, Opt[number]>>]: GuardType<P[K]> }
+	& { [K in Extract<keyof P, Opt[number]>]?: GuardType<P[K]> }
+>
 
 // Parsed absolute URL shape used by the portable URL parser.
 export interface ParsedAbsoluteUrl {
