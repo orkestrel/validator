@@ -48,6 +48,16 @@ export function isRecord(x: unknown): boolean {
 // Count helpers
 // --------------------------------------------
 
+// Private helper: count own enumerable string keys and enumerable symbol keys
+function countEnumerableProperties(obj: object): number {
+	const keysLen = Object.keys(obj).length
+	const symsLen = Object.getOwnPropertySymbols(obj).reduce(
+		(acc, s) => acc + (Object.getOwnPropertyDescriptor(obj, s)?.enumerable ? 1 : 0),
+		0,
+	)
+	return keysLen + symsLen
+}
+
 /**
  * Check the exact count of own enumerable properties on a plain object.
  *
@@ -72,12 +82,7 @@ export function isCount<T extends Record<string | symbol, unknown>>(x: T, n: num
 export function isCount(x: unknown, n: number): x is Record<string | symbol, unknown>
 export function isCount(x: unknown, n: number): boolean {
 	if (!isRecord(x)) return false
-	const keysLen = Object.keys(x).length
-	const symsLen = Object.getOwnPropertySymbols(x).reduce(
-		(acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0),
-		0,
-	)
-	return keysLen + symsLen === n
+	return countEnumerableProperties(x) === n
 }
 
 /**
@@ -106,11 +111,6 @@ export function isCountRange<T extends Record<string | symbol, unknown>>(x: T, m
 export function isCountRange(x: unknown, min: number, max: number): x is Record<string | symbol, unknown>
 export function isCountRange(x: unknown, min: number, max: number): boolean {
 	if (!isRecord(x)) return false
-	const keysLen = Object.keys(x).length
-	const symsLen = Object.getOwnPropertySymbols(x).reduce(
-		(acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0),
-		0,
-	)
-	const c = keysLen + symsLen
+	const c = countEnumerableProperties(x)
 	return c >= min && c <= max
 }

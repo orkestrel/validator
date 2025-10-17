@@ -5,6 +5,16 @@ import { isLength } from './arrays.js'
 import { isSize } from './collections.js'
 import { isEmpty } from './emptiness.js'
 
+// Private helper: count own enumerable string keys and enumerable symbol keys
+function countEnumerableProperties(obj: object): number {
+	const keysLen = Object.keys(obj).length
+	const symsLen = Object.getOwnPropertySymbols(obj).reduce(
+		(acc, s) => acc + (Object.getOwnPropertyDescriptor(obj, s)?.enumerable ? 1 : 0),
+		0,
+	)
+	return keysLen + symsLen
+}
+
 /**
  * Create a guard that accepts one of the provided literal values.
  *
@@ -555,14 +565,7 @@ export function minOf(min: number): Guard<number | string | ReadonlyArray<unknow
 		if (Array.isArray(x)) return x.length >= min
 		if (x instanceof Map) return x.size >= min
 		if (x instanceof Set) return x.size >= min
-		if (isRecord(x)) {
-			const keysLen = Object.keys(x).length
-			const symsLen = Object.getOwnPropertySymbols(x).reduce(
-				(acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0),
-				0,
-			)
-			return keysLen + symsLen >= min
-		}
+		if (isRecord(x)) return countEnumerableProperties(x) >= min
 		return false
 	}
 }
@@ -587,14 +590,7 @@ export function maxOf(max: number): Guard<number | string | ReadonlyArray<unknow
 		if (Array.isArray(x)) return x.length <= max
 		if (x instanceof Map) return x.size <= max
 		if (x instanceof Set) return x.size <= max
-		if (isRecord(x)) {
-			const keysLen = Object.keys(x).length
-			const symsLen = Object.getOwnPropertySymbols(x).reduce(
-				(acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0),
-				0,
-			)
-			return keysLen + symsLen <= max
-		}
+		if (isRecord(x)) return countEnumerableProperties(x) <= max
 		return false
 	}
 }
@@ -621,12 +617,7 @@ export function rangeOf(min: number, max: number): Guard<number | string | Reado
 		if (x instanceof Map) return x.size >= min && x.size <= max
 		if (x instanceof Set) return x.size >= min && x.size <= max
 		if (isRecord(x)) {
-			const keysLen = Object.keys(x).length
-			const symsLen = Object.getOwnPropertySymbols(x).reduce(
-				(acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0),
-				0,
-			)
-			const c = keysLen + symsLen
+			const c = countEnumerableProperties(x)
 			return c >= min && c <= max
 		}
 		return false
