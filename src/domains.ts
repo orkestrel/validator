@@ -224,13 +224,6 @@ export function isSlug(s: unknown): boolean {
  * ```ts
  * isBase64('TWFu') // true
  * isBase64('TQ==') // true
- * ```
- * Overloads:
- * - When called with `string`, returns `boolean` (no type narrowing).
- * - When called with `unknown`, returns a type predicate narrowing to `string`.
- *
- * @example
- * ```ts
  * isBase64('SGVsbG8=') // true
  * ```
  */
