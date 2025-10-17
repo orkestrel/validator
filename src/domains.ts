@@ -12,13 +12,13 @@ import { isIPv4String, isHostnameString, isIPv6String } from './strings.js'
  *
  * @example
  * ```ts
- * isValidIdent('name') // true
- * isValidIdent('weird key') // false
+ * isIdentifier('name') // true
+ * isIdentifier('weird key') // false
  * ```
  */
-export function isValidIdent(s: string): boolean
-export function isValidIdent(s: unknown): s is string
-export function isValidIdent(s: unknown): boolean {
+export function isIdentifier(s: string): boolean
+export function isIdentifier(s: unknown): s is string
+export function isIdentifier(s: unknown): boolean {
 	return typeof s === 'string' && /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(s)
 }
 
@@ -35,14 +35,14 @@ export function isValidIdent(s: unknown): boolean {
  * @returns `true` when the host looks valid enough for parsing
  * @example
  * ```ts
- * isValidHost('example.com') // true
- * isValidHost('[::1]') // true
- * isValidHost('') // false
+ * isHost('example.com') // true
+ * isHost('[::1]') // true
+ * isHost('') // false
  * ```
  */
-export function isValidHost(text: string): boolean
-export function isValidHost(text: unknown): text is string
-export function isValidHost(text: unknown): boolean {
+export function isHost(text: string): boolean
+export function isHost(text: unknown): text is string
+export function isHost(text: unknown): boolean {
 	if (typeof text !== 'string') return false
 	if (text.length === 0) return false
 	if (text.startsWith('[') && text.endsWith(']')) {
@@ -81,12 +81,12 @@ export function isUUIDv4(s: unknown): boolean {
  *
  * @example
  * ```ts
- * isISODateString('2020-01-02') // true
+ * isISODate('2020-01-02') // true
  * ```
  */
-export function isISODateString(s: string): boolean
-export function isISODateString(s: unknown): s is string
-export function isISODateString(s: unknown): boolean {
+export function isISODate(s: string): boolean
+export function isISODate(s: unknown): s is string
+export function isISODate(s: unknown): boolean {
 	if (typeof s !== 'string') return false
 	const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s)
 	if (!m) return false
@@ -108,12 +108,12 @@ export function isISODateString(s: unknown): boolean {
  *
  * @example
  * ```ts
- * isISODateTimeString('2020-01-02T12:34:56Z') // true
+ * isISODateTime('2020-01-02T12:34:56Z') // true
  * ```
  */
-export function isISODateTimeString(s: string): boolean
-export function isISODateTimeString(s: unknown): s is string
-export function isISODateTimeString(s: unknown): boolean {
+export function isISODateTime(s: string): boolean
+export function isISODateTime(s: unknown): s is string
+export function isISODateTime(s: unknown): boolean {
 	if (typeof s !== 'string') return false
 	if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(s)) return false
 	const dt = new Date(s)
@@ -129,12 +129,12 @@ export function isISODateTimeString(s: unknown): boolean {
  *
  * @example
  * ```ts
- * isEmailString('alice@example.com') // true
+ * isEmail('alice@example.com') // true
  * ```
  */
-export function isEmailString(s: string): boolean
-export function isEmailString(s: unknown): s is string
-export function isEmailString(s: unknown): boolean {
+export function isEmail(s: string): boolean
+export function isEmail(s: unknown): s is string
+export function isEmail(s: unknown): boolean {
 	if (typeof s !== 'string') return false
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
 }
@@ -148,34 +148,16 @@ export function isEmailString(s: unknown): boolean {
  *
  * @example
  * ```ts
- * isURLString('https://example.com/path') // true
+ * isURL('https://example.com/path') // true
  * ```
  */
-export function isURLString(s: string): boolean
-export function isURLString(s: unknown): s is string
-export function isURLString(s: unknown): boolean {
+export function isURL(s: string): boolean
+export function isURL(s: unknown): s is string
+export function isURL(s: unknown): boolean {
 	return typeof s === 'string' && parseAbsoluteUrl(s) !== undefined
 }
 
-/**
- * Determine whether a value is an HTTP or HTTPS URL string.
- *
- * Overloads:
- * - When called with `string`, returns `boolean` (no type narrowing).
- * - When called with `unknown`, returns a type predicate narrowing to `string`.
- *
- * @example
- * ```ts
- * isHttpUrlString('https://example.com') // true
- * ```
- */
-export function isHttpUrlString(s: string): boolean
-export function isHttpUrlString(s: unknown): s is string
-export function isHttpUrlString(s: unknown): boolean {
-	if (typeof s !== 'string') return false
-	const p = parseAbsoluteUrl(s)
-	return p !== undefined && (p.protocol === 'http:' || p.protocol === 'https:')
-}
+
 
 /**
  * Determine whether a value is a valid TCP/UDP port number (1-65535).
@@ -186,12 +168,12 @@ export function isHttpUrlString(s: unknown): boolean {
  *
  * @example
  * ```ts
- * isPortNumber(8080) // true
+ * isPort(8080) // true
  * ```
  */
-export function isPortNumber(x: number): boolean
-export function isPortNumber(x: unknown): x is number
-export function isPortNumber(x: unknown): boolean {
+export function isPort(x: number): boolean
+export function isPort(x: unknown): x is number
+export function isPort(x: unknown): boolean {
 	return isInteger(x) && isRange(x, 1, 65535)
 }
 
@@ -204,12 +186,12 @@ export function isPortNumber(x: unknown): boolean {
  *
  * @example
  * ```ts
- * isMimeType('application/json') // true
+ * isMIMEType('application/json') // true
  * ```
  */
-export function isMimeType(s: string): boolean
-export function isMimeType(s: unknown): s is string
-export function isMimeType(s: unknown): boolean {
+export function isMIMEType(s: string): boolean
+export function isMIMEType(s: unknown): s is string
+export function isMIMEType(s: unknown): boolean {
 	if (typeof s !== 'string') return false
 	return /^[a-z0-9][\w.+-]*\/[a-z0-9][\w.+-]*$/i.test(s)
 }
@@ -242,8 +224,8 @@ export function isSlug(s: unknown): boolean {
  *
  * @example
  * ```ts
- * isBase64String('TWFu') // true
- * isBase64String('TQ==') // true
+ * isBase64('TWFu') // true
+ * isBase64('TQ==') // true
  * ```
  * Overloads:
  * - When called with `string`, returns `boolean` (no type narrowing).
@@ -251,12 +233,12 @@ export function isSlug(s: unknown): boolean {
  *
  * @example
  * ```ts
- * isBase64String('SGVsbG8=') // true
+ * isBase64('SGVsbG8=') // true
  * ```
  */
-export function isBase64String(s: string): boolean
-export function isBase64String(s: unknown): s is string
-export function isBase64String(s: unknown): boolean {
+export function isBase64(s: string): boolean
+export function isBase64(s: unknown): s is string
+export function isBase64(s: unknown): boolean {
 	if (typeof s !== 'string') return false
 	return /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(s)
 }
@@ -274,12 +256,12 @@ export function isBase64String(s: unknown): boolean {
  * - `allow0x` — when true, allow a leading `0x` prefix which will be ignored for validation
  * @example
  * ```ts
- * isHexString('0xdeadbeef', { allow0x: true, evenLength: true }) // true
+ * isHex('0xdeadbeef', { allow0x: true, evenLength: true }) // true
  * ```
  */
-export function isHexString(s: string, opts?: HexStringOptions): boolean
-export function isHexString(s: unknown, opts?: HexStringOptions): s is string
-export function isHexString(s: unknown, opts?: HexStringOptions): boolean {
+export function isHex(s: string, opts?: HexStringOptions): boolean
+export function isHex(s: unknown, opts?: HexStringOptions): s is string
+export function isHex(s: unknown, opts?: HexStringOptions): boolean {
 	if (typeof s !== 'string') return false
 	const str = opts?.allow0x === true && s.startsWith('0x') ? s.slice(2) : s
 	if (!/^[0-9a-fA-F]+$/.test(str)) return false
@@ -367,12 +349,12 @@ export function isJsonValue(x: unknown): x is JsonValue {
  *
  * @example
  * ```ts
- * isHttpMethod('GET') // true
+ * isHTTPMethod('GET') // true
  * ```
  */
-export function isHttpMethod(s: string): boolean
-export function isHttpMethod(s: unknown): s is HttpMethod
-export function isHttpMethod(s: unknown): boolean {
+export function isHTTPMethod(s: string): boolean
+export function isHTTPMethod(s: unknown): s is HttpMethod
+export function isHTTPMethod(s: unknown): boolean {
 	if (typeof s !== 'string') return false
 	return ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH'].includes(s)
 }

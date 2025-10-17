@@ -141,12 +141,12 @@ User({ id: 'u1', age: 41, extra: 1 }) // false (exact)
 Pragmatic, ecosystem‑friendly checks:
 
 - UUID: `isUUIDv4`
-- Time: `isISODateString`, `isISODateTimeString`
-- Email/URL: `isEmailString`, `isURLString`, `isHttpUrlString`
-- Net: `isPortNumber`, `isHostnameString`, `isIPv4String`
-- Content: `isMimeType`, `isSlug`, `isBase64String`, `isHexString({ allow0x, evenLength })`, `isSemver`
+- Time: `isISODate`, `isISODateTime`
+- Email/URL: `isEmail`, `isURL`
+- Net: `isPort`, `isHostnameString`, `isIPv4String`
+- Content: `isMIMEType`, `isSlug`, `isBase64`, `isHex({ allow0x, evenLength })`, `isSemver`
 - JSON: `isJsonString`, `isJsonValue`
-- HTTP: `isHttpMethod`
+- HTTP: `isHTTPMethod`
 
 ## Deep checks
 
