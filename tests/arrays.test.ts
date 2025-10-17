@@ -15,8 +15,6 @@ import {
 	isFloat64Array,
 	isBigInt64Array,
 	isBigUint64Array,
-	isLength,
-	isLengthRange,
 } from '../src/arrays.js'
 
 describe('arrays', () => {
@@ -214,31 +212,6 @@ describe('arrays', () => {
 			if (typeof BigUint64Array === 'undefined') {
 				expect(isBigUint64Array({} as unknown)).toBe(false)
 			}
-		})
-	})
-
-	describe('isLength (exact length for strings/arrays)', () => {
-		test('matches exact string length', () => {
-			expect(isLength('ab', 2)).toBe(true)
-			expect(isLength('ab', 3)).toBe(false)
-		})
-		test('matches exact array length', () => {
-			expect(isLength([], 0)).toBe(true)
-			expect(isLength(['a', 'b'], 2)).toBe(true)
-			expect(isLength(['a', 'b'], 1)).toBe(false)
-		})
-	})
-
-	describe('isLengthRange (value-first length range validator)', () => {
-		test('string length within inclusive range', () => {
-			expect(isLengthRange('ab', 2, 3)).toBe(true)
-			expect(isLengthRange('abc', 2, 3)).toBe(true)
-			expect(isLengthRange('a', 2, 3)).toBe(false)
-		})
-		test('array length within inclusive range', () => {
-			expect(isLengthRange([1, 2], 2, 3)).toBe(true)
-			expect(isLengthRange([1, 2, 3], 2, 3)).toBe(true)
-			expect(isLengthRange([1], 2, 3)).toBe(false)
 		})
 	})
 })
