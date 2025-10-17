@@ -107,7 +107,6 @@ describe('domains', () => {
 		})
 	})
 
-
 	describe('isPort', () => {
 		test('returns true for valid port numbers', () => {
 			expect(isPort(1)).toBe(true)

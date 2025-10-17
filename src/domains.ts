@@ -157,8 +157,6 @@ export function isURL(s: unknown): boolean {
 	return typeof s === 'string' && parseAbsoluteUrl(s) !== undefined
 }
 
-
-
 /**
  * Determine whether a value is a valid TCP/UDP port number (1-65535).
  *
