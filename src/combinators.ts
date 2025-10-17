@@ -4,16 +4,7 @@ import { isString, isNumber, isIterable } from './primitives.js'
 import { isLength } from './arrays.js'
 import { isSize } from './collections.js'
 import { isEmpty } from './emptiness.js'
-
-// Private helper: count own enumerable string keys and enumerable symbol keys
-function countEnumerableProperties(obj: object): number {
-	const keysLen = Object.keys(obj).length
-	const symsLen = Object.getOwnPropertySymbols(obj).reduce(
-		(acc, s) => acc + (Object.getOwnPropertyDescriptor(obj, s)?.enumerable ? 1 : 0),
-		0,
-	)
-	return keysLen + symsLen
-}
+import { countEnumerableProperties } from './helpers.js'
 
 /**
  * Create a guard that accepts one of the provided literal values.

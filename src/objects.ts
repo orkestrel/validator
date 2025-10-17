@@ -1,3 +1,5 @@
+import { countEnumerableProperties } from './helpers.js'
+
 // --------------------------------------------
 // Type guards
 // --------------------------------------------
@@ -47,16 +49,6 @@ export function isRecord(x: unknown): boolean {
 // --------------------------------------------
 // Count helpers
 // --------------------------------------------
-
-// Private helper: count own enumerable string keys and enumerable symbol keys
-function countEnumerableProperties(obj: object): number {
-	const keysLen = Object.keys(obj).length
-	const symsLen = Object.getOwnPropertySymbols(obj).reduce(
-		(acc, s) => acc + (Object.getOwnPropertyDescriptor(obj, s)?.enumerable ? 1 : 0),
-		0,
-	)
-	return keysLen + symsLen
-}
 
 /**
  * Check the exact count of own enumerable properties on a plain object.
