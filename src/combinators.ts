@@ -1,4 +1,4 @@
-import type { Guard, Result, UnionToIntersection, GuardsShape, EmptyOf, GuardType, ObjectOfOptions } from './types.js'
+import type { Guard, Result, UnionToIntersection, GuardsShape, EmptyOf, ObjectOfOptions, FromGuardsWithOptional } from './types.js'
 import { isRecord, isCount } from './objects.js'
 import { isString, isNumber, isIterable } from './primitives.js'
 import { isLength } from './arrays.js'
@@ -282,42 +282,41 @@ export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E
  * Bag({ id: 'b-1', a: 'nope' })   // false
  * ```
  */
-export function objectOf<const P extends GuardsShape, const Opt extends readonly (keyof P)[] = []>(
+export function objectOf<
+	const P extends GuardsShape,
+	const Opt extends readonly (keyof P)[],
+>(
 	props: P,
-	options?: ObjectOfOptions<Opt>,
-): (x: unknown) => x is Readonly<
-	{ [K in Exclude<keyof P, Opt[number]>]-?: GuardType<P[K]> }
-	& { [K in Opt[number]]?: GuardType<P[K]> }
-> {
-	const keys = Object.keys(props) as readonly (keyof P & string)[]
-	const optionalSet = new Set<keyof P>(options?.optional as readonly (keyof P)[] | undefined ?? [])
-	const exact = options?.exact === true
-	const rest = options?.rest
+	options: ObjectOfOptions<Opt> = {},
+): Guard<FromGuardsWithOptional<P, Opt>> {
+	const declaredKeys = Object.keys(props) as readonly (keyof P & string)[]
+	const optional = new Set<PropertyKey>(options.optional as readonly PropertyKey[] | undefined)
+	const exact = options.exact === true
+	const rest = options.rest
 
-	return (x: unknown): x is Readonly<
-		{ [K in Exclude<keyof P, Opt[number]>]-?: GuardType<P[K]> }
-		& { [K in Opt[number]]?: GuardType<P[K]> }
-	> => {
+	return (x: unknown): x is FromGuardsWithOptional<P, Opt> => {
 		if (!isRecord(x)) return false
+		const obj = x as Record<string, unknown>
 
-		for (const k of keys) {
-			const has = Object.prototype.hasOwnProperty.call(x, k)
-			const isOpt = optionalSet.has(k)
-			if (!has && !isOpt) return false
-			if (has) {
-				const g = props[k]
-				const v = (x as Record<string, unknown>)[k as string]
-				if (!(g as Guard<unknown>)(v)) return false
+		// Validate declared keys (presence + value guards)
+		for (const k of declaredKeys) {
+			const has = Object.prototype.hasOwnProperty.call(obj, k)
+			if (!has) {
+				if (!optional.has(k)) return false
+				continue
 			}
+			const g = props[k]
+			const v = obj[k as string]
+			if (!(g as Guard<unknown>)(v)) return false
 		}
 
-		for (const k in x as Record<string, unknown>) {
-			if (!Object.prototype.hasOwnProperty.call(x, k)) continue
-			if (!Object.prototype.hasOwnProperty.call(props, k)) {
-				if (exact) return false
-				if (rest && !(rest as Guard<unknown>)((x as Record<string, unknown>)[k])) return false
-			}
+		// Validate extras inline (no helpers): enforce exact/rest
+		for (const k of Object.keys(obj)) {
+			if (Object.prototype.hasOwnProperty.call(props, k)) continue
+			if (exact) return false
+			if (rest && !(rest as Guard<unknown>)(obj[k])) return false
 		}
+
 		return true
 	}
 }
