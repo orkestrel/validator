@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
-import { isSchema, isPartialSchema } from '../src/schema.js'
-import { objectOf, stringMatchOf } from '../src/combinators.js'
+import { isSchema } from '../src/schema.js'
+import { objectOf } from '../src/combinators.js'
 import { isString, isNumber } from '../src/primitives.js'
 
 describe('schema', () => {
@@ -16,33 +16,15 @@ describe('schema', () => {
 		})
 	})
 
-	describe('isPartialSchema', () => {
-		test('allows missing keys', () => {
-			const schema = { id: 'string', tag: stringMatchOf(/^[a-z]+$/) } as const
-			expect(isPartialSchema({}, schema)).toBe(true)
-		})
-
-		test('validates present keys', () => {
-			const schema = { id: 'string', tag: stringMatchOf(/^[a-z]+$/) } as const
-			expect(isPartialSchema({ id: 'x' }, schema)).toBe(true)
-			expect(isPartialSchema({ tag: 'ok' }, schema)).toBe(true)
-		})
-
-		test('returns false when present keys fail validation', () => {
-			const schema = { id: 'string', tag: stringMatchOf(/^[a-z]+$/) } as const
-			expect(isPartialSchema({ tag: 'NotOk' }, schema)).toBe(false)
-		})
-	})
-
 	describe('objectOf', () => {
 		test('validates objects with optional fields', () => {
-			const User = objectOf({ id: isString, age: isNumber, note: isString }, { optional: ['note'], exact: true } as const)
+			const User = objectOf({ id: isString, age: isNumber, note: isString }, { optional: ['note' as const], exact: true })
 			expect(User({ id: 'x', age: 1 })).toBe(true)
 			expect(User({ id: 'x', age: 1, note: 'hello' })).toBe(true)
 		})
 
 		test('enforces exact option to reject extra fields', () => {
-			const User = objectOf({ id: isString, age: isNumber, note: isString }, { optional: ['note'], exact: true } as const)
+			const User = objectOf({ id: isString, age: isNumber, note: isString }, { optional: ['note' as const], exact: true })
 			expect(User({ id: 'x', age: 1, extra: 1 })).toBe(false)
 		})
 

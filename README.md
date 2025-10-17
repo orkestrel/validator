@@ -120,20 +120,37 @@ const mustHaveItems = nonEmptyOf(arrayOf(isNumber)) // non-empty number array
 
 ## Schema and object builders
 
-- `hasSchema(obj, schema)` — declarative shape with primitive tags and nested guards.
-- `hasPartialSchema` — like `hasSchema` but keys are optional.
-- `objectOf(props, { optional, exact, rest })` — build guards for objects programmatically with precise types.
+- `isSchema(obj, schema)` — declarative shape with primitive tags and nested guards. All schema keys are required.
+- `objectOf(props, { optional, exact, rest })` — build guards for objects programmatically with precise types. Keys in the `optional` array are reflected as optional properties in the narrowed type.
 
 ```ts
 import { objectOf, isString, isNumber } from '@orkestrel/validator'
 
 const User = objectOf(
   { id: isString, age: isNumber, note: isString },
-  { optional: ['note'], exact: true } as const,
+  { optional: ['note' as const], exact: true },
 )
+// Type: { readonly id: string; readonly age: number; readonly note?: string }
 
 User({ id: 'u1', age: 41 })           // true
+User({ id: 'u1', age: 41, note: 'hi' }) // true
 User({ id: 'u1', age: 41, extra: 1 }) // false (exact)
+```
+
+**Replacing partial schemas:**
+There is no separate "partial schema" helper. Use `objectOf(..., { optional: [...] })` instead. When you include all keys in `optional`, this behaves like a "partial" version at both runtime and type level.
+
+```ts
+// Make all fields optional by listing all keys in optional
+const PartialUser = objectOf(
+  { id: isString, age: isNumber, note: isString },
+  { optional: ['id' as const, 'age' as const, 'note' as const] },
+)
+// Type: { readonly id?: string; readonly age?: number; readonly note?: string }
+
+PartialUser({})                      // true
+PartialUser({ id: 'u1' })            // true
+PartialUser({ age: 42, note: 'hi' }) // true
 ```
 
 ## Domain guards

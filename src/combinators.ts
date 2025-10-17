@@ -1,4 +1,4 @@
-import type { Guard, Result, UnionToIntersection, GuardsShape, FromGuards, ObjectOfOptions, EmptyOf } from './types.js'
+import type { Guard, Result, UnionToIntersection, GuardsShape, EmptyOf, GuardType } from './types.js'
 import { isRecord, isCount } from './objects.js'
 import { isString, isNumber, isIterable } from './primitives.js'
 import { isLength } from './arrays.js'
@@ -246,11 +246,16 @@ export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E
 }
 
 /**
- * Build an object guard from a shape of property guards.
+ * Build a composable guard from a shape of property guards.
  *
- * Use `objectOf` for powerful, composable object validation with options for
- * optional fields, exact key validation, and rest property validation.
- * For simple declarative validation with type strings, use {@link isSchema} instead.
+ * Use `objectOf` for composable object validation with options for:
+ * - optional fields: keys listed in options.optional may be missing
+ * - exact key validation: when exact is true, no additional keys are allowed
+ * - rest property validation: when exact is false and rest is provided, any
+ *   extra property values must satisfy the rest guard
+ *
+ * Typing: keys listed in options.optional are reflected as optional properties
+ * in the returned guard's type, so the narrowed type matches the runtime behavior.
  *
  * @param props - Mapping of property names to guard functions
  * @param options - Optional configuration (optional/exact/rest)
@@ -262,36 +267,48 @@ export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E
  * @returns Guard validating objects that satisfy the provided shape
  * @example
  * ```ts
- * const User = objectOf({ id: isString, age: isNumber }, { optional: ['age' as const], exact: true })
+ * import { objectOf, isString, isNumber } from '@orkestrel/validator'
+ * const User = objectOf(
+ *   { id: isString, age: isNumber },
+ *   { optional: ['age' as const], exact: true }
+ * )
+ * // Type narrows to: { readonly id: string; readonly age?: number }
  * ```
  * @example
  * ```ts
- * // For simple type string validation, use isSchema instead:
- * import { isSchema } from '@orkestrel/validator'
- * isSchema({ id: 'x', age: 1 }, { id: 'string', age: 'number' })
+ * // Allow extras that match the rest guard
+ * const Bag = objectOf({ id: isString }, { rest: isNumber })
+ * Bag({ id: 'b-1', a: 1, b: 2 })  // true
+ * Bag({ id: 'b-1', a: 'nope' })   // false
  * ```
  */
-export function objectOf<const P extends GuardsShape, Opt extends readonly PropertyKey[] = readonly PropertyKey[]>(
+export function objectOf<const P extends GuardsShape, const Opt extends readonly (keyof P)[] = []>(
 	props: P,
-	options: ObjectOfOptions<Opt> = {},
-): Guard<FromGuards<P>> {
+	options?: Readonly<{ optional?: Opt, exact?: boolean, rest?: Guard<unknown> }>,
+): (x: unknown) => x is Readonly<
+	{ [K in Exclude<keyof P, Opt[number]>]-?: GuardType<P[K]> }
+	& { [K in Opt[number]]?: GuardType<P[K]> }
+> {
 	const keys = Object.keys(props) as readonly (keyof P & string)[]
-	const opt = new Set<PropertyKey>(options.optional as readonly PropertyKey[] | undefined)
-	const exact = options.exact === true
-	const rest = options.rest
+	const optionalSet = new Set<keyof P>(options?.optional as readonly (keyof P)[] | undefined ?? [])
+	const exact = options?.exact === true
+	const rest = options?.rest
 
-	return (x: unknown): x is FromGuards<P> => {
+	return (x: unknown): x is Readonly<
+		{ [K in Exclude<keyof P, Opt[number]>]-?: GuardType<P[K]> }
+		& { [K in Opt[number]]?: GuardType<P[K]> }
+	> => {
 		if (!isRecord(x)) return false
 
 		for (const k of keys) {
 			const has = Object.prototype.hasOwnProperty.call(x, k)
-			if (!has) {
-				if (!opt || !opt.has(k)) return false
-				continue
+			const isOpt = optionalSet.has(k)
+			if (!has && !isOpt) return false
+			if (has) {
+				const g = props[k]
+				const v = (x as Record<string, unknown>)[k as string]
+				if (!(g as Guard<unknown>)(v)) return false
 			}
-			const g = props[k]
-			const v = (x as Record<string, unknown>)[k as string]
-			if (!(g as Guard<unknown>)(v)) return false
 		}
 
 		for (const k in x as Record<string, unknown>) {
