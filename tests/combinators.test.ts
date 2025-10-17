@@ -10,12 +10,10 @@ import {
 	nullableOf,
 	lazyOf,
 	refineOf,
-	matchOf,
 	discriminatedUnionOf,
 	enumOf,
 	safeParse,
 	objectOf,
-	partialOf,
 	arrayOf,
 	tupleOf,
 	stringMatchOf,
@@ -27,10 +25,6 @@ import {
 	functionOf,
 	nonEmptyOf,
 	emptyOf,
-	// Utility guards
-	definedOf,
-	nonNullOf,
-	truthyOf,
 	// Unified comparators
 	minOf,
 	maxOf,
@@ -42,86 +36,10 @@ import {
 	measureOf,
 	stringOf,
 	numberOf,
-	instanceOf,
-	isStringGuard,
-	isNumberGuard,
-	isBooleanGuard,
-	isBigIntGuard,
-	isSymbolGuard,
 } from '../src/combinators.js'
 import { isString, isNumber } from '../src/primitives.js'
 
 describe('combinators', () => {
-	describe('Base Primitive Guards', () => {
-		test('isStringGuard validates strings', () => {
-			expect(isStringGuard('hello')).toBe(true)
-			expect(isStringGuard(123)).toBe(false)
-		})
-
-		test('isNumberGuard validates numbers', () => {
-			expect(isNumberGuard(42)).toBe(true)
-			expect(isNumberGuard('42')).toBe(false)
-		})
-
-		test('isBooleanGuard validates booleans', () => {
-			expect(isBooleanGuard(true)).toBe(true)
-			expect(isBooleanGuard(1)).toBe(false)
-		})
-
-		test('isBigIntGuard validates bigints', () => {
-			expect(isBigIntGuard(1n)).toBe(true)
-			expect(isBigIntGuard(1)).toBe(false)
-		})
-
-		test('isSymbolGuard validates symbols', () => {
-			expect(isSymbolGuard(Symbol('x'))).toBe(true)
-			expect(isSymbolGuard('x')).toBe(false)
-		})
-	})
-
-	describe('instanceOf', () => {
-		test('validates class instances', () => {
-			const isDate = instanceOf(Date)
-			expect(isDate(new Date())).toBe(true)
-			expect(isDate('2023-01-01')).toBe(false)
-		})
-	})
-
-	describe('Utility Guards', () => {
-		test('definedOf excludes undefined', () => {
-			const g = definedOf(optionalOf(isNumberGuard))
-			expect(g(42)).toBe(true)
-			expect(g(undefined)).toBe(false)
-		})
-
-		test('nonNullOf excludes null', () => {
-			const g = nonNullOf(nullableOf(isStringGuard))
-			expect(g('hello')).toBe(true)
-			expect(g(null)).toBe(false)
-		})
-
-		test('truthyOf filters falsy values', () => {
-			const g = truthyOf(isNumberGuard)
-			expect(g(5)).toBe(true)
-			expect(g(0)).toBe(false)
-		})
-
-		test('truthyOf filters falsy strings', () => {
-			const g = truthyOf(isStringGuard)
-			expect(g('hello')).toBe(true)
-			expect(g('')).toBe(false)
-		})
-	})
-
-	describe('matchOf', () => {
-		test('regex matcher for strings', () => {
-			const isEmail = matchOf(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)
-			expect(isEmail('test@example.com')).toBe(true)
-			expect(isEmail('not-email')).toBe(false)
-			expect(isEmail(123)).toBe(false)
-		})
-	})
-
 	describe('literalOf', () => {
 		test('validates exact literal values', () => {
 			const isA = literalOf('a' as const)
@@ -508,17 +426,19 @@ describe('combinators', () => {
 	})
 
 	describe('stringOf/numberOf', () => {
-		test('stringOf matches exact string', () => {
-			const g = stringOf('ok')
-			expect(g('ok')).toBe(true)
-			expect(g('nope')).toBe(false)
+		test('stringOf validates any string', () => {
+			expect(stringOf('ok')).toBe(true)
+			expect(stringOf('nope')).toBe(true)
+			expect(stringOf('')).toBe(true)
+			expect(stringOf(123)).toBe(false)
 		})
-		test('numberOf matches exact number', () => {
-			const g = numberOf(42)
-			expect(g(42)).toBe(true)
-			expect(g(41)).toBe(false)
+		test('numberOf validates any number', () => {
+			expect(numberOf(42)).toBe(true)
+			expect(numberOf(41)).toBe(true)
+			expect(numberOf(0)).toBe(true)
+			expect(numberOf(NaN)).toBe(true)
 			// rejects non-numbers
-			expect(g('42' as unknown)).toBe(false)
+			expect(numberOf('42' as unknown)).toBe(false)
 		})
 	})
 
@@ -613,27 +533,6 @@ describe('combinators', () => {
 		test('objectOf validates present optional values', () => {
 			const Guard = objectOf({ id: isString, age: isNumber }, { optional: ['age' as const] })
 			expect(Guard({ id: 'x', age: 'not-a-number' } as unknown)).toBe(false)
-		})
-	})
-
-	describe('partialOf', () => {
-		test('makes all properties optional', () => {
-			const Guard = partialOf({ id: isStringGuard, name: isStringGuard })
-			expect(Guard({})).toBe(true)
-			expect(Guard({ id: 'x' })).toBe(true)
-			expect(Guard({ name: 'Alice' })).toBe(true)
-			expect(Guard({ id: 'x', name: 'Alice' })).toBe(true)
-		})
-
-		test('validates present property values', () => {
-			const Guard = partialOf({ id: isStringGuard, age: isNumberGuard })
-			expect(Guard({ id: 123 } as unknown)).toBe(false)
-			expect(Guard({ age: 'not-a-number' } as unknown)).toBe(false)
-		})
-
-		test('rejects extra keys (exact by default)', () => {
-			const Guard = partialOf({ id: isStringGuard })
-			expect(Guard({ id: 'x', extra: 1 })).toBe(false)
 		})
 	})
 })

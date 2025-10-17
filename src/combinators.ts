@@ -291,7 +291,8 @@ export function objectOf<
 ): Guard<FromGuardsWithOptional<P, Opt>> {
 	const declaredKeys = Object.keys(props) as readonly (keyof P & string)[]
 	const optional = new Set<PropertyKey>(options.optional as readonly PropertyKey[] | undefined)
-	const exact = options.exact === true
+	// Exact by default: reject extra keys unless explicitly allowed
+	const exact = options.exact !== false
 	const rest = options.rest
 
 	return (x: unknown): x is FromGuardsWithOptional<P, Opt> => {
@@ -465,36 +466,28 @@ export function stringMatchOf(re: RegExp): Guard<string> {
 }
 
 /**
- * Create a guard that matches an exact string value.
+ * Guard that checks if a value is a string.
  *
- * @param s - Exact string to match
- * @returns Guard that accepts only the exact string `s`
+ * @returns Guard for the `string` type
  * @example
  * ```ts
- * const g = stringOf('ok')
- * g('ok') // true
- * g('nope') // false
+ * stringOf('hello') // true
+ * stringOf(123) // false
  * ```
  */
-export function stringOf<const S extends string>(s: S): Guard<S> {
-	return (x: unknown): x is S => x === s
-}
+export const stringOf: Guard<string> = (x: unknown): x is string => isString(x)
 
 /**
- * Create a guard that matches an exact number value.
+ * Guard that checks if a value is a number.
  *
- * @param n - Exact number to match
- * @returns Guard that accepts only the exact number `n`
+ * @returns Guard for the `number` type
  * @example
  * ```ts
- * const g = numberOf(42)
- * g(42) // true
- * g(41) // false
+ * numberOf(42) // true
+ * numberOf('42') // false
  * ```
  */
-export function numberOf<const N extends number>(n: N): Guard<N> {
-	return (x: unknown): x is N => typeof x === 'number' && x === n
-}
+export const numberOf: Guard<number> = (x: unknown): x is number => isNumber(x)
 
 // ------------------------------------------------------------
 // Unified range/limit comparators (length/size/count aware)
@@ -792,10 +785,9 @@ export function functionOf<T>(_returnGuard: Guard<T>): Guard<(...args: unknown[]
  * ```
  */
 export function measureOf(n: number): Guard<number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>> {
-	const byNum = numberOf(n)
 	const byLen = lengthOf(n)
 	const bySize = sizeOf(n)
 	const byCount = countOf(n)
 	return (x: unknown): x is number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown> =>
-		byNum(x) || byLen(x) || bySize(x) || byCount(x)
+		(typeof x === 'number' && x === n) || byLen(x) || bySize(x) || byCount(x)
 }
