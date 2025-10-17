@@ -6,12 +6,6 @@ export type Guard<T> = (x: unknown) => x is T
 // Extract the guarded type `T` from a `Guard<T>`.
 export type GuardType<G> = G extends Guard<infer T> ? T : never
 
-// Alias for extracting guarded type (per spec naming).
-export type InferGuard<G> = G extends Guard<infer T> ? T : never
-
-// Combine two guards into an intersection guard type.
-export type CombineGuards<A, B> = Guard<InferGuard<A> & InferGuard<B>>
-
 // Mapping from string keys to guard functions.
 export type GuardsShape = Readonly<Record<string, Guard<unknown>>>
 

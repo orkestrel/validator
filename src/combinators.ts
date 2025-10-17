@@ -1,79 +1,10 @@
 import type { Guard, Result, UnionToIntersection, GuardsShape, EmptyOf, ObjectOfOptions, FromGuardsWithOptional } from './types.js'
 import { isRecord, isCount } from './objects.js'
-import { isString as isStringPrimitive, isNumber as isNumberPrimitive, isBoolean as isBooleanPrimitive, isBigInt as isBigIntPrimitive, isSymbol as isSymbolPrimitive, isIterable } from './primitives.js'
+import { isString, isNumber, isIterable } from './primitives.js'
 import { isLength } from './arrays.js'
 import { isSize } from './collections.js'
 import { isEmpty } from './emptiness.js'
 import { countEnumerableProperties } from './helpers.js'
-
-// ------------------------------------------------------------
-// Base Primitives
-// ------------------------------------------------------------
-
-/**
- * Guard that checks if a value is a string.
- *
- * @returns Guard for the `string` type
- * @example
- * ```ts
- * const isStr = stringOf
- * isStr('hello') // true
- * isStr(123) // false
- * ```
- */
-export const stringOf: Guard<string> = (x: unknown): x is string => isStringPrimitive(x)
-
-/**
- * Guard that checks if a value is a number.
- *
- * @returns Guard for the `number` type
- * @example
- * ```ts
- * const isNum = numberOf
- * isNum(42) // true
- * isNum('42') // false
- * ```
- */
-export const numberOf: Guard<number> = (x: unknown): x is number => isNumberPrimitive(x)
-
-/**
- * Guard that checks if a value is a boolean.
- *
- * @returns Guard for the `boolean` type
- * @example
- * ```ts
- * const isBool = booleanOf
- * isBool(true) // true
- * isBool(1) // false
- * ```
- */
-export const booleanOf: Guard<boolean> = (x: unknown): x is boolean => isBooleanPrimitive(x)
-
-/**
- * Guard that checks if a value is a bigint.
- *
- * @returns Guard for the `bigint` type
- * @example
- * ```ts
- * const isBig = bigintOf
- * isBig(1n) // true
- * isBig(1) // false
- * ```
- */
-export const bigintOf: Guard<bigint> = (x: unknown): x is bigint => isBigIntPrimitive(x)
-
-/**
- * Guard that checks if a value is a symbol.
- *
- * @returns Guard for the `symbol` type
- * @example
- * ```ts
- * const isSym = symbolOf
- * isSym(Symbol('x')) // true
- * isSym('x') // false
- * ```
- */
-export const symbolOf: Guard<symbol> = (x: unknown): x is symbol => isSymbolPrimitive(x)
 
 /**
  * Create a guard that accepts one of the provided literal values.
@@ -91,24 +22,6 @@ export function literalOf<const Literals extends readonly (string | number | boo
 	...literals: Literals
 ): Guard<Literals[number]> {
 	return (x: unknown): x is Literals[number] => literals.includes(x as never)
-}
-
-/**
- * Create a guard that checks if a value is an instance of a class.
- *
- * @param ctor - Constructor/class to check against
- * @returns Guard that validates instanceof the constructor
- * @example
- * ```ts
- * const isDate = instanceOf(Date)
- * isDate(new Date()) // true
- * isDate('2023-01-01') // false
- * ```
- */
-export function instanceOf<C extends new (...args: unknown[]) => unknown>(
-	ctor: C,
-): Guard<InstanceType<C>> {
-	return (x: unknown): x is InstanceType<C> => x instanceof ctor
 }
 
 /**
@@ -231,86 +144,13 @@ export function optionalOf<T>(g: Guard<T>): Guard<T | undefined> {
  * @returns Guard allowing `null` or `T`
  * @example
  * ```ts
- * nullableOf(stringOf)(null) // true
- * nullableOf(stringOf)('hello') // true
- * nullableOf(stringOf)(123) // false
+ * nullableOf(isString)(null) // true
+ * nullableOf(isString)('hello') // true
+ * nullableOf(isString)(123) // false
  * ```
  */
 export function nullableOf<T>(g: Guard<T>): Guard<T | null> {
 	return (x: unknown): x is T | null => x === null || g(x)
-}
-
-// ------------------------------------------------------------
-// Utility Guards
-// ------------------------------------------------------------
-
-/**
- * Create a guard that ensures a value is not undefined.
- *
- * @param g - Base guard for the value type
- * @returns Guard that excludes `undefined` from the type
- * @example
- * ```ts
- * const g = definedOf(optionalOf(numberOf))
- * g(42) // true
- * g(undefined) // false
- * ```
- */
-export function definedOf<T>(g: Guard<T>): Guard<Exclude<T, undefined>> {
-	return (x: unknown): x is Exclude<T, undefined> => x !== undefined && g(x)
-}
-
-/**
- * Create a guard that ensures a value is not null.
- *
- * @param g - Base guard for the value type
- * @returns Guard that excludes `null` from the type
- * @example
- * ```ts
- * const g = nonNullOf(nullableOf(stringOf))
- * g('hello') // true
- * g(null) // false
- * ```
- */
-export function nonNullOf<T>(g: Guard<T>): Guard<Exclude<T, null>> {
-	return (x: unknown): x is Exclude<T, null> => x !== null && g(x)
-}
-
-/**
- * Create a guard that filters out falsy values.
- *
- * Excludes: `false`, `0`, `''`, `null`, `undefined`
- *
- * Note: While `NaN` is falsy in JavaScript, it remains in the type since it cannot
- * be distinguished from other numbers at the type level.
- *
- * @param g - Base guard for the value type
- * @returns Guard that excludes falsy values from the type
- * @example
- * ```ts
- * const g = truthyOf(numberOf)
- * g(5) // true
- * g(0) // false
- * ```
- */
-export function truthyOf<T>(g: Guard<T>): Guard<Exclude<T, 0 | '' | false | null | undefined>> {
-	return (x: unknown): x is Exclude<T, 0 | '' | false | null | undefined> => !!x && g(x)
-}
-
-/**
- * Create a guard for a non-empty array with at least one element.
- *
- * @param elem - Guard to validate each element
- * @returns Guard that accepts non-empty arrays of `T`
- * @example
- * ```ts
- * const g = arrayNonEmptyOf(numberOf)
- * g([1, 2, 3]) // true
- * g([]) // false
- * ```
- */
-export function arrayNonEmptyOf<T>(elem: Guard<T>): Guard<readonly [T, ...T[]]> {
-	return (x: unknown): x is readonly [T, ...T[]] => Array.isArray(x) && x.length > 0 && x.every(elem)
 }
 
 /**
@@ -329,117 +169,18 @@ export function lazyOf<T>(thunk: () => Guard<T>): Guard<T> {
 }
 
 /**
- * Create a refined guard that narrows types using additional runtime checks.
+ * Create a refined guard that narrows `T` to `U` using `refineFn`.
  *
- * Overloads:
- * - `refineOf(predicate)` — predicate-based refinement from `unknown`
- * - `refineOf(base, predicate)` — refine within an existing guard with type predicate
- * - `refineOf(base, predicate)` — refine within an existing guard with boolean predicate
- *
- * @param baseOrPredicate - Base guard or standalone predicate
- * @param predicate - Optional refinement predicate when base is provided
- * @returns Refined guard
+ * @param base - Base guard for `T`
+ * @param refineFn - Type predicate that narrows `T` to `U`
+ * @returns Guard for `U`
  * @example
  * ```ts
- * const isUser = objectOf({ id: stringOf, name: stringOf, age: optionalOf(numberOf) })
- * const isAdult = refineOf(isUser, u => u.age !== undefined && u.age >= 18)
- * // Type: Guard<{ id: string; name: string; age: number }>
- * ```
- * @example
- * ```ts
- * const isPositive = refineOf(numberOf, n => n > 0)
- * isPositive(5) // true
- * isPositive(-1) // false
+ * const g = refineOf(isNumber, (n): n is 1 | 2 => n === 1 || n === 2)
  * ```
  */
-export function refineOf<T>(predicate: (value: T) => boolean): Guard<T>
-export function refineOf<T, S extends T>(base: Guard<T>, predicate: (value: T) => value is S): Guard<S>
-export function refineOf<T>(base: Guard<T>, predicate: (value: T) => boolean): Guard<T>
-export function refineOf<T, S extends T>(
-	baseOrPredicate: Guard<T> | ((value: T) => boolean),
-	predicate?: ((value: T) => value is S) | ((value: T) => boolean),
-): Guard<T> | Guard<S> {
-	if (predicate === undefined) {
-		// Single argument: standalone predicate
-		const pred = baseOrPredicate as (value: T) => boolean
-		return (x: unknown): x is T => {
-			try {
-				return pred(x as T)
-			}
-			catch {
-				return false
-			}
-		}
-	}
-	// Two arguments: base guard + refinement predicate
-	const base = baseOrPredicate as Guard<T>
-	const refineFn = predicate
-	return (x: unknown): x is T & S => (base(x) ? refineFn(x) : false)
-}
-
-/**
- * Create guards using pattern or functional matching.
- *
- * Overloads:
- * - `matchOf(pattern)` — regex matcher for strings
- * - `matchOf(predicate)` — predicate matcher
- * - `matchOf(base, matcher)` — pattern/predicate matcher combined with base guard
- *
- * @param patternOrBase - RegExp pattern, predicate, or base guard
- * @param matcher - Optional matcher when base is provided
- * @returns Guard that validates the match
- * @example
- * ```ts
- * const isEmail = matchOf(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)
- * isEmail('test@example.com') // true
- * isEmail('not-email') // false
- * ```
- * @example
- * ```ts
- * const hasEmail = matchOf(
- *   objectOf({ email: stringOf }),
- *   u => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(u.email)
- * )
- * ```
- */
-export function matchOf(pattern: RegExp): Guard<string>
-export function matchOf<T>(predicate: (value: T) => boolean): Guard<T>
-export function matchOf<T>(base: Guard<T>, matcher: RegExp | ((value: T) => boolean)): Guard<T>
-export function matchOf<T>(
-	patternOrBase: RegExp | ((value: T) => boolean) | Guard<T>,
-	matcher?: RegExp | ((value: T) => boolean),
-): Guard<string> | Guard<T> {
-	if (matcher === undefined) {
-		// Single argument
-		if (patternOrBase instanceof RegExp) {
-			// Regex matcher for strings
-			const pattern = patternOrBase
-			return (x: unknown): x is string => isStringPrimitive(x) && pattern.test(x)
-		}
-		// Predicate matcher
-		const predicate = patternOrBase as (value: T) => boolean
-		return (x: unknown): x is T => {
-			try {
-				return predicate(x as T)
-			}
-			catch {
-				return false
-			}
-		}
-	}
-	// Two arguments: base guard + matcher
-	const base = patternOrBase as Guard<T>
-	if (matcher instanceof RegExp) {
-		const pattern = matcher
-		return (x: unknown): x is T => {
-			if (!base(x)) return false
-			// Assume T has a string representation or is a string
-			const str = String(x)
-			return pattern.test(str)
-		}
-	}
-	const predicate = matcher as (value: T) => boolean
-	return (x: unknown): x is T => base(x) && predicate(x)
+export function refineOf<T, U extends T>(base: Guard<T>, refineFn: (x: T) => x is U): Guard<U> {
+	return (x: unknown): x is U => (base(x) ? refineFn(x) : false)
 }
 
 /**
@@ -526,9 +267,9 @@ export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E
  * @returns Guard validating objects that satisfy the provided shape
  * @example
  * ```ts
- * import { objectOf, stringOf, numberOf } from '@orkestrel/validator'
+ * import { objectOf, isString, isNumber } from '@orkestrel/validator'
  * const User = objectOf(
- *   { id: stringOf, age: numberOf },
+ *   { id: isString, age: isNumber },
  *   { optional: ['age' as const], exact: true }
  * )
  * // Type narrows to: { readonly id: string; readonly age?: number }
@@ -536,7 +277,7 @@ export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E
  * @example
  * ```ts
  * // Allow extras that match the rest guard
- * const Bag = objectOf({ id: stringOf }, { rest: numberOf })
+ * const Bag = objectOf({ id: isString }, { rest: isNumber })
  * Bag({ id: 'b-1', a: 1, b: 2 })  // true
  * Bag({ id: 'b-1', a: 'nope' })   // false
  * ```
@@ -578,47 +319,6 @@ export function objectOf<
 
 		return true
 	}
-}
-
-/**
- * Create a guard that makes all properties of an object optional.
- *
- * @param props - Object shape definition
- * @returns Guard for partial version of the object type
- * @example
- * ```ts
- * const isUser = { id: stringOf, name: stringOf }
- * const isPartialUser = partialOf(isUser)
- * isPartialUser({}) // true
- * isPartialUser({ id: 'x' }) // true
- * isPartialUser({ id: 'x', name: 'Alice' }) // true
- * ```
- */
-export function partialOf<P extends GuardsShape>(
-	props: P,
-): Guard<Partial<FromGuardsWithOptional<P, readonly []>>> {
-	const allKeys = Object.keys(props) as readonly (keyof P)[]
-	return objectOf(props, { optional: allKeys }) as Guard<Partial<FromGuardsWithOptional<P, readonly []>>>
-}
-
-/**
- * Create a guard that ensures no extra keys beyond the specified shape.
- *
- * This is a convenience wrapper around `objectOf` with `exact: true`.
- *
- * @param props - Mapping of property names to guard functions
- * @returns Guard that validates exact object shape with no extra keys
- * @example
- * ```ts
- * const isUser = exactOf({ id: stringOf, name: stringOf })
- * isUser({ id: 'x', name: 'Alice' }) // true
- * isUser({ id: 'x', name: 'Alice', extra: 1 }) // false
- * ```
- */
-export function exactOf<P extends GuardsShape>(
-	props: P,
-): Guard<FromGuardsWithOptional<P, readonly []>> {
-	return objectOf(props, { exact: true }) as Guard<FromGuardsWithOptional<P, readonly []>>
 }
 
 // ------------------------------------------------------------
@@ -761,7 +461,39 @@ export function tupleOf<const Gs extends readonly Guard<unknown>[]>(
  * ```
  */
 export function stringMatchOf(re: RegExp): Guard<string> {
-	return (x: unknown): x is string => isStringPrimitive(x) && re.test(x)
+	return (x: unknown): x is string => isString(x) && re.test(x)
+}
+
+/**
+ * Create a guard that matches an exact string value.
+ *
+ * @param s - Exact string to match
+ * @returns Guard that accepts only the exact string `s`
+ * @example
+ * ```ts
+ * const g = stringOf('ok')
+ * g('ok') // true
+ * g('nope') // false
+ * ```
+ */
+export function stringOf<const S extends string>(s: S): Guard<S> {
+	return (x: unknown): x is S => x === s
+}
+
+/**
+ * Create a guard that matches an exact number value.
+ *
+ * @param n - Exact number to match
+ * @returns Guard that accepts only the exact number `n`
+ * @example
+ * ```ts
+ * const g = numberOf(42)
+ * g(42) // true
+ * g(41) // false
+ * ```
+ */
+export function numberOf<const N extends number>(n: N): Guard<N> {
+	return (x: unknown): x is N => typeof x === 'number' && x === n
 }
 
 // ------------------------------------------------------------
@@ -912,7 +644,7 @@ export function rangeOf(min: number, max: number): Guard<number | string | Reado
  * ```
  */
 export function multipleOf(m: number): Guard<number> {
-	return (x: unknown): x is number => isNumberPrimitive(x) && Number.isFinite(m) && m !== 0 && x % m === 0
+	return (x: unknown): x is number => isNumber(x) && Number.isFinite(m) && m !== 0 && x % m === 0
 }
 
 /**
@@ -977,56 +709,22 @@ export function keyOf<const O extends Readonly<Record<PropertyKey, unknown>>>(ob
 }
 
 /**
- * Create a guard for a plain-object record with uniform key and value types.
+ * Create a guard for a plain-object record whose values match a guard.
  *
- * Overloads:
- * - `recordOf(valueGuard)` — validates all string keys map to values matching valueGuard
- * - `recordOf(keyGuard, valueGuard)` — validates keys and values both match guards
- *
- * @param keyOrValueGuard - Guard for keys when two args, or values when one arg
- * @param valueGuard - Optional guard for values when two args provided
- * @returns Guard that accepts records matching the key/value guards
+ * @param valueGuard - Guard for property values
+ * @returns Guard that accepts records of `T`
  * @example
  * ```ts
- * const g = recordOf(numberOf)
+ * const g = recordOf(isNumber)
  * g({ a: 1, b: 2 }) // true
  * g({ a: 1, b: 'x' }) // false
  * ```
- * @example
- * ```ts
- * const g = recordOf(stringOf, numberOf)
- * g({ a: 1, b: 2 }) // true
- * ```
  */
-export function recordOf<T>(valueGuard: Guard<T>): Guard<Record<string, T>>
-export function recordOf<K extends string | number | symbol, V>(
-	keyGuard: Guard<K>,
-	valueGuard: Guard<V>,
-): Guard<Record<K, V>>
-export function recordOf<K extends string | number | symbol, V>(
-	keyOrValueGuard: Guard<K> | Guard<V>,
-	valueGuard?: Guard<V>,
-): Guard<Record<string, V>> | Guard<Record<K, V>> {
-	if (valueGuard === undefined) {
-		// Single argument: value guard only (keys are strings)
-		const vg = keyOrValueGuard as Guard<V>
-		return (x: unknown): x is Record<string, V> => {
-			if (!isRecord(x)) return false
-			for (const k of Object.keys(x)) {
-				if (!vg((x as Record<string, unknown>)[k])) return false
-			}
-			return true
-		}
-	}
-	// Two arguments: key and value guards
-	const kg = keyOrValueGuard as Guard<K>
-	const vg = valueGuard
-	return (x: unknown): x is Record<K, V> => {
+export function recordOf<T>(valueGuard: Guard<T>): Guard<Record<string, T>> {
+	return (x: unknown): x is Record<string, T> => {
 		if (!isRecord(x)) return false
 		for (const k of Object.keys(x)) {
-			// Keys from Object.keys are always strings, so we need to validate them against K
-			if (!kg(k)) return false
-			if (!vg((x as Record<string, unknown>)[k])) return false
+			if (!valueGuard((x as Record<string, unknown>)[k])) return false
 		}
 		return true
 	}
@@ -1094,9 +792,10 @@ export function functionOf<T>(_returnGuard: Guard<T>): Guard<(...args: unknown[]
  * ```
  */
 export function measureOf(n: number): Guard<number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>> {
+	const byNum = numberOf(n)
 	const byLen = lengthOf(n)
 	const bySize = sizeOf(n)
 	const byCount = countOf(n)
 	return (x: unknown): x is number | string | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown> =>
-		(typeof x === 'number' && x === n) || byLen(x) || bySize(x) || byCount(x)
+		byNum(x) || byLen(x) || bySize(x) || byCount(x)
 }
