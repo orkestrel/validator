@@ -256,3 +256,4 @@ const Username = intersectionOf(
 
 ## Progress log
 - 2025-10-17: Consolidated on `whereOf` for predicate confirmation that preserves the base type `T`. Removed mentions of “refineOf/refinementOf” from direction docs and public guides; code already exposes `whereOf` with strict, overload-backed typing and tests in `tests/combinators.test.ts`.
+- 2025-10-17: Refactored `src/combinators.ts` (1635 lines) into modular structure: created `src/combinators/` folder with separate files for wrapper combinators (primitives, arrays, collections, strings, functions, domains, emptiness, measurements), keeping core combinators (literalOf, objectOf, unionOf, intersectionOf, whereOf, etc.) in main file. Added mirrored test files in `tests/combinators/` folder. All tests pass (444 tests total).
