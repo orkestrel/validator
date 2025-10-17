@@ -221,7 +221,7 @@ describe('combinators', () => {
 
 	describe('lazyOf', () => {
 		test('supports recursive types', () => {
-			type Node = { value: number, next?: Node | undefined }
+			type _Node = { value: number, next?: _Node | undefined }
 			const isNode = lazyOf(() =>
 				objectOf({ value: numberOf, next: optionalOf(isNode) }, { optional: ['next' as const], exact: true }),
 			)
