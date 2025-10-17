@@ -279,7 +279,10 @@ export function nonNullOf<T>(g: Guard<T>): Guard<Exclude<T, null>> {
 /**
  * Create a guard that filters out falsy values.
  *
- * Excludes: `false`, `0`, `''`, `null`, `undefined`, `NaN`
+ * Excludes: `false`, `0`, `''`, `null`, `undefined`
+ *
+ * Note: While `NaN` is falsy in JavaScript, it remains in the type since it cannot
+ * be distinguished from other numbers at the type level.
  *
  * @param g - Base guard for the value type
  * @returns Guard that excludes falsy values from the type
@@ -371,7 +374,7 @@ export function refineOf<T, S extends T>(
 	// Two arguments: base guard + refinement predicate
 	const base = baseOrPredicate as Guard<T>
 	const refineFn = predicate
-	return (x: unknown): x is T & S => (base(x) ? (refineFn(x) as boolean) : false)
+	return (x: unknown): x is T & S => (base(x) ? refineFn(x) : false)
 }
 
 /**
@@ -1021,7 +1024,8 @@ export function recordOf<K extends string | number | symbol, V>(
 	return (x: unknown): x is Record<K, V> => {
 		if (!isRecord(x)) return false
 		for (const k of Object.keys(x)) {
-			if (!kg(k as K)) return false
+			// Keys from Object.keys are always strings, so we need to validate them against K
+			if (!kg(k)) return false
 			if (!vg((x as Record<string, unknown>)[k])) return false
 		}
 		return true
