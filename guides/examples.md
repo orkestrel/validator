@@ -95,12 +95,12 @@ if (!r.equal) {
 
 HTTP request guard
 ```ts
-import { objectOf, literalOf, stringMatchOf, isHttpUrlString } from '@orkestrel/validator'
+import { objectOf, literalOf, stringMatchOf, isURL } from '@orkestrel/validator'
 
 const isHeaderName = stringMatchOf(/^[A-Za-z0-9-]+$/)
 const isHeaders = objectOf({ }, { rest: isHeaderName }) // any key -> header name; simplistic example
 const isRequest = objectOf(
-  { method: literalOf('GET','POST','PUT','PATCH','DELETE' as const), url: isHttpUrlString, headers: isHeaders },
+  { method: literalOf('GET','POST','PUT','PATCH','DELETE' as const), url: isURL, headers: isHeaders },
   { exact: true },
 )
 
