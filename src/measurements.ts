@@ -1,5 +1,6 @@
 import { countEnumerableProperties } from './helpers'
 import { isRecord } from './objects'
+import type { MeasureKind } from './types'
 
 /**
  * Check the exact length of strings and arrays.
@@ -328,4 +329,71 @@ export function isCountRange(x: unknown, min: number, max: number): boolean {
 	if (!isRecord(x)) return false
 	const c = countEnumerableProperties(x)
 	return c >= min && c <= max
+}
+
+/**
+ * Check whether a value's unified measure equals `expected`.
+ *
+ * Kinds:
+ * - 'value'  → numbers (identity)
+ * - 'length' → strings, arrays, functions (arity via `.length`)
+ * - 'size'   → Map/Set (`.size`)
+ * - 'count'  → objects (own enumerable keys + enumerable symbols)
+ * @param x
+ * @param kind
+ * @param expected
+ * @example
+ */
+export function isMeasure(x: unknown, kind: MeasureKind, expected: number): boolean {
+	if (kind === 'value') return typeof x === 'number' && x === expected
+	if (kind === 'length') return isLength(x as unknown, expected)
+	if (kind === 'size') return isSize(x as unknown, expected)
+	if (kind === 'count') return isCount(x as unknown, expected)
+	return false
+}
+
+/**
+ * Check whether a value's unified measure is at least `min` (inclusive).
+ * @param x
+ * @param kind
+ * @param min
+ * @example
+ */
+export function isMin(x: unknown, kind: MeasureKind, min: number): boolean {
+	if (kind === 'value') return typeof x === 'number' && x >= min
+	if (kind === 'length') return isLengthMin(x as unknown, min)
+	if (kind === 'size') return isSizeMin(x as unknown, min)
+	if (kind === 'count') return isCountMin(x as unknown, min)
+	return false
+}
+
+/**
+ * Check whether a value's unified measure is at most `max` (inclusive).
+ * @param x
+ * @param kind
+ * @param max
+ * @example
+ */
+export function isMax(x: unknown, kind: MeasureKind, max: number): boolean {
+	if (kind === 'value') return typeof x === 'number' && x <= max
+	if (kind === 'length') return isLengthMax(x as unknown, max)
+	if (kind === 'size') return isSizeMax(x as unknown, max)
+	if (kind === 'count') return isCountMax(x as unknown, max)
+	return false
+}
+
+/**
+ * Check whether a value's unified measure is within the inclusive range [min, max].
+ * @param x
+ * @param kind
+ * @param min
+ * @param max
+ * @example
+ */
+export function isRange(x: unknown, kind: MeasureKind, min: number, max: number): boolean {
+	if (kind === 'value') return typeof x === 'number' && x >= min && x <= max
+	if (kind === 'length') return isLengthRange(x as unknown, min, max)
+	if (kind === 'size') return isSizeRange(x as unknown, min, max)
+	if (kind === 'count') return isCountRange(x as unknown, min, max)
+	return false
 }

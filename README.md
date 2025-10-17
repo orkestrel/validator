@@ -70,8 +70,8 @@ const schema = {
 - Primitives: `isString`, `isNumber` (finite), `isBoolean`, `isFunction`, `isAsyncFunction`, `isDate`, `isRegExp`, `isError`, `isPromiseLike`
 - Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isPromiseFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`, `isZeroArgPromise`
 - Objects & keys: `isObject`, `isRecord`, `keyOf`
-- Arrays/collections: `isArray`, `arrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`, `iterableOf`, `functionOf`
-- Strings/numbers: `stringMatchOf`, `stringOf`, `numberOf`, `isLowercase`, `isUppercase`, `isAlphanumeric`, `isAscii`, `isHexColor`, `isIPv4String`, `isIPv6String`, `isHostnameString`
+- Arrays/collections: `isArray`, `arrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`, `iterableOf`
+- Strings/numbers: `matchOf`, `stringOf`, `numberOf`, `isLowercase`, `isUppercase`, `isAlphanumeric`, `isAscii`, `isHexColor`, `isIPv4String`, `isIPv6String`, `isHostnameString`
 - Size/length/count: `lengthOf`, `sizeOf`, `countOf`, `minOf`, `maxOf`, `rangeOf`, `measureOf`, `multipleOf`
 
 Each guard accepts `unknown` and returns a precise `x is T` predicate. Helpers are pure and do not mutate inputs.
@@ -82,16 +82,16 @@ Build complex shapes from small parts:
 
 ```ts
 import {
-  literalOf, andOf, orOf, notOf, unionOf, intersectionOf,
-  optionalOf, nullableOf, lazyOf, refineOf, enumOf, discriminatedUnionOf,
+  literalOf, andOf, orOf, notOf, complementOf, unionOf, intersectionOf,
+  optionalOf, nullableOf, lazyOf, whereOf, enumOf, discriminatedUnionOf,
   isString, isNumber, objectOf,
-  emptyOf, nonEmptyOf, stringMatchOf, stringOf, numberOf,
+  emptyOf, nonEmptyOf, matchOf, stringOf, numberOf,
   lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, multipleOf,
   mapOf, setOf, keyOf, recordOf, iterableOf, measureOf,
 } from '@orkestrel/validator'
 
-// Literal unions and refinement
-const isId = refineOf(isString, (s): s is string => s.length > 0)
+// Literal unions and where-clause confirmation (preserves base type)
+const isId = whereOf(isString, s => s.length > 0)
 const isLevel = literalOf('info','warn','error' as const)
 
 // Logical combinators
@@ -102,10 +102,10 @@ const isStringOrNumber = orOf(isString, isNumber)
 const notString = notOf(isString) // Guard<unknown>
 
 // Typed exclusion using a base guard (precise Exclude)
-const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
-const isRect   = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
+const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber })
+const isRect   = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber })
 const isShape  = unionOf(isCircle, isRect)
-const notCircle = notOf(isShape, isCircle) // Guard<{ kind: 'rect', w: number, h: number }>
+const notCircle = complementOf(isShape, isCircle) // Guard<{ kind: 'rect', w: number, h: number }>
 
 // Size/length/count constraints
 const twoChars = lengthOf(2)        // string or array with length 2
@@ -121,30 +121,31 @@ const mustHaveItems = nonEmptyOf(arrayOf(isNumber)) // non-empty number array
 ## Schema and object builders
 
 - `isSchema(obj, schema)` — declarative shape with primitive tags and nested guards. All schema keys are required.
-- `objectOf(props, { optional, exact, rest })` — build guards for objects programmatically with precise types. Keys in the `optional` array are reflected as optional properties in the narrowed type.
+- `objectOf(props, { rest })` — exact-by-default shape checks with optional `rest` guard for extras.
+- `optionalOf(shape, optionalKeys, { rest })` — mark specific keys optional while keeping exact-by-default behavior.
 
 ```ts
-import { objectOf, isString, isNumber } from '@orkestrel/validator'
+import { objectOf, optionalOf, isString, isNumber } from '@orkestrel/validator'
 
-const User = objectOf(
+const User = optionalOf(
   { id: isString, age: isNumber, note: isString },
-  { optional: ['note' as const], exact: true },
+  ['note' as const],
 )
 // Type: { readonly id: string; readonly age: number; readonly note?: string }
 
 User({ id: 'u1', age: 41 })           // true
 User({ id: 'u1', age: 41, note: 'hi' }) // true
-User({ id: 'u1', age: 41, extra: 1 }) // false (exact)
+User({ id: 'u1', age: 41, extra: 1 }) // false (exact by default)
 ```
 
 **Replacing partial schemas:**
-There is no separate "partial schema" helper. Use `objectOf(..., { optional: [...] })` instead. When you include all keys in `optional`, this behaves like a "partial" version at both runtime and type level.
+There is no separate "partial schema" helper. Use `optionalOf(shape, [...allKeys])` to make all fields optional (still exact by default).
 
 ```ts
-// Make all fields optional by listing all keys in optional
-const PartialUser = objectOf(
+// Make all fields optional by listing all keys in optionalOf
+const PartialUser = optionalOf(
   { id: isString, age: isNumber, note: isString },
-  { optional: ['id' as const, 'age' as const, 'note' as const] },
+  ['id' as const, 'age' as const, 'note' as const],
 )
 // Type: { readonly id?: string; readonly age?: number; readonly note?: string }
 
@@ -199,7 +200,7 @@ Options:
     - `nonEmptyOf(guard)` — requires non-empty values and passing the guard
 - Opposites:
     - `notOf(guard)` — simple negation (returns `Guard<unknown>`)
-    - `notOf(base, exclude)` — typed exclusion: `Exclude<Base, Excluded>`
+    - `complementOf(base, exclude)` — typed exclusion: `Exclude<Base, Excluded>`
 
 ## TypeScript and build
 

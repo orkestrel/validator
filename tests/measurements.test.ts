@@ -8,7 +8,10 @@ import {
 	isSize,
 	isCountRange,
 	isCountMin,
-	isCountMax, isSizeMin, isSizeMax, isSizeRange,
+	isCountMax,
+	isSizeMin,
+	isSizeMax,
+	isSizeRange,
 } from '../src/measurements.js'
 
 describe('measurements', () => {

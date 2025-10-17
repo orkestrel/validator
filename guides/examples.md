@@ -30,15 +30,15 @@ if (
 
 Environment variables
 ```ts
-import { isNumber, isRange } from '@orkestrel/validator'
+import { isRecord, isString, isNumber, rangeOf, arrayOf } from '@orkestrel/validator'
 
 const env: unknown = { PORT: 8080, ALLOWED: ['a','b'] }
-const isValidPort = (x: unknown): x is number => isNumber(x) && isRange(1, 65535)(x)
+const isValidPort = (x: unknown): x is number => isNumber(x) && rangeOf(1, 65535)(x)
 
 if (
   isRecord(env)
   && isValidPort(env.PORT)
-  && Array.isArray(env.ALLOWED) && env.ALLOWED.every(isString)
+  && arrayOf(isString)(env.ALLOWED)
 ) {
   // env is valid
 } else {
@@ -50,8 +50,8 @@ Discriminated unions
 ```ts
 import { literalOf, discriminatedUnionOf, objectOf, isNumber } from '@orkestrel/validator'
 
-const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
-const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
+const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber })
+const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber })
 const isShape = discriminatedUnionOf('kind', { circle: isCircle, rect: isRect } as const)
 
 function area(x: unknown): number {
@@ -60,11 +60,12 @@ function area(x: unknown): number {
 }
 ```
 
-Optional/exact/rest objectOf
+Optional/rest with exact-by-default objects
 ```ts
-import { objectOf, isString, isNumber } from '@orkestrel/validator'
+import { objectOf, optionalOf, isString, isNumber } from '@orkestrel/validator'
 
-const User = objectOf({ id: isString, age: isNumber, note: isString }, { optional: ['note'], exact: true })
+// Exact by default; no extras allowed unless `rest` is provided
+const User = optionalOf({ id: isString, age: isNumber, note: isString }, ['note' as const])
 console.log(User({ id: 'u1', age: 41 })) // true
 console.log(User({ id: 'u1', age: 41, extra: 1 })) // false
 
@@ -95,13 +96,12 @@ if (!r.equal) {
 
 HTTP request guard
 ```ts
-import { objectOf, literalOf, stringMatchOf, isURL } from '@orkestrel/validator'
+import { objectOf, literalOf, matchOf, isURL } from '@orkestrel/validator'
 
-const isHeaderName = stringMatchOf(/^[A-Za-z0-9-]+$/)
+const isHeaderName = matchOf(/^[A-Za-z0-9-]+$/)
 const isHeaders = objectOf({ }, { rest: isHeaderName }) // any key -> header name; simplistic example
 const isRequest = objectOf(
   { method: literalOf('GET','POST','PUT','PATCH','DELETE' as const), url: isURL, headers: isHeaders },
-  { exact: true },
 )
 
 declare const input: unknown

@@ -9,22 +9,26 @@ import {
 	optionalOf,
 	nullableOf,
 	lazyOf,
-	refineOf,
+	whereOf,
 	discriminatedUnionOf,
 	enumOf,
-	safeParse,
 	objectOf,
 	arrayOf,
 	tupleOf,
-	stringMatchOf,
+	matchOf,
 	mapOf,
 	setOf,
 	keyOf,
 	recordOf,
 	iterableOf,
+	// callable family
 	functionOf,
-	nonEmptyOf,
-	emptyOf,
+	asyncFunctionOf,
+	generatorFunctionOf,
+	asyncGeneratorFunctionOf,
+	returnsOf,
+	promiseOf,
+	promiseLikeOf,
 	// Unified comparators
 	minOf,
 	maxOf,
@@ -36,6 +40,16 @@ import {
 	measureOf,
 	stringOf,
 	numberOf,
+	partialOf,
+	pickOf,
+	omitOf,
+	allOf,
+	emptyOf,
+	nonEmptyOf,
+	transformOf,
+	complementOf,
+	weakMapOf,
+	weakSetOf,
 } from '../src/combinators.js'
 import { isString, isNumber } from '../src/primitives.js'
 
@@ -87,26 +101,6 @@ describe('combinators', () => {
 			expect(notOf(isA)('a')).toBe(false)
 			expect(notOf(isA)('b')).toBe(true)
 		})
-
-		test('typed exclusion with base and exclude', () => {
-			const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
-			const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
-			const isShape = unionOf(isCircle, isRect)
-			const notCircle = notOf(isShape, isCircle)
-
-			// Accepts rectangles, rejects circles and non-shapes
-			expect(notCircle({ kind: 'rect', w: 2, h: 3 })).toBe(true)
-			expect(notCircle({ kind: 'circle', r: 1 })).toBe(false)
-			expect(notCircle({} as unknown)).toBe(false)
-		})
-
-		test('typed exclusion on primitives union', () => {
-			const isStringOrNumber = orOf(isString, isNumber)
-			const notString = notOf(isStringOrNumber, isString)
-			expect(notString(123)).toBe(true)
-			expect(notString('x')).toBe(false)
-			expect(notString(true as unknown)).toBe(false)
-		})
 	})
 
 	describe('unionOf', () => {
@@ -124,19 +118,19 @@ describe('combinators', () => {
 
 	describe('intersectionOf', () => {
 		test('validates intersection of guards', () => {
-			const isNonEmptyString = refineOf(isString, (s): s is string => s.length > 0)
+			const isNonEmptyString = whereOf(isString, s => s.length > 0)
 			const both = intersectionOf(isString as (x: unknown) => x is string, isNonEmptyString)
 			expect(both('x')).toBe(true)
 		})
 
 		test('returns false when any guard fails', () => {
-			const isNonEmptyString = refineOf(isString, (s): s is string => s.length > 0)
+			const isNonEmptyString = whereOf(isString, s => s.length > 0)
 			const both = intersectionOf(isString as (x: unknown) => x is string, isNonEmptyString)
 			expect(both('')).toBe(false)
 		})
 	})
 
-	describe('optionalOf', () => {
+	describe('optionalOf (value)', () => {
 		test('allows undefined', () => {
 			expect(optionalOf(isString)(undefined)).toBe(true)
 		})
@@ -168,47 +162,32 @@ describe('combinators', () => {
 		test('supports recursive types', () => {
 			type Node = { value: number, next?: Node | undefined }
 			const isNode: (x: unknown) => x is Node = lazyOf(() =>
-				objectOf({ value: isNumber, next: optionalOf(isNode) }, { optional: ['next' as const], exact: true }),
+				optionalOf({ value: isNumber, next: optionalOf((x: unknown): x is Node => isNode(x)) }, ['next' as const]),
 			)
 			expect(isNode({ value: 1 })).toBe(true)
 			expect(isNode({ value: 1, next: { value: 2 } })).toBe(true)
 		})
 	})
 
-	describe('safeParse', () => {
-		test('returns ok result for valid values', () => {
-			const ok = safeParse('x', isString)
-			expect(ok.ok).toBe(true)
-			if (ok.ok) {
-				expect(ok.value).toBe('x')
-			}
-		})
-
-		test('returns error result for invalid values', () => {
-			const err = safeParse('x', isNumber)
-			expect(err.ok).toBe(false)
-		})
-	})
-
 	describe('discriminatedUnionOf', () => {
 		test('validates discriminated unions', () => {
-			const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
-			const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
+			const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber })
+			const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber })
 			const isShape = discriminatedUnionOf('kind', { circle: isCircle, rect: isRect } as const)
 			expect(isShape({ kind: 'circle', r: 1 })).toBe(true)
 			expect(isShape({ kind: 'rect', w: 2, h: 3 })).toBe(true)
 		})
 
 		test('returns false for wrong discriminant', () => {
-			const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
-			const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
+			const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber })
+			const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber })
 			const isShape = discriminatedUnionOf('kind', { circle: isCircle, rect: isRect } as const)
 			expect(isShape({ kind: 'triangle' } as unknown)).toBe(false)
 		})
 
 		test('returns false for invalid variant data', () => {
-			const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber }, { exact: true })
-			const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber }, { exact: true })
+			const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber })
+			const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber })
 			const isShape = discriminatedUnionOf('kind', { circle: isCircle, rect: isRect } as const)
 			expect(isShape({ kind: 'circle', r: 'x' } as unknown)).toBe(false)
 		})
@@ -303,16 +282,16 @@ describe('combinators', () => {
 			expect(nonEmptyStr('')).toBe(false)
 			expect(emptyStr('')).toBe(true)
 			expect(emptyStr(123 as unknown)).toBe(false)
-			const isObj = objectOf({}) // any record
+			const isObj = objectOf({}) // exact by default: only empty objects
 			const isObjEmptyOk = emptyOf(isObj)
 			expect(isObjEmptyOk({})).toBe(true)
 		})
 	})
 
-	describe('stringMatchOf and length-based guards', () => {
-		test('stringMatchOf', () => {
-			expect(stringMatchOf(/^[a-z]+$/)('abc')).toBe(true)
-			expect(stringMatchOf(/^\d+$/)('abc')).toBe(false)
+	describe('matchOf and length-based guards', () => {
+		test('matchOf', () => {
+			expect(matchOf(/^[a-z]+$/)('abc')).toBe(true)
+			expect(matchOf(/^\d+$/)('abc')).toBe(false)
 		})
 		test('lengthOf(exact)', () => {
 			expect(lengthOf(2)('ab')).toBe(true)
@@ -409,6 +388,19 @@ describe('combinators', () => {
 		})
 	})
 
+	describe('weakMapOf/weakSetOf', () => {
+		test('weakMapOf validates WeakMap', () => {
+			const g = weakMapOf()
+			expect(g(new WeakMap())).toBe(true)
+			expect(g(new Map() as unknown)).toBe(false)
+		})
+		test('weakSetOf validates WeakSet', () => {
+			const g = weakSetOf()
+			expect(g(new WeakSet())).toBe(true)
+			expect(g(new Set() as unknown)).toBe(false)
+		})
+	})
+
 	describe('keyOf', () => {
 		test('validates membership in object keys', () => {
 			const g = keyOf({ a: 1, b: 2 } as const)
@@ -426,19 +418,18 @@ describe('combinators', () => {
 	})
 
 	describe('stringOf/numberOf', () => {
-		test('stringOf validates any string', () => {
-			expect(stringOf('ok')).toBe(true)
-			expect(stringOf('nope')).toBe(true)
-			expect(stringOf('')).toBe(true)
-			expect(stringOf(123)).toBe(false)
+		test('stringOf is a string type guard (accepts any string)', () => {
+			const g = stringOf()
+			expect(g('ok')).toBe(true)
+			expect(g('nope')).toBe(true)
+			expect(g(123 as unknown)).toBe(false)
 		})
-		test('numberOf validates any number', () => {
-			expect(numberOf(42)).toBe(true)
-			expect(numberOf(41)).toBe(true)
-			expect(numberOf(0)).toBe(true)
-			expect(numberOf(NaN)).toBe(true)
+		test('numberOf is a number type guard (accepts any number)', () => {
+			const g = numberOf()
+			expect(g(42)).toBe(true)
+			expect(g(41)).toBe(true)
 			// rejects non-numbers
-			expect(numberOf('42' as unknown)).toBe(false)
+			expect(g('42' as unknown)).toBe(false)
 		})
 	})
 
@@ -458,81 +449,217 @@ describe('combinators', () => {
 		})
 	})
 
-	describe('functionOf', () => {
-		test('validates functions', () => {
-			const g = functionOf(isNumber)
+	describe('callable family', () => {
+		test('functionOf validates functions', () => {
+			const g = functionOf<[], number>()
 			expect(g(() => 42)).toBe(true)
-			expect(g((x: number) => x)).toBe(true)
+			// base functionOf does not enforce arity; use arityOf for that.
+			const anyFn = functionOf()
+			expect(anyFn(() => 1)).toBe(true)
 		})
 
-		test('rejects non-functions', () => {
-			const g = functionOf(isString)
-			expect(g({} as unknown)).toBe(false)
-			expect(g('string' as unknown)).toBe(false)
-			expect(g(123 as unknown)).toBe(false)
+		test('async/generator shorthands', () => {
+			const isAsync = asyncFunctionOf()
+			expect(isAsync(async () => 1)).toBe(true)
+			function* gen() {
+				yield 1
+			}
+			const isGen = generatorFunctionOf()
+			expect(isGen(gen)).toBe(true)
+			async function* agen() {
+				yield 1
+			}
+			const isAGen = asyncGeneratorFunctionOf()
+			expect(isAGen(agen)).toBe(true)
 		})
 
-		test('type-level validation with various return types', () => {
-			const numFn = functionOf(isNumber)
-			const strFn = functionOf(isString)
-			expect(numFn(() => 1)).toBe(true)
-			expect(strFn(() => 'test')).toBe(true)
+		test('returnsOf validates sync return once', () => {
+			const returnsNumber = returnsOf([], (x: unknown): x is number => typeof x === 'number')
+			expect(returnsNumber(() => 42)).toBe(true)
+			expect(returnsNumber(() => 'x' as unknown as number)).toBe(false)
+		})
+
+		test('promise guards', () => {
+			expect(promiseOf()(Promise.resolve(1))).toBe(true)
+			const thenable = { then() { /* noop */ } }
+			expect(promiseLikeOf()(thenable)).toBe(true)
 		})
 	})
 
-	describe('objectOf optional/exact/rest', () => {
-		test('objectOf optional: missing optional key is allowed, missing required key is rejected', () => {
-			const Guard = objectOf({ id: isString, age: isNumber }, { optional: ['age' as const] })
+	describe('objectOf optional/rest', () => {
+		test('optionalOf(shape): missing optional key is allowed, missing required key is rejected', () => {
+			const Guard = optionalOf({ id: isString, age: isNumber }, ['age' as const])
 			expect(Guard({ id: 'x', age: 1 })).toBe(true)
 			expect(Guard({ id: 'x' })).toBe(true)
 			expect(Guard({ age: 1 } as unknown)).toBe(false)
 		})
 
-		test('objectOf exact: rejects extra keys (default behavior)', () => {
+		test('objectOf exact by default: rejects extra keys', () => {
 			const Guard = objectOf({ id: isString })
 			expect(Guard({ id: 'x' })).toBe(true)
 			expect(Guard({ id: 'x', extra: 1 } as unknown)).toBe(false)
 		})
 
-		test('objectOf nested optional via optionalOf', () => {
-			type Node = { value: number, next?: Node }
-			const isNode = lazyOf((): (x: unknown) => x is Node =>
-				objectOf(
-					{ value: isNumber, next: optionalOf((x: unknown): x is Node => isNode(x)) },
-					{ optional: ['next' as const] },
-				),
-			)
-			expect(isNode({ value: 1 })).toBe(true)
-			expect(isNode({ value: 1, next: { value: 2 } })).toBe(true)
-			expect(isNode({ value: 1, next: { value: 2, next: { value: 3 } } })).toBe(true)
-			expect(isNode({ value: 1, extra: 2 } as unknown)).toBe(false)
+		test('objectOf rest: validates extra keys when provided', () => {
+			const Guard = objectOf({ id: isString }, { rest: isNumber })
+			expect(Guard({ id: 'x' })).toBe(true)
+			expect(Guard({ id: 'x', a: 1, b: 2 })).toBe(true)
+			expect(Guard({ id: 'x', a: 'nope' } as unknown)).toBe(false)
 		})
 
-		test('objectOf exact with optional keys', () => {
-			const Guard = objectOf(
+		test('optionalOf(shape) with rest', () => {
+			const Guard = optionalOf(
 				{ id: isString, note: isString },
-				{ optional: ['note' as const] },
+				['note' as const],
+				{ rest: isNumber },
 			)
 			expect(Guard({ id: 'x' })).toBe(true)
-			expect(Guard({ id: 'x', note: 'hello' })).toBe(true)
-			expect(Guard({ id: 'x', note: 'hello', extra: 1 } as unknown)).toBe(false)
+			expect(Guard({ id: 'x', note: 'hi' })).toBe(true)
+			expect(Guard({ id: 'x', a: 1, b: 2 })).toBe(true)
+			expect(Guard({ id: 'x', note: 'hi', a: 1 })).toBe(true)
+			expect(Guard({ id: 'x', a: 'bad' } as unknown)).toBe(false)
 		})
 
-		test('objectOf with multiple optional keys', () => {
-			const Guard = objectOf(
-				{ id: isString, age: isNumber, name: isString },
-				{ optional: ['age' as const, 'name' as const] },
-			)
-			expect(Guard({ id: 'x' })).toBe(true)
-			expect(Guard({ id: 'x', age: 42 })).toBe(true)
-			expect(Guard({ id: 'x', name: 'Alice' })).toBe(true)
-			expect(Guard({ id: 'x', age: 42, name: 'Alice' })).toBe(true)
-			expect(Guard({ age: 42, name: 'Alice' } as unknown)).toBe(false)
-		})
-
-		test('objectOf validates present optional values', () => {
-			const Guard = objectOf({ id: isString, age: isNumber }, { optional: ['age' as const] })
+		test('optionalOf(shape) validates present optional values', () => {
+			const Guard = optionalOf({ id: isString, age: isNumber }, ['age' as const])
 			expect(Guard({ id: 'x', age: 'not-a-number' } as unknown)).toBe(false)
+		})
+	})
+
+	describe('shape helpers', () => {
+		test('partialOf makes all keys optional (exact)', () => {
+			const Guard = partialOf({ id: isString, age: isNumber })
+			expect(Guard({})).toBe(true)
+			expect(Guard({ id: 'x' })).toBe(true)
+			expect(Guard({ id: 'x', age: 1 })).toBe(true)
+			// extras rejected without rest
+			expect(Guard({ id: 'x', extra: 1 } as unknown)).toBe(false)
+		})
+		test('pickOf/omitOf compose shapes', () => {
+			const base = { id: isString, age: isNumber, name: isString } as const
+			const picked = pickOf(base, ['id' as const, 'name' as const])
+			const omitted = omitOf(base, ['age' as const])
+			const pickGuard = objectOf(picked)
+			const omitGuard = objectOf(omitted)
+			expect(pickGuard({ id: 'x', name: 'a' })).toBe(true)
+			expect(omitGuard({ id: 'x', name: 'a' })).toBe(true)
+			// missing required
+			expect(pickGuard({ id: 'x' } as unknown)).toBe(false)
+		})
+	})
+
+	// Newly added coverage
+	describe('allOf', () => {
+		test('composes multiple guards with AND', () => {
+			const isAlpha = (x: unknown): x is string => typeof x === 'string' && /^[A-Za-z]+$/.test(x)
+			const isLen2 = (x: unknown): x is string => typeof x === 'string' && x.length === 2
+			const g = allOf(isString, isAlpha, isLen2)
+			expect(g('ab')).toBe(true)
+			expect(g('a')).toBe(false)
+			expect(g('a1')).toBe(false)
+		})
+	})
+
+	describe('transformOf', () => {
+		test('validates projection when base passes', () => {
+			const arity1 = transformOf(functionOf(), () => (args: unknown) => args, lengthOf(1))
+			expect(arity1((a: unknown) => a)).toBe(true)
+			expect(arity1(() => 1)).toBe(false)
+		})
+		test('transforms derived value and validates it (trim + lowercase)', () => {
+			const alphaTrimmed = transformOf(isString, s => s.trim().toLowerCase(), matchOf(/^[a-z]+$/))
+			expect(alphaTrimmed(' Abc ')).toBe(true)
+			expect(alphaTrimmed(' 123 ' as unknown)).toBe(false)
+		})
+		test('rejects when base fails without calling projection', () => {
+			let called = 0
+			const g = transformOf(isString, (s) => {
+				called++
+				return s.length
+			}, numberOf())
+			expect(g(123 as unknown)).toBe(false)
+			expect(called).toBe(0)
+		})
+	})
+
+	describe('objectOf', () => {
+		test('validates objects with optional fields (exact by default)', () => {
+			const User = optionalOf({ id: isString, age: isNumber, note: isString }, ['note' as const])
+			expect(User({ id: 'x', age: 1 })).toBe(true)
+			expect(User({ id: 'x', age: 1, note: 'hello' })).toBe(true)
+		})
+
+		test('enforces exact by default to reject extra fields', () => {
+			const User = optionalOf({ id: isString, age: isNumber, note: isString }, ['note' as const])
+			expect(User({ id: 'x', age: 1, extra: 1 })).toBe(false)
+		})
+
+		test('validates rest fields with rest option', () => {
+			const WithRest = objectOf({ id: isString }, { rest: isNumber })
+			expect(WithRest({ id: 'x' })).toBe(true)
+			expect(WithRest({ id: 'x', a: 1, b: 2 })).toBe(true)
+		})
+
+		test('returns false when rest fields fail validation', () => {
+			const WithRest = objectOf({ id: isString }, { rest: isNumber })
+			expect(WithRest({ id: 'x', a: 'nope' as unknown })).toBe(false)
+		})
+	})
+
+	describe('matchOf', () => {
+		test('returns true when string matches regex', () => {
+			expect(matchOf(/^[a-z]+$/)('abc')).toBe(true)
+		})
+
+		test('returns false when string does not match regex', () => {
+			expect(matchOf(/^\d+$/)('abc')).toBe(false)
+		})
+	})
+
+	describe('string length via lengthOf (exact)', () => {
+		test('returns true when string has exact length', () => {
+			expect(lengthOf(2)('ab')).toBe(true)
+			expect(lengthOf(3)('abc')).toBe(true)
+		})
+
+		test('returns false when string length differs', () => {
+			expect(lengthOf(2)('x')).toBe(false)
+			expect(lengthOf(2)('abc')).toBe(false)
+		})
+	})
+
+	describe('string length via rangeOf/minOf', () => {
+		test('returns true when string length is within range', () => {
+			expect(rangeOf(0, 3)('abc')).toBe(true)
+			expect(rangeOf(0, 3)('ab')).toBe(true)
+		})
+
+		test('returns false when string is too long', () => {
+			expect(rangeOf(0, 3)('xxxx')).toBe(false)
+		})
+
+		test('minOf works on string length', () => {
+			expect(minOf(2)('ab')).toBe(true)
+			expect(minOf(2)('x')).toBe(false)
+		})
+	})
+
+	describe('complementOf', () => {
+		test('excludes a variant from a base union (discriminated)', () => {
+			const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber })
+			const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber })
+			const isShape = unionOf(isCircle, isRect)
+			const notCircle = complementOf(isShape, isCircle)
+			expect(notCircle({ kind: 'rect', w: 1, h: 2 })).toBe(true)
+			expect(notCircle({ kind: 'circle', r: 3 })).toBe(false)
+		})
+
+		test('works with a refinement predicate as the exclude', () => {
+			const base = stringOf()
+			const exclude = (s: string): s is string => s.length === 0
+			const nonEmptyString = complementOf(base, exclude)
+			expect(nonEmptyString('x')).toBe(true)
+			expect(nonEmptyString('')).toBe(false)
 		})
 	})
 })

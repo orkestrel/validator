@@ -149,3 +149,19 @@ export type EmptyOf<T>
 				: T extends ReadonlySet<infer U> ? ReadonlySet<U>
 					: T extends Record<string | symbol, unknown> ? Record<string | symbol, never>
 						: never
+
+/**
+ * Intersection of the types guarded by a tuple of guards.
+ *
+ * Useful for `allOf`/`intersectionOf` combinators to express precise output.
+ */
+export type GuardedIntersection<Gs extends readonly Guard<unknown>[]> = UnionToIntersection<GuardType<Gs[number]>>
+
+/**
+ * Map a tuple of guards to a readonly tuple of their guarded types.
+ *
+ * Useful for `tupleOf` return types.
+ */
+export type GuardedTuple<Gs extends readonly Guard<unknown>[]> = { readonly [K in keyof Gs]: GuardType<Gs[K]> }
+
+export type MeasureKind = 'length' | 'size' | 'count' | 'value'

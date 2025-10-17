@@ -1,6 +1,15 @@
 import { describe, test, expect } from 'vitest'
-import { isZeroArg, isAsyncFunction, isGeneratorFunction, isAsyncGeneratorFunction, isPromiseFunction,
-	isZeroArgAsync, isZeroArgGenerator, isZeroArgAsyncGenerator, isZeroArgPromise } from '../src/functions.js'
+import {
+	isZeroArg,
+	isAsyncFunction,
+	isGeneratorFunction,
+	isAsyncGeneratorFunction,
+	isPromiseFunction,
+	isZeroArgAsync,
+	isZeroArgGenerator,
+	isZeroArgAsyncGenerator,
+	isZeroArgPromise,
+} from '../src/functions.js'
 
 describe('functions', () => {
 	describe('isZeroArg', () => {

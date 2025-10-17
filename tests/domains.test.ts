@@ -16,6 +16,11 @@ import {
 	isHTTPMethod,
 	isIdentifier,
 	isHost,
+	isAscii,
+	isHexColor,
+	isIPv4String,
+	isIPv6String,
+	isHostnameString,
 } from '../src/domains.js'
 
 describe('domains', () => {
@@ -287,6 +292,75 @@ describe('domains', () => {
 
 		test('returns false for unbracketed IPv6', () => {
 			expect(isHost('::1')).toBe(false)
+		})
+	})
+
+	describe('isAscii', () => {
+		test('returns true for ASCII strings', () => {
+			expect(isAscii('abc123')).toBe(true)
+		})
+
+		test('returns false for non-ASCII strings', () => {
+			expect(isAscii('\u00A9')).toBe(false)
+		})
+	})
+
+	describe('isHexColor', () => {
+		test('returns true for valid hex colors', () => {
+			expect(isHexColor('ffffff')).toBe(true)
+			expect(isHexColor('fff')).toBe(true)
+		})
+
+		test('returns true for hex colors with hash when allowed', () => {
+			expect(isHexColor('#fff', { allowHash: true })).toBe(true)
+			expect(isHexColor('#ffffff', { allowHash: true })).toBe(true)
+		})
+
+		test('returns false for invalid hex colors', () => {
+			expect(isHexColor('ffff')).toBe(false)
+			expect(isHexColor('gg')).toBe(false)
+		})
+	})
+
+	describe('isIPv4String', () => {
+		test('returns true for valid IPv4 strings', () => {
+			expect(isIPv4String('127.0.0.1')).toBe(true)
+			expect(isIPv4String('192.168.1.1')).toBe(true)
+		})
+
+		test('returns false for invalid IPv4 strings', () => {
+			expect(isIPv4String('256.0.0.1')).toBe(false)
+			expect(isIPv4String('abc.def.ghi.jkl')).toBe(false)
+		})
+	})
+
+	describe('isIPv6String', () => {
+		test('returns true for valid IPv6 strings', () => {
+			expect(isIPv6String('::1')).toBe(true)
+			expect(isIPv6String('2001:db8::1')).toBe(true)
+			expect(isIPv6String('::ffff:192.0.2.128')).toBe(true)
+		})
+
+		test('returns false for invalid IPv6 strings', () => {
+			expect(isIPv6String(':::1')).toBe(false)
+			// adjacent extra colon rejection around '::'
+			expect(isIPv6String('2001:db8:::1')).toBe(false)
+			expect(isIPv6String('2001:db8::1:')).toBe(false)
+			expect(isIPv6String(':2001:db8::1')).toBe(false)
+			expect(isIPv6String('2001:db8::ff::1')).toBe(false)
+		})
+	})
+
+	describe('isHostnameString', () => {
+		test('returns true for valid hostnames', () => {
+			expect(isHostnameString('example.com')).toBe(true)
+			expect(isHostnameString('sub.domain.co')).toBe(true)
+		})
+
+		test('returns false for invalid hostnames', () => {
+			expect(isHostnameString('')).toBe(false)
+			expect(isHostnameString('-invalid.com')).toBe(false)
+			expect(isHostnameString('toolonglabeltoolonglabeltoolonglabeltoolonglabeltoolonglabeltoolonglabeltoolonglabeltoolonglabel.com')).toBe(false)
 		})
 	})
 })

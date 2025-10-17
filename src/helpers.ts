@@ -1,6 +1,6 @@
 import type { ParsedAbsoluteUrl } from './types.js'
 import { isInteger, isRange } from './numbers.js'
-import { isIPv4String, isIPv6String, isHostnameString } from './strings.js'
+import { isIPv4String, isIPv6String, isHostnameString } from './domains.js'
 
 /** Internal conservative absolute URL regex */
 const ABS_URL_RE = /^(?<scheme>[A-Za-z][A-Za-z0-9+.-]*):\/\/(?<authority>[^/?#]*)(?<rest>[/?#].*)?$/
@@ -39,6 +39,45 @@ export function countEnumerableProperties(obj: object): number {
 		0,
 	)
 	return keysLen + symsLen
+}
+
+/**
+ * Peek an Iterable once and produce a new Iterable that replays the peeked element,
+ * followed by the remaining elements from the original iterator.
+ *
+ * This avoids consuming the first value irreversibly when we need a non-empty check
+ * but still want to pass the full sequence to a downstream guard.
+ *
+ * @typeParam T - Element type of the iterable
+ * @param iterable - Source iterable to peek
+ * @returns An object with `empty` flag and a `replay` iterable that yields the same
+ *          sequence as the original when `empty` is false
+ * @example
+ * ```ts
+ * function* gen() { yield 1; yield 2 }
+ * const { empty, replay } = peekIterable(gen())
+ * // empty === false; replay yields 1, 2
+ * ```
+ */
+export function peekIterable<T>(iterable: Iterable<T>): { empty: boolean; replay: Iterable<T> } {
+	const iterator = iterable[Symbol.iterator]()
+	const first = iterator.next()
+	if (first.done) return { empty: true, replay: { [Symbol.iterator](): Iterator<T> { return { next: () => ({ done: true, value: undefined as unknown as T }) } } } }
+	const replay: Iterable<T> = {
+		[Symbol.iterator](): Iterator<T> {
+			let yieldedFirst = false
+			return {
+				next(): IteratorResult<T> {
+					if (!yieldedFirst) {
+						yieldedFirst = true
+						return { value: first.value, done: false }
+					}
+					return iterator.next()
+				},
+			}
+		},
+	}
+	return { empty: false, replay }
 }
 
 /**

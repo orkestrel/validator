@@ -5,7 +5,7 @@ Practical guidance for composition, typing, and trade-offs.
 Typing and narrowing
 - Accept unknown at the edges; narrow progressively with guards
 - Prefer readonly outputs and avoid mutation in helpers
-- Use refineOf to express subtypes (e.g., non-empty string) and optionalOf/nullableOf for partials
+- Use whereOf to confirm predicates on a known base type (e.g., non-empty string) while preserving the original type; use optionalOf/nullableOf for partials
 
 Composition patterns
 - Build small guard pieces and combine with andOf/orOf/unionOf
@@ -17,9 +17,9 @@ Negation and exclusion (typed, one-liners)
 - Simple negation when you only know “not this”:
   - `const notString = notOf(isString)` // Guard<unknown>
 - Typed exclusion when you know the base set:
-  - `const notCircle = notOf(isShape, isCircle)` // Guard<Exclude<Shape, Circle>>
+  - `const notCircle = complementOf(isShape, isCircle)` // Guard<Exclude<Shape, Circle>>
 - Exclude multiple variants in one line with unionOf:
-  - `const notCircleOrRect = notOf(isShape, unionOf(isCircle, isRect))`
+  - `const notCircleOrRect = complementOf(isShape, unionOf(isCircle, isRect))`
 
 Combinator typing guarantees (at a glance)
 - `andOf<A, B>(A, B)` → Guard<A & B>
@@ -28,8 +28,8 @@ Combinator typing guarantees (at a glance)
 - `intersectionOf(g1, g2, ...)` → Guard<T1 & T2 & ...>
 - `optionalOf<T>(g)` → Guard<T | undefined>
 - `nullableOf<T>(g)` → Guard<T | null>
-- `refineOf<T, U extends T>(base, predicate)` → Guard<U>
-- `notOf(exclude)` → Guard<unknown>; `notOf(base, exclude)` → Guard<Exclude<Base, Excluded>>
+- `whereOf<T>(base, predicate)` → Guard<T> (predicate confirms facts without changing the static type)
+- `notOf(exclude)` → Guard<unknown>; `complementOf(base, exclude)` → Guard<Exclude<Base, Excluded>>
 
 Schema vs objectOf
 - hasSchema: simple, declarative, “string” primitives + nested guards
