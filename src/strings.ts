@@ -1,5 +1,3 @@
-import type { HexColorOptions } from './types.js'
-
 /**
  * Determine whether a string is all lowercase.
  *

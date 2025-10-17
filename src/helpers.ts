@@ -59,10 +59,21 @@ export function countEnumerableProperties(obj: object): number {
  * // empty === false; replay yields 1, 2
  * ```
  */
-export function peekIterable<T>(iterable: Iterable<T>): { empty: boolean; replay: Iterable<T> } {
+export function peekIterable<T>(iterable: Iterable<T>): { empty: boolean, replay: Iterable<T> } {
 	const iterator = iterable[Symbol.iterator]()
 	const first = iterator.next()
-	if (first.done) return { empty: true, replay: { [Symbol.iterator](): Iterator<T> { return { next: () => ({ done: true, value: undefined as unknown as T }) } } } }
+	if (first.done) {
+		return {
+			empty: true,
+			replay: {
+				[Symbol.iterator](): Iterator<T> {
+					return {
+						next: () => ({ done: true, value: undefined as unknown as T }),
+					}
+				},
+			},
+		}
+	}
 	const replay: Iterable<T> = {
 		[Symbol.iterator](): Iterator<T> {
 			let yieldedFirst = false
