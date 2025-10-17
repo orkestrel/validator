@@ -7,7 +7,7 @@ describe('combinators/functions', () => {
 		test('accepts any function', () => {
 			const g = functionOf()
 			expect(g(() => {})).toBe(true)
-			expect(g(function() {})).toBe(true)
+			expect(g(function () {})).toBe(true)
 			expect(g({} as unknown)).toBe(false)
 		})
 	})
@@ -17,14 +17,16 @@ describe('combinators/functions', () => {
 			const g = asyncFunctionOf()
 			expect(g(async () => {})).toBe(true)
 			expect(g(() => Promise.resolve())).toBe(false)
-			expect(g(function() {}) as unknown).toBe(false)
+			expect(g(function () {}) as unknown).toBe(false)
 		})
 	})
 
 	describe('generatorFunctionOf', () => {
 		test('accepts generator functions only', () => {
 			const g = generatorFunctionOf()
-			function* gen() { yield 1 }
+			function* gen() {
+				yield 1
+			}
 			expect(g(gen)).toBe(true)
 			expect(g(() => {})).toBe(false)
 		})
@@ -33,7 +35,9 @@ describe('combinators/functions', () => {
 	describe('asyncGeneratorFunctionOf', () => {
 		test('accepts async generator functions only', () => {
 			const g = asyncGeneratorFunctionOf()
-			async function* gen() { yield 1 }
+			async function* gen() {
+				yield 1
+			}
 			expect(g(gen)).toBe(true)
 			expect(g(async () => {})).toBe(false)
 		})

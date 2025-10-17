@@ -77,37 +77,86 @@ export function bigIntOf(): Guard<bigint> {
 	return (x: unknown) => isBigInt(x)
 }
 
-/** Guard for `null` only. */
+/**
+ * Guard for `null` only.
+ * @returns Guard
+ * @example
+ * ```ts
+ * nullOf()(null) // true
+ * ```
+ */
 export function nullOf(): Guard<null> {
 	return (x: unknown): x is null => x === null
 }
 
-/** Guard for `undefined` only. */
+/**
+ * Guard for `undefined` only.
+ * @returns Guard
+ * @example
+ * ```ts
+ * undefinedOf()(undefined) // true
+ * ```
+ */
 export function undefinedOf(): Guard<undefined> {
 	return (x: unknown): x is undefined => x === undefined
 }
 
-/** Guard for Date objects. */
+/**
+ * Guard for Date objects.
+ * @returns Guard
+ * @example
+ * ```ts
+ * dateOf()(new Date()) // true
+ * ```
+ */
 export function dateOf(): Guard<Date> {
 	return (x: unknown) => isDate(x)
 }
 
-/** Guard for RegExp objects. */
+/**
+ * Guard for RegExp objects.
+ * @returns Guard
+ * @example
+ * ```ts
+ * regExpOf()(/test/) // true
+ * ```
+ */
 export function regExpOf(): Guard<RegExp> {
 	return (x: unknown) => isRegExp(x)
 }
 
-/** Guard for Error objects. */
+/**
+ * Guard for Error objects.
+ * @returns Guard
+ * @example
+ * ```ts
+ * errorOf()(new Error()) // true
+ * ```
+ */
 export function errorOf(): Guard<Error> {
 	return (x: unknown) => isError(x)
 }
 
-/** Guard for ArrayBuffer instances. */
+/**
+ * Guard for ArrayBuffer instances.
+ * @returns Guard
+ * @example
+ * ```ts
+ * arrayBufferOf()(new ArrayBuffer(10)) // true
+ * ```
+ */
 export function arrayBufferOf(): Guard<ArrayBuffer> {
 	return (x: unknown) => isArrayBuffer(x)
 }
 
-/** Guard for SharedArrayBuffer instances (feature-detected). */
+/**
+ * Guard for SharedArrayBuffer instances (feature-detected).
+ * @returns Guard
+ * @example
+ * ```ts
+ * sharedArrayBufferOf()(new SharedArrayBuffer(10)) // true
+ * ```
+ */
 export function sharedArrayBufferOf(): Guard<SharedArrayBuffer> {
 	return (x: unknown) => isSharedArrayBuffer(x)
 }

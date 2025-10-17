@@ -339,10 +339,15 @@ export function isCountRange(x: unknown, min: number, max: number): boolean {
  * - 'length' → strings, arrays, functions (arity via `.length`)
  * - 'size'   → Map/Set (`.size`)
  * - 'count'  → objects (own enumerable keys + enumerable symbols)
- * @param x
- * @param kind
- * @param expected
+ *
+ * @param x - Value to check
+ * @param kind - Measure kind to apply
+ * @param expected - Expected measure value
+ * @returns True if the measure equals expected
  * @example
+ * ```ts
+ * isMeasure('ab', 'length', 2) // true
+ * ```
  */
 export function isMeasure(x: unknown, kind: MeasureKind, expected: number): boolean {
 	if (kind === 'value') return typeof x === 'number' && x === expected
@@ -354,10 +359,15 @@ export function isMeasure(x: unknown, kind: MeasureKind, expected: number): bool
 
 /**
  * Check whether a value's unified measure is at least `min` (inclusive).
- * @param x
- * @param kind
- * @param min
+ *
+ * @param x - Value to check
+ * @param kind - Measure kind to apply
+ * @param min - Minimum measure value
+ * @returns True if the measure is at least min
  * @example
+ * ```ts
+ * isMin('abc', 'length', 2) // true
+ * ```
  */
 export function isMin(x: unknown, kind: MeasureKind, min: number): boolean {
 	if (kind === 'value') return typeof x === 'number' && x >= min
@@ -369,10 +379,15 @@ export function isMin(x: unknown, kind: MeasureKind, min: number): boolean {
 
 /**
  * Check whether a value's unified measure is at most `max` (inclusive).
- * @param x
- * @param kind
- * @param max
+ *
+ * @param x - Value to check
+ * @param kind - Measure kind to apply
+ * @param max - Maximum measure value
+ * @returns True if the measure is at most max
  * @example
+ * ```ts
+ * isMax('abc', 'length', 5) // true
+ * ```
  */
 export function isMax(x: unknown, kind: MeasureKind, max: number): boolean {
 	if (kind === 'value') return typeof x === 'number' && x <= max
@@ -384,11 +399,16 @@ export function isMax(x: unknown, kind: MeasureKind, max: number): boolean {
 
 /**
  * Check whether a value's unified measure is within the inclusive range [min, max].
- * @param x
- * @param kind
- * @param min
- * @param max
+ *
+ * @param x - Value to check
+ * @param kind - Measure kind to apply
+ * @param min - Minimum measure value
+ * @param max - Maximum measure value
+ * @returns True if the measure is within the range
  * @example
+ * ```ts
+ * isRange('abc', 'length', 2, 5) // true
+ * ```
  */
 export function isRange(x: unknown, kind: MeasureKind, min: number, max: number): boolean {
 	if (kind === 'value') return typeof x === 'number' && x >= min && x <= max

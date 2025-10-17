@@ -11,7 +11,9 @@ import { isWeakMap, isWeakSet } from '../collections.js'
  * weakMapOf()({} as unknown) // false
  * ```
  */
-export function weakMapOf(): Guard<WeakMap<object, unknown>> { return (x: unknown): x is WeakMap<object, unknown> => isWeakMap(x) }
+export function weakMapOf(): Guard<WeakMap<object, unknown>> {
+	return (x: unknown): x is WeakMap<object, unknown> => isWeakMap(x)
+}
 
 /**
  * Guard for WeakSet instances.
@@ -23,4 +25,6 @@ export function weakMapOf(): Guard<WeakMap<object, unknown>> { return (x: unknow
  * weakSetOf()([] as unknown) // false
  * ```
  */
-export function weakSetOf(): Guard<WeakSet<object>> { return (x: unknown): x is WeakSet<object> => isWeakSet(x) }
+export function weakSetOf(): Guard<WeakSet<object>> {
+	return (x: unknown): x is WeakSet<object> => isWeakSet(x)
+}
