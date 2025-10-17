@@ -6,8 +6,8 @@ Guards (validate unknown, narrow precisely)
 - Guard<T> is a function (x: unknown) => x is T
 - Primitives: isString, isNumber (finite), isBoolean, isFunction, isAsyncFunction, isDate, isRegExp, isError, isPromiseLike
 - Function introspection: isZeroArg, isAsyncFunction, isGeneratorFunction, isAsyncGeneratorFunction, isPromiseFunction, isZeroArgAsync, isZeroArgGenerator, isZeroArgAsyncGenerator, isZeroArgPromise
-- Objects: isObject, isRecord; keys: hasOwn, hasOnlyKeys, hasNo; keyOf derives a guard from object keys
-- Arrays/Collections: isArray; arrayOf, tupleOf, recordOf; isMap/isSet + mapOf/setOf, iterableOf
+- Objects: isObject, isRecord; keyOf derives a guard from object keys
+- Arrays/Collections: isArray; arrayOf, tupleOf, recordOf; isMap/isSet + mapOf/setOf, iterableOf, functionOf
 - Strings/Numbers: stringMatchOf, stringOf, numberOf, isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isIPv6String, isHostnameString
 - Size/length/count: lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, measureOf, multipleOf
 
@@ -53,7 +53,6 @@ Emptiness and opposites
 - isEmptyString, isEmptyArray, isEmptyObject, isEmptyMap, isEmptySet and non-empty counterparts
 - emptyOf(guard) — allows empty values or values passing the guard
 - nonEmptyOf(guard) — requires non-empty values and passing the guard
-- hasNo: object owns none of the given keys
 - notOf: negate a guard or exclude a subset with a base guard
 
 Domain guards (ecosystem-friendly)

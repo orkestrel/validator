@@ -20,6 +20,28 @@ export function getTag(x: unknown): string {
 }
 
 /**
+ * Count own enumerable string keys and enumerable symbol keys on an object.
+ *
+ * Internal helper used by object property count validators and combinators.
+ * Counts both enumerable string keys (via Object.keys) and enumerable symbol keys.
+ *
+ * @param obj - Object to count keys on
+ * @returns Total count of enumerable string and symbol keys
+ * @example
+ * ```ts
+ * countEnumerableProperties({ a: 1, b: 2 }) // 2
+ * ```
+ */
+export function countEnumerableProperties(obj: object): number {
+	const keysLen = Object.keys(obj).length
+	const symsLen = Object.getOwnPropertySymbols(obj).reduce(
+		(acc, s) => acc + (Object.getOwnPropertyDescriptor(obj, s)?.enumerable ? 1 : 0),
+		0,
+	)
+	return keysLen + symsLen
+}
+
+/**
  * Parse a decimal port number text into a number within [1, 65535].
  *
  * Returns `undefined` when the input is empty, non-numeric, or out of range.

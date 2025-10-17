@@ -1,9 +1,10 @@
 import type { Guard, Result, UnionToIntersection, GuardsShape, FromGuards, ObjectOfOptions, EmptyOf } from './types.js'
-import { isRecord, isCount, ownEnumerableCount } from './objects.js'
+import { isRecord, isCount } from './objects.js'
 import { isString, isNumber, isIterable } from './primitives.js'
 import { isLength } from './arrays.js'
 import { isSize } from './collections.js'
 import { isEmpty } from './emptiness.js'
+import { countEnumerableProperties } from './helpers.js'
 
 /**
  * Create a guard that accepts one of the provided literal values.
@@ -555,7 +556,7 @@ export function minOf(min: number): Guard<number | string | ReadonlyArray<unknow
 		if (Array.isArray(x)) return x.length >= min
 		if (x instanceof Map) return x.size >= min
 		if (x instanceof Set) return x.size >= min
-		if (isRecord(x)) return ownEnumerableCount(x) >= min
+		if (isRecord(x)) return countEnumerableProperties(x) >= min
 		return false
 	}
 }
@@ -580,7 +581,7 @@ export function maxOf(max: number): Guard<number | string | ReadonlyArray<unknow
 		if (Array.isArray(x)) return x.length <= max
 		if (x instanceof Map) return x.size <= max
 		if (x instanceof Set) return x.size <= max
-		if (isRecord(x)) return ownEnumerableCount(x) <= max
+		if (isRecord(x)) return countEnumerableProperties(x) <= max
 		return false
 	}
 }
@@ -607,7 +608,7 @@ export function rangeOf(min: number, max: number): Guard<number | string | Reado
 		if (x instanceof Map) return x.size >= min && x.size <= max
 		if (x instanceof Set) return x.size >= min && x.size <= max
 		if (isRecord(x)) {
-			const c = ownEnumerableCount(x)
+			const c = countEnumerableProperties(x)
 			return c >= min && c <= max
 		}
 		return false
@@ -734,6 +735,26 @@ export function iterableOf<T>(elemGuard: Guard<T>): Guard<Iterable<T>> {
 		}
 		return true
 	}
+}
+
+/**
+ * Create a guard that validates a function with a specific return type.
+ *
+ * This checks that the value is a function and is intended to be composed with
+ * additional runtime checks when needed. The return type validation cannot be
+ * enforced at runtime without calling the function.
+ *
+ * @param _returnGuard - Guard for the function's return type (not enforced at runtime, type-level only)
+ * @returns Guard that accepts functions expected to return `T`
+ * @example
+ * ```ts
+ * const g = functionOf(isNumber)
+ * g(() => 42) // true
+ * g({}) // false
+ * ```
+ */
+export function functionOf<T>(_returnGuard: Guard<T>): Guard<(...args: unknown[]) => T> {
+	return (x: unknown): x is (...args: unknown[]) => T => typeof x === 'function'
 }
 
 /**

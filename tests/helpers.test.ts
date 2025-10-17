@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { getTag, parseAbsoluteUrl, parsePort } from '../src/helpers.js'
+import { getTag, parseAbsoluteUrl, parsePort, countEnumerableProperties } from '../src/helpers.js'
 
 describe('helpers', () => {
 	describe('getTag', () => {
@@ -13,6 +13,37 @@ describe('helpers', () => {
 
 		test('returns object tag for objects', () => {
 			expect(getTag({})).toBe('[object Object]')
+		})
+	})
+
+	describe('countEnumerableProperties', () => {
+		test('counts enumerable string keys', () => {
+			expect(countEnumerableProperties({ a: 1, b: 2 })).toBe(2)
+			expect(countEnumerableProperties({})).toBe(0)
+		})
+
+		test('counts enumerable symbol keys', () => {
+			const sym1 = Symbol('s1')
+			const sym2 = Symbol('s2')
+			const obj: Record<string | symbol, unknown> = { a: 1 }
+			Object.defineProperty(obj, sym1, { value: 1, enumerable: true })
+			Object.defineProperty(obj, sym2, { value: 2, enumerable: true })
+			expect(countEnumerableProperties(obj)).toBe(3)
+		})
+
+		test('excludes non-enumerable properties', () => {
+			const obj: Record<string | symbol, unknown> = { a: 1 }
+			Object.defineProperty(obj, 'b', { value: 2, enumerable: false })
+			const sym = Symbol('s')
+			Object.defineProperty(obj, sym, { value: 3, enumerable: false })
+			expect(countEnumerableProperties(obj)).toBe(1)
+		})
+
+		test('counts both string and symbol keys', () => {
+			const sym = Symbol('s')
+			const obj: Record<string | symbol, unknown> = { a: 1, b: 2 }
+			Object.defineProperty(obj, sym, { value: 1, enumerable: true })
+			expect(countEnumerableProperties(obj)).toBe(3)
 		})
 	})
 
