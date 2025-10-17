@@ -1,32 +1,4 @@
 // --------------------------------------------
-// Internal helpers (exported for internal use by combinators)
-// --------------------------------------------
-
-/**
- * Count own enumerable string keys and enumerable symbol keys on an object.
- *
- * Exported for internal use by combinators.ts. Counts both enumerable
- * string keys (via Object.keys) and enumerable symbol keys.
- *
- * This is a low-level helper; most users should use {@link isCount} or {@link countOf} instead.
- *
- * @param obj - Object to count keys on
- * @returns Total count of enumerable string and symbol keys
- * @example
- * ```ts
- * ownEnumerableCount({ a: 1, b: 2 }) // 2
- * ```
- */
-export function ownEnumerableCount(obj: object): number {
-	const keysLen = Object.keys(obj).length
-	const symsLen = Object.getOwnPropertySymbols(obj).reduce(
-		(acc, s) => acc + (Object.getOwnPropertyDescriptor(obj, s)?.enumerable ? 1 : 0),
-		0,
-	)
-	return keysLen + symsLen
-}
-
-// --------------------------------------------
 // Type guards
 // --------------------------------------------
 
@@ -72,69 +44,6 @@ export function isRecord(x: unknown): boolean {
 	return typeof x === 'object' && x !== null && !Array.isArray(x)
 }
 
-/**
- * hasOwn with overloads that preserve the original type where known.
- *
- * Checks whether `obj` owns the provided key(s). When used with a single key
- * the type predicate narrows the object to include that property.
- *
- * @param obj - Value to check
- * @param keys - One or more keys to require on the object
- * @returns True when all provided keys exist as own properties on `obj`
- * @example
- * ```ts
- * hasOwn({ a: 1 }, 'a') // true
- * hasOwn({}, 'a') // false
- * ```
- */
-export function hasOwn<K extends PropertyKey>(obj: unknown, keys: K): obj is Record<K, unknown>
-export function hasOwn<Ks extends readonly PropertyKey[]>(obj: unknown, ...keys: Ks): obj is { [P in Ks[number]]: unknown }
-export function hasOwn<T extends object, K extends PropertyKey>(obj: T, keys: K): obj is T & Record<K, unknown>
-export function hasOwn<T extends object, Ks extends readonly PropertyKey[]>(obj: T, ...keys: Ks): obj is T & { [P in Ks[number]]: unknown }
-export function hasOwn(obj: unknown, ...keys: readonly PropertyKey[]): boolean {
-	if (!isRecord(obj)) return false
-	for (const k of keys) if (!Object.prototype.hasOwnProperty.call(obj, k)) return false
-	return true
-}
-
-/**
- * Object must own only the specified keys (no extras).
- *
- * @param obj - Value to check
- * @param keys - Exact allowed keys
- * @returns True when `obj` is an object and owns exactly the provided keys
- * @example
- * ```ts
- * hasOnlyKeys({ a: 1 }, 'a') // true
- * hasOnlyKeys({ a: 1, b: 2 }, 'a') // false
- * ```
- */
-export function hasOnlyKeys<Ks extends readonly PropertyKey[]>(obj: unknown, ...keys: Ks): obj is { [P in Ks[number]]: unknown } {
-	if (!isRecord(obj)) return false
-	const objKeys = Object.keys(obj)
-	if (objKeys.length !== keys.length) return false
-	for (const k of keys) if (!Object.prototype.hasOwnProperty.call(obj, k)) return false
-	return true
-}
-
-/**
- * Opposite of hasOwn: returns true if object owns none of the provided keys.
- *
- * @param obj - Value to check
- * @param keys - Keys that must not be present
- * @returns True when `obj` does not own any of the provided keys
- * @example
- * ```ts
- * hasNo({ a: 1 }, 'b') // true
- * hasNo({ a: 1 }, 'a') // false
- * ```
- */
-export function hasNo(obj: unknown, ...keys: readonly PropertyKey[]): boolean {
-	if (!isRecord(obj)) return false
-	for (const k of keys) if (Object.prototype.hasOwnProperty.call(obj, k)) return false
-	return true
-}
-
 // --------------------------------------------
 // Count helpers
 // --------------------------------------------
@@ -150,7 +59,7 @@ export function hasNo(obj: unknown, ...keys: readonly PropertyKey[]): boolean {
  *
  * @param x - Value to test (plain object)
  * @param n - Exact required count (integer ≥ 0)
- * @returns True when `ownEnumerableCount(x) === n`
+ * @returns True when the count of own enumerable properties equals `n`
  * @example
  * ```ts
  * const s = Symbol('s')
@@ -163,7 +72,12 @@ export function isCount<T extends Record<string | symbol, unknown>>(x: T, n: num
 export function isCount(x: unknown, n: number): x is Record<string | symbol, unknown>
 export function isCount(x: unknown, n: number): boolean {
 	if (!isRecord(x)) return false
-	return ownEnumerableCount(x as object) === n
+	const keysLen = Object.keys(x).length
+	const symsLen = Object.getOwnPropertySymbols(x).reduce(
+		(acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0),
+		0,
+	)
+	return keysLen + symsLen === n
 }
 
 /**
@@ -178,7 +92,7 @@ export function isCount(x: unknown, n: number): boolean {
  * @param x - Value to test (plain object)
  * @param min - Minimum inclusive count
  * @param max - Maximum inclusive count
- * @returns True when `min <= ownEnumerableCount(x) <= max`
+ * @returns True when `min <= count <= max`
  * @example
  * ```ts
  * const sym = Symbol('s')
@@ -192,6 +106,11 @@ export function isCountRange<T extends Record<string | symbol, unknown>>(x: T, m
 export function isCountRange(x: unknown, min: number, max: number): x is Record<string | symbol, unknown>
 export function isCountRange(x: unknown, min: number, max: number): boolean {
 	if (!isRecord(x)) return false
-	const c = ownEnumerableCount(x as object)
+	const keysLen = Object.keys(x).length
+	const symsLen = Object.getOwnPropertySymbols(x).reduce(
+		(acc, s) => acc + (Object.getOwnPropertyDescriptor(x, s)?.enumerable ? 1 : 0),
+		0,
+	)
+	const c = keysLen + symsLen
 	return c >= min && c <= max
 }

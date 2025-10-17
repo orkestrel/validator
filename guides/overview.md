@@ -8,7 +8,7 @@ What it gives you
 - Schema and object builders for ergonomic shape checks
 - Domain guards for common ecosystem data (UUID, ISO dates, URLs, MIME, etc.)
 - Deep structural checks (equality and clone verification), cycle-safe
-- Emptiness and opposite predicates (not, hasNo) for crisp invariants
+- Emptiness and opposite predicates (not) for crisp invariants
 
 Highlights
 - TypeScript-first, ESM-only, strict by default
@@ -19,8 +19,8 @@ Highlights
 Modules at a glance
 - Primitives: isString, isNumber (finite), isBoolean, isFunction, isAsyncFunction, isDate, …
 - Function introspection: isZeroArg, isAsyncFunction, isGeneratorFunction, isAsyncGeneratorFunction, isPromiseFunction, isZeroArgAsync, isZeroArgGenerator, isZeroArgAsyncGenerator, isZeroArgPromise
-- Objects: isObject, isRecord, hasOwn, hasOnlyKeys, hasNo, keyOf
-- Arrays & collections: isArray, arrayOf, tupleOf, recordOf, isMap, isSet, mapOf, setOf, iterableOf
+- Objects: isObject, isRecord, keyOf
+- Arrays & collections: isArray, arrayOf, tupleOf, recordOf, isMap, isSet, mapOf, setOf, iterableOf, functionOf
 - Strings & numbers: stringMatchOf, stringOf, numberOf, isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isIPv6String, isHostnameString
 - Size/length/count: lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, measureOf, multipleOf
 - Combinators: literalOf, andOf, orOf, notOf, unionOf, intersectionOf, optionalOf, nullableOf, lazyOf, refineOf, discriminatedUnionOf, enumOf, emptyOf, nonEmptyOf

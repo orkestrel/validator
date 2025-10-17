@@ -69,8 +69,8 @@ const schema = {
 
 - Primitives: `isString`, `isNumber` (finite), `isBoolean`, `isFunction`, `isAsyncFunction`, `isDate`, `isRegExp`, `isError`, `isPromiseLike`
 - Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isPromiseFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`, `isZeroArgPromise`
-- Objects & keys: `isObject`, `isRecord`, `hasOwn`, `hasOnlyKeys`, `hasNo`, `keyOf`
-- Arrays/collections: `isArray`, `arrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`, `iterableOf`
+- Objects & keys: `isObject`, `isRecord`, `keyOf`
+- Arrays/collections: `isArray`, `arrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`, `iterableOf`, `functionOf`
 - Strings/numbers: `stringMatchOf`, `stringOf`, `numberOf`, `isLowercase`, `isUppercase`, `isAlphanumeric`, `isAscii`, `isHexColor`, `isIPv4String`, `isIPv6String`, `isHostnameString`
 - Size/length/count: `lengthOf`, `sizeOf`, `countOf`, `minOf`, `maxOf`, `rangeOf`, `measureOf`, `multipleOf`
 
@@ -183,7 +183,6 @@ Options:
 - Opposites:
     - `notOf(guard)` — simple negation (returns `Guard<unknown>`)
     - `notOf(base, exclude)` — typed exclusion: `Exclude<Base, Excluded>`
-    - `hasNo(obj, ...keys)` — object owns none of these keys
 
 ## TypeScript and build
 

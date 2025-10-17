@@ -22,6 +22,7 @@ import {
 	keyOf,
 	recordOf,
 	iterableOf,
+	functionOf,
 	nonEmptyOf,
 	emptyOf,
 	// Unified comparators
@@ -452,6 +453,28 @@ describe('combinators', () => {
 				yield 'x'
 			}
 			expect(g(bad() as unknown as Iterable<number>)).toBe(false)
+		})
+	})
+
+	describe('functionOf', () => {
+		test('validates functions', () => {
+			const g = functionOf(isNumber)
+			expect(g(() => 42)).toBe(true)
+			expect(g((x: number) => x)).toBe(true)
+		})
+
+		test('rejects non-functions', () => {
+			const g = functionOf(isString)
+			expect(g({} as unknown)).toBe(false)
+			expect(g('string' as unknown)).toBe(false)
+			expect(g(123 as unknown)).toBe(false)
+		})
+
+		test('type-level validation with various return types', () => {
+			const numFn = functionOf(isNumber)
+			const strFn = functionOf(isString)
+			expect(numFn(() => 1)).toBe(true)
+			expect(strFn(() => 'test')).toBe(true)
 		})
 	})
 })
