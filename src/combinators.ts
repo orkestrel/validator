@@ -1,4 +1,4 @@
-import type { Guard, Result, UnionToIntersection, GuardsShape, EmptyOf, GuardType } from './types.js'
+import type { Guard, Result, UnionToIntersection, GuardsShape, EmptyOf, GuardType, ObjectOfOptions } from './types.js'
 import { isRecord, isCount } from './objects.js'
 import { isString, isNumber, isIterable } from './primitives.js'
 import { isLength } from './arrays.js'
@@ -284,7 +284,7 @@ export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E
  */
 export function objectOf<const P extends GuardsShape, const Opt extends readonly (keyof P)[] = []>(
 	props: P,
-	options?: Readonly<{ optional?: Opt, exact?: boolean, rest?: Guard<unknown> }>,
+	options?: ObjectOfOptions<Opt>,
 ): (x: unknown) => x is Readonly<
 	{ [K in Exclude<keyof P, Opt[number]>]-?: GuardType<P[K]> }
 	& { [K in Opt[number]]?: GuardType<P[K]> }
