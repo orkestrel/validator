@@ -27,7 +27,6 @@ import {
 	generatorFunctionOf,
 	asyncGeneratorFunctionOf,
 	returnsOf,
-	promiseOf,
 	promiseLikeOf,
 	// Unified comparators
 	minOf,
@@ -38,8 +37,6 @@ import {
 	countOf,
 	multipleOf,
 	measureOf,
-	stringOf,
-	numberOf,
 	partialOf,
 	pickOf,
 	omitOf,
@@ -51,7 +48,9 @@ import {
 	weakMapOf,
 	weakSetOf,
 } from '../src/combinators.js'
-import { isString, isNumber } from '../src/primitives.js'
+import { isString, isNumber, isPromise, isBigInt } from '../src/primitives.js'
+import { isTypedArray, isInt16Array, isBigInt64Array, isBigUint64Array } from '../src/arrays.js'
+import { isFiniteNumber } from '../src/numbers.js'
 
 describe('combinators', () => {
 	describe('literalOf', () => {
@@ -417,19 +416,17 @@ describe('combinators', () => {
 		})
 	})
 
-	describe('stringOf/numberOf', () => {
-		test('stringOf is a string type guard (accepts any string)', () => {
-			const g = stringOf()
-			expect(g('ok')).toBe(true)
-			expect(g('nope')).toBe(true)
-			expect(g(123 as unknown)).toBe(false)
+	describe('isString/isNumber guards', () => {
+		test('isString is a string type guard (accepts any string)', () => {
+			expect(isString('ok')).toBe(true)
+			expect(isString('nope')).toBe(true)
+			expect(isString(123 as unknown)).toBe(false)
 		})
-		test('numberOf is a number type guard (accepts any number)', () => {
-			const g = numberOf()
-			expect(g(42)).toBe(true)
-			expect(g(41)).toBe(true)
+		test('isNumber is a number type guard (accepts any number)', () => {
+			expect(isNumber(42)).toBe(true)
+			expect(isNumber(41)).toBe(true)
 			// rejects non-numbers
-			expect(g('42' as unknown)).toBe(false)
+			expect(isNumber('42' as unknown)).toBe(false)
 		})
 	})
 
@@ -480,7 +477,7 @@ describe('combinators', () => {
 		})
 
 		test('promise guards', () => {
-			expect(promiseOf()(Promise.resolve(1))).toBe(true)
+			expect(isPromise(Promise.resolve(1))).toBe(true)
 			const thenable = { then() { /* noop */ } }
 			expect(promiseLikeOf()(thenable)).toBe(true)
 		})
@@ -576,7 +573,7 @@ describe('combinators', () => {
 			const g = transformOf(isString, (s) => {
 				called++
 				return s.length
-			}, numberOf())
+			}, isNumber)
 			expect(g(123 as unknown)).toBe(false)
 			expect(called).toBe(0)
 		})
@@ -655,11 +652,58 @@ describe('combinators', () => {
 		})
 
 		test('works with a refinement predicate as the exclude', () => {
-			const base = stringOf()
+			const base = isString
 			const exclude = (s: string): s is string => s.length === 0
 			const nonEmptyString = complementOf(base, exclude)
 			expect(nonEmptyString('x')).toBe(true)
 			expect(nonEmptyString('')).toBe(false)
+		})
+	})
+
+	describe('iterableOf with typed arrays', () => {
+		test('numeric typed arrays with iterableOf + isTypedArray', () => {
+			// Accept any numeric typed array
+			const NumericTypedArray = intersectionOf(
+				isTypedArray,
+				iterableOf(isFiniteNumber),
+			)
+
+			expect(NumericTypedArray(new Uint8Array([1, 2, 3]))).toBe(true)
+			expect(NumericTypedArray(new Int16Array([1, 2, 3]))).toBe(true)
+			expect(NumericTypedArray(new Float32Array([1.5, 2.5]))).toBe(true)
+			expect(NumericTypedArray(new BigInt64Array([1n, 2n]))).toBe(false) // bigint, not number
+			expect(NumericTypedArray([1, 2, 3])).toBe(false) // array, not typed array
+		})
+
+		test('bigint typed arrays with iterableOf', () => {
+			const BigIntTypedArray = intersectionOf(
+				unionOf(isBigInt64Array, isBigUint64Array),
+				iterableOf(isBigInt),
+			)
+
+			expect(BigIntTypedArray(new BigInt64Array([1n, 2n]))).toBe(true)
+			expect(BigIntTypedArray(new BigUint64Array([1n, 2n]))).toBe(true)
+			expect(BigIntTypedArray(new Int32Array([1, 2]))).toBe(false) // numeric, not bigint
+			expect(BigIntTypedArray([1n, 2n])).toBe(false) // array, not typed array
+		})
+
+		test('specific typed array with element refinement', () => {
+			// Non-negative Int16Array
+			const NonNegativeInt16Array = intersectionOf(
+				isInt16Array,
+				iterableOf((n: unknown): n is number => typeof n === 'number' && n >= 0),
+			)
+
+			expect(NonNegativeInt16Array(new Int16Array([0, 1, 2]))).toBe(true)
+			expect(NonNegativeInt16Array(new Int16Array([1, -1, 2]))).toBe(false) // has negative
+			expect(NonNegativeInt16Array(new Uint16Array([0, 1, 2]))).toBe(false) // wrong type
+		})
+
+		test('arrayOf does not accept typed arrays', () => {
+			// arrayOf only accepts Array.isArray() results
+			const Numbers = arrayOf(isNumber)
+			expect(Numbers([1, 2, 3])).toBe(true)
+			expect(Numbers(new Int32Array([1, 2, 3]))).toBe(false)
 		})
 	})
 })
