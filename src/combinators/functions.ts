@@ -105,20 +105,6 @@ export function returnsOf<A extends readonly unknown[], R>(
 }
 
 /**
- * Guard for native Promises (strict).
- *
- * @returns Guard for `Promise<unknown>`
- * @example
- * ```ts
- * const g = promiseOf()
- * g(Promise.resolve(1)) // true
- * ```
- */
-export function promiseOf(): Guard<Promise<unknown>> {
-	return (u: unknown): u is Promise<unknown> => isPromise(u)
-}
-
-/**
  * Guard for thenables (Promise‑like). Does not await.
  *
  * @returns Guard for `PromiseLike<unknown>`
