@@ -71,7 +71,7 @@ const schema = {
 - Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isPromiseFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`, `isZeroArgPromise`
 - Objects & keys: `isObject`, `isRecord`, `keyOf`
 - Arrays/collections: `isArray`, `arrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`, `iterableOf`
-- Strings/numbers: `matchOf`, `stringOf`, `numberOf`, `isLowercase`, `isUppercase`, `isAlphanumeric`, `isAscii`, `isHexColor`, `isIPv4String`, `isIPv6String`, `isHostnameString`
+- Strings/numbers: `matchOf`, `isLowercase`, `isUppercase`, `isAlphanumeric`, `isAscii`, `isHexColor`, `isIPv4String`, `isIPv6String`, `isHostnameString`
 - Size/length/count: `lengthOf`, `sizeOf`, `countOf`, `minOf`, `maxOf`, `rangeOf`, `measureOf`, `multipleOf`
 
 Each guard accepts `unknown` and returns a precise `x is T` predicate. Helpers are pure and do not mutate inputs.
@@ -85,7 +85,7 @@ import {
   literalOf, andOf, orOf, notOf, complementOf, unionOf, intersectionOf,
   optionalOf, nullableOf, lazyOf, whereOf, enumOf, discriminatedUnionOf,
   isString, isNumber, objectOf,
-  emptyOf, nonEmptyOf, matchOf, stringOf, numberOf,
+  emptyOf, nonEmptyOf, matchOf,
   lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, multipleOf,
   mapOf, setOf, keyOf, recordOf, iterableOf, measureOf,
 } from '@orkestrel/validator'
@@ -117,6 +117,46 @@ const atMost100 = maxOf(100)        // measure <= 100
 const maybeEmptyString = emptyOf(isString)     // '' or non-empty string
 const mustHaveItems = nonEmptyOf(arrayOf(isNumber)) // non-empty number array
 ```
+
+## Typed arrays and iterableOf
+
+`arrayOf` validates only native arrays (`Array.isArray(x)`). For typed arrays (`Int8Array`, `Uint8Array`, etc.), use `iterableOf` combined with typed-array guards:
+
+```ts
+import { 
+  intersectionOf, unionOf, iterableOf,
+  isTypedArray, isInt16Array, isBigInt64Array, isBigUint64Array,
+  isFiniteNumber, isBigInt,
+} from '@orkestrel/validator'
+
+// Accept any numeric typed array
+const NumericTypedArray = intersectionOf(
+  isTypedArray,
+  iterableOf(isFiniteNumber),
+)
+NumericTypedArray(new Uint8Array([1, 2, 3])) // true
+NumericTypedArray(new Float32Array([1.5, 2.5])) // true
+NumericTypedArray(new BigInt64Array([1n, 2n])) // false (bigint elements)
+NumericTypedArray([1, 2, 3]) // false (not a typed array)
+
+// Accept only BigInt typed arrays
+const BigIntTypedArray = intersectionOf(
+  unionOf(isBigInt64Array, isBigUint64Array),
+  iterableOf(isBigInt),
+)
+BigIntTypedArray(new BigInt64Array([1n, 2n])) // true
+BigIntTypedArray(new Int32Array([1, 2])) // false (numeric elements)
+
+// Specific typed array with element refinement
+const NonNegativeInt16Array = intersectionOf(
+  isInt16Array,
+  iterableOf((n: unknown): n is number => typeof n === 'number' && n >= 0),
+)
+NonNegativeInt16Array(new Int16Array([0, 1, 2])) // true
+NonNegativeInt16Array(new Int16Array([1, -1, 2])) // false (has negative)
+```
+
+Rationale: Keeping `arrayOf` minimal encourages consistent composition. Use `iterableOf` for any iterable structure (generators, typed arrays, etc.) that needs element validation.
 
 ## Schema and object builders
 

@@ -21,16 +21,16 @@ describe('combinators/collections', () => {
 				[key1, 'value1'],
 				[key2, 'value2'],
 			])
-			
+
 			// All proof keys in map pass validation
 			const g1 = weakMapOf(isObject, isString, [key1, key2])
 			expect(g1(wm)).toBe(true)
-			
+
 			// Proof key exists but value fails validation
 			wm.set(key3, 123 as unknown as string)
 			const g2 = weakMapOf(isObject, isString, [key1, key2, key3])
 			expect(g2(wm)).toBe(false)
-			
+
 			// Proof key not in map - skipped
 			const key4 = { id: 4 }
 			const g3 = weakMapOf(isObject, isString, [key1, key4])
@@ -57,23 +57,23 @@ describe('combinators/collections', () => {
 		})
 
 		test('validates elements when proof provided', () => {
-			const hasId = (x: unknown): x is { id: number } => 
+			const hasId = (x: unknown): x is { id: number } =>
 				isObject(x) && typeof (x as Record<string, unknown>).id === 'number'
-			
+
 			const obj1 = { id: 1 }
 			const obj2 = { id: 2 }
 			const objNoId = { name: 'no-id' }
 			const ws = new WeakSet([obj1, obj2])
-			
+
 			// All proof elements in set pass validation
 			const g1 = weakSetOf(hasId, [obj1, obj2])
 			expect(g1(ws)).toBe(true)
-			
+
 			// Proof element exists but fails validation
 			ws.add(objNoId)
 			const g2 = weakSetOf(hasId, [obj1, obj2, objNoId])
 			expect(g2(ws)).toBe(false)
-			
+
 			// Proof element not in set - skipped
 			const obj4 = { id: 4 }
 			const g3 = weakSetOf(hasId, [obj1, obj4])

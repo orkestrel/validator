@@ -1,5 +1,4 @@
 import type { Guard } from '../types.js'
-import { isPromise } from '../primitives.js'
 
 /**
  * Base function guard. No kind/arity/return checks.

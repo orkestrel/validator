@@ -21,7 +21,7 @@ Modules at a glance
 - Function introspection: isZeroArg, isAsyncFunction, isGeneratorFunction, isAsyncGeneratorFunction, isPromiseFunction, isZeroArgAsync, isZeroArgGenerator, isZeroArgAsyncGenerator, isZeroArgPromise
 - Objects: isObject, isRecord, keyOf
 - Arrays & collections: isArray, arrayOf, tupleOf, recordOf, isMap, isSet, mapOf, setOf, iterableOf
-- Strings & numbers: matchOf, stringOf, numberOf, isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isIPv6String, isHostnameString
+- Strings & numbers: matchOf, isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isIPv6String, isHostnameString
 - Size/length/count: lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, measureOf, multipleOf
 - Combinators: literalOf, andOf, orOf, notOf, complementOf, unionOf, intersectionOf, optionalOf, nullableOf, lazyOf, whereOf, discriminatedUnionOf, enumOf, emptyOf, nonEmptyOf
 - Schema & builders: isSchema; optionalOf/objectOf for optional/exact/rest behavior (objectOf is exact by default; use rest to allow extras)

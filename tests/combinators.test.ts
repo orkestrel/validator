@@ -667,7 +667,7 @@ describe('combinators', () => {
 				isTypedArray,
 				iterableOf(isFiniteNumber),
 			)
-			
+
 			expect(NumericTypedArray(new Uint8Array([1, 2, 3]))).toBe(true)
 			expect(NumericTypedArray(new Int16Array([1, 2, 3]))).toBe(true)
 			expect(NumericTypedArray(new Float32Array([1.5, 2.5]))).toBe(true)
@@ -680,7 +680,7 @@ describe('combinators', () => {
 				unionOf(isBigInt64Array, isBigUint64Array),
 				iterableOf(isBigInt),
 			)
-			
+
 			expect(BigIntTypedArray(new BigInt64Array([1n, 2n]))).toBe(true)
 			expect(BigIntTypedArray(new BigUint64Array([1n, 2n]))).toBe(true)
 			expect(BigIntTypedArray(new Int32Array([1, 2]))).toBe(false) // numeric, not bigint
@@ -693,7 +693,7 @@ describe('combinators', () => {
 				isInt16Array,
 				iterableOf((n: unknown): n is number => typeof n === 'number' && n >= 0),
 			)
-			
+
 			expect(NonNegativeInt16Array(new Int16Array([0, 1, 2]))).toBe(true)
 			expect(NonNegativeInt16Array(new Int16Array([1, -1, 2]))).toBe(false) // has negative
 			expect(NonNegativeInt16Array(new Uint16Array([0, 1, 2]))).toBe(false) // wrong type
