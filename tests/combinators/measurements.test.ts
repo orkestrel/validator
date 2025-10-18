@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, multipleOf, measureOf } from '../../src/combinators/measurements.js'
+import { isString } from '../../src/primitives.js'
+import { arrayOf, objectOf } from '../../src/combinators.js'
 
 describe('combinators/measurements', () => {
 	describe('lengthOf', () => {
@@ -126,6 +128,52 @@ describe('combinators/measurements', () => {
 			const g = measureOf(2)
 			expect(g(new Set([1, 2]))).toBe(true)
 			expect(g(new Set([1]))).toBe(false)
+		})
+	})
+
+	describe('composed forms with auto-detection', () => {
+		test('minOf with base guard auto-detects measure', () => {
+			// String length auto-detected
+			const MinLength2 = minOf(isString, 2)
+			expect(MinLength2('ab')).toBe(true)
+			expect(MinLength2('abc')).toBe(true)
+			expect(MinLength2('a')).toBe(false)
+
+			// Array length auto-detected
+			const MinArrayLen1 = minOf(arrayOf(isString), 1)
+			expect(MinArrayLen1(['a'])).toBe(true)
+			expect(MinArrayLen1([])).toBe(false)
+		})
+
+		test('maxOf with base guard auto-detects measure', () => {
+			// String length auto-detected
+			const MaxLength5 = maxOf(isString, 5)
+			expect(MaxLength5('abc')).toBe(true)
+			expect(MaxLength5('abcde')).toBe(true)
+			expect(MaxLength5('abcdef')).toBe(false)
+		})
+
+		test('rangeOf with base guard auto-detects measure', () => {
+			// String length auto-detected
+			const Range2to4 = rangeOf(isString, 2, 4)
+			expect(Range2to4('ab')).toBe(true)
+			expect(Range2to4('abc')).toBe(true)
+			expect(Range2to4('abcd')).toBe(true)
+			expect(Range2to4('a')).toBe(false)
+			expect(Range2to4('abcde')).toBe(false)
+
+			// Object property count auto-detected
+			const ObjRange1to2 = rangeOf(objectOf({ id: isString }), 1, 2)
+			expect(ObjRange1to2({ id: 'x' })).toBe(true)
+			expect(ObjRange1to2({ id: 'x', name: 'y' } as unknown)).toBe(false) // 2 props, exact only
+		})
+
+		test('measureOf with base guard auto-detects measure', () => {
+			// String length auto-detected
+			const Exactly3 = measureOf(isString, 3)
+			expect(Exactly3('abc')).toBe(true)
+			expect(Exactly3('ab')).toBe(false)
+			expect(Exactly3('abcd')).toBe(false)
 		})
 	})
 })

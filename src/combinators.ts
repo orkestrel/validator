@@ -3,12 +3,9 @@ import { isRecord } from './objects.js'
 import { isString, isIterable, isNumber, isSymbol } from './primitives.js'
 
 // Re-export wrapper combinators from submodules
-export * from './combinators/primitives.js'
-export * from './combinators/arrays.js'
 export * from './combinators/collections.js'
 export * from './combinators/strings.js'
 export * from './combinators/functions.js'
-export * from './combinators/domains.js'
 export * from './combinators/emptiness.js'
 export * from './combinators/measurements.js'
 

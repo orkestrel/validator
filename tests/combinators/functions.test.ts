@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { functionOf, asyncFunctionOf, generatorFunctionOf, asyncGeneratorFunctionOf, returnsOf, promiseOf, promiseLikeOf } from '../../src/combinators/functions.js'
+import { functionOf, asyncFunctionOf, generatorFunctionOf, asyncGeneratorFunctionOf, returnsOf, promiseLikeOf } from '../../src/combinators/functions.js'
 import { isNumber } from '../../src/primitives.js'
 
 describe('combinators/functions', () => {
@@ -54,14 +54,6 @@ describe('combinators/functions', () => {
 		test('rejects thenables', () => {
 			const g = returnsOf([], isNumber)
 			expect(g(() => Promise.resolve(42))).toBe(false)
-		})
-	})
-
-	describe('promiseOf', () => {
-		test('accepts Promise instances', () => {
-			const g = promiseOf()
-			expect(g(Promise.resolve(1))).toBe(true)
-			expect(g({ then: () => {} } as unknown)).toBe(false)
 		})
 	})
 

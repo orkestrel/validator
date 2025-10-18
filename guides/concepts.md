@@ -8,7 +8,7 @@ Guards (validate unknown, narrow precisely)
 - Function introspection: isZeroArg, isAsyncFunction, isGeneratorFunction, isAsyncGeneratorFunction, isPromiseFunction, isZeroArgAsync, isZeroArgGenerator, isZeroArgAsyncGenerator, isZeroArgPromise
 - Objects: isObject, isRecord; keyOf derives a guard from object keys
 - Arrays/Collections: isArray; arrayOf, tupleOf, recordOf; isMap/isSet + mapOf/setOf, iterableOf
-- Strings/Numbers: matchOf, stringOf, numberOf, isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isIPv6String, isHostnameString
+- Strings/Numbers: matchOf, isLowercase, isUppercase, isAlphanumeric, isAscii, isHexColor, isIPv4String, isIPv6String, isHostnameString
 - Size/length/count: lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, measureOf, multipleOf
 
 Combinators (compose without DSLs)
@@ -19,7 +19,7 @@ Combinators (compose without DSLs)
 - discriminatedUnionOf('kind', { circle: guard, rect: guard })
 - enumOf(Enum) to guard TS enums
 - emptyOf, nonEmptyOf for emptiness-aware validation
-- matchOf, stringOf, numberOf for exact string/number matching
+- matchOf for exact string matching
 - lengthOf, sizeOf, countOf for exact size constraints
 - minOf, maxOf, rangeOf for range constraints across multiple shapes
 - multipleOf for numeric divisibility checks

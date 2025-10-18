@@ -1,4 +1,4 @@
-import type { Guard, MeasureKind } from '../types.js'
+import type { Guard } from '../types.js'
 import { isString, isFunction } from '../primitives.js'
 import { isArray } from '../arrays.js'
 import { isSet, isMap } from '../collections.js'
@@ -16,10 +16,6 @@ import {
 	isSizeMax,
 	isSizeMin,
 	isSizeRange,
-	isMeasure,
-	isMin,
-	isMax,
-	isRange,
 } from '../measurements.js'
 import { isFiniteNumber } from '../numbers.js'
 
@@ -66,31 +62,56 @@ export function countOf(n: number): Guard<Record<string | symbol, unknown>> {
 	return (x: unknown): x is Record<string | symbol, unknown> => isCount(x, n)
 }
 
+/**
+ * Auto-detect the measure of a value and return its numeric representation.
+ * - number → value itself
+ * - string/array/function → .length
+ * - Map/Set → .size
+ * - plain object (record) → own enumerable property count
+ *
+ * @param x - Value to measure
+ * @returns The numeric measure, or undefined if not measurable
+ */
+function getMeasure(x: unknown): number | undefined {
+	if (typeof x === 'number') return x
+	if (isString(x) || isFunction(x) || isArray(x)) return (x as { length: number }).length
+	if (isMap(x) || isSet(x)) return (x as { size: number }).size
+	if (isRecord(x)) {
+		const keys = Object.keys(x)
+		const symbols = Object.getOwnPropertySymbols(x).filter(s => Object.prototype.propertyIsEnumerable.call(x, s))
+		return keys.length + symbols.length
+	}
+	return undefined
+}
+
 // Minimum measure comparator (unified or composed)
 export function minOf(min: number): Guard<number | string | ((...args: ReadonlyArray<unknown>) => unknown) | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>>
-export function minOf<T>(base: Guard<T>, kind: MeasureKind, min: number): Guard<T>
+export function minOf<T>(base: Guard<T>, min: number): Guard<T>
 /**
  * Minimum measure across supported shapes (number value, string/array length, Map/Set size, object count),
- * or compose with a base guard and a specific measure kind.
+ * or compose with a base guard that auto-detects the measure.
  *
  * Overloads:
  * - minOf(min) → unified guard for numbers/lengths/sizes/counts
- * - minOf(base, kind, min) → refined guard preserving base type
+ * - minOf(base, min) → refined guard preserving base type with auto-detected measure
  *
  * @param a - Either the minimum number (unified mode), or the base guard (composed mode)
- * @param kind - When composing with a base guard, the measure kind to compare (e.g., 'length' | 'size' | 'count' | 'value')
- * @param min - When composing with a base guard, the minimum to enforce for the given kind
+ * @param min - When composing with a base guard, the minimum to enforce (auto-detected measure)
  * @returns Guard that accepts values whose measure is at least `min`
  * @example
  * ```ts
  * minOf(2)('ab') // true
- * minOf(objectOf({ id: isString }), 'count', 1)({ id: 'x' }) // true
+ * minOf(objectOf({ id: isString }), 1)({ id: 'x' }) // true (auto-detects property count)
  * ```
  */
-export function minOf<T>(a: number | Guard<T>, kind?: MeasureKind, min?: number): Guard<unknown> {
-	if (typeof a === 'function' && kind && typeof min === 'number') {
+export function minOf<T>(a: number | Guard<T>, min?: number): Guard<unknown> {
+	if (typeof a === 'function' && typeof min === 'number') {
 		const base = a as Guard<T>
-		return (x: unknown): x is T => base(x) && isMin(x, kind, min)
+		return (x: unknown): x is T => {
+			if (!base(x)) return false
+			const measure = getMeasure(x)
+			return measure !== undefined && measure >= min
+		}
 	}
 	const m = a as number
 	return (x: unknown): x is number | string | ((...args: ReadonlyArray<unknown>) => unknown) | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown> => {
@@ -104,29 +125,32 @@ export function minOf<T>(a: number | Guard<T>, kind?: MeasureKind, min?: number)
 
 // Maximum measure comparator (unified or composed)
 export function maxOf(max: number): Guard<number | string | ((...args: ReadonlyArray<unknown>) => unknown) | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>>
-export function maxOf<T>(base: Guard<T>, kind: MeasureKind, max: number): Guard<T>
+export function maxOf<T>(base: Guard<T>, max: number): Guard<T>
 /**
  * Maximum measure across supported shapes (number value, string/array length, Map/Set size, object count),
- * or compose with a base guard and a specific measure kind.
+ * or compose with a base guard that auto-detects the measure.
  *
  * Overloads:
  * - maxOf(max) → unified guard for numbers/lengths/sizes/counts
- * - maxOf(base, kind, max) → refined guard preserving base type
+ * - maxOf(base, max) → refined guard preserving base type with auto-detected measure
  *
  * @param a - Either the maximum number (unified mode), or the base guard (composed mode)
- * @param kind - When composing with a base guard, the measure kind to compare (e.g., 'length' | 'size' | 'count' | 'value')
- * @param max - When composing with a base guard, the maximum to enforce for the given kind
+ * @param max - When composing with a base guard, the maximum to enforce (auto-detected measure)
  * @returns Guard that accepts values whose measure is at most `max`
  * @example
  * ```ts
  * maxOf(2)('abc') // false
- * maxOf(arrayOf(isNumber), 'length', 1)([1]) // true
+ * maxOf(arrayOf(isNumber), 1)([1]) // true (auto-detects array length)
  * ```
  */
-export function maxOf<T>(a: number | Guard<T>, kind?: MeasureKind, max?: number): Guard<unknown> {
-	if (typeof a === 'function' && kind && typeof max === 'number') {
+export function maxOf<T>(a: number | Guard<T>, max?: number): Guard<unknown> {
+	if (typeof a === 'function' && typeof max === 'number') {
 		const base = a as Guard<T>
-		return (x: unknown): x is T => base(x) && isMax(x, kind, max)
+		return (x: unknown): x is T => {
+			if (!base(x)) return false
+			const measure = getMeasure(x)
+			return measure !== undefined && measure <= max
+		}
 	}
 	const m = a as number
 	return (x: unknown): x is number | string | ((...args: ReadonlyArray<unknown>) => unknown) | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown> => {
@@ -140,31 +164,35 @@ export function maxOf<T>(a: number | Guard<T>, kind?: MeasureKind, max?: number)
 
 // Inclusive range comparator (unified or composed)
 export function rangeOf(min: number, max: number): Guard<number | string | ((...args: ReadonlyArray<unknown>) => unknown) | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>>
-export function rangeOf<T>(base: Guard<T>, kind: MeasureKind, min: number, max: number): Guard<T>
+export function rangeOf<T>(base: Guard<T>, min: number, max: number): Guard<T>
 /**
  * Inclusive range across supported shapes (number value, string/array length, Map/Set size, object count),
- * or compose with a base guard and a specific measure kind.
+ * or compose with a base guard that auto-detects the measure.
  *
  * Overloads:
  * - rangeOf(min, max) → unified guard for numbers/lengths/sizes/counts
- * - rangeOf(base, kind, min, max) → refined guard preserving base type
+ * - rangeOf(base, min, max) → refined guard preserving base type with auto-detected measure
  *
  * @param a - Either the minimum number (unified mode) or the base guard (composed mode)
- * @param b - Either the maximum number (unified mode) or the measure kind when composing with a base guard
- * @param c - When composing with a base guard, the inclusive minimum for the given kind
- * @param d - When composing with a base guard, the inclusive maximum for the given kind
+ * @param b - Either the maximum number (unified mode) or the minimum when composing with a base guard
+ * @param c - When composing with a base guard, the inclusive maximum (auto-detected measure)
  * @returns Guard that accepts values whose measure is within the inclusive range
  * @example
  * ```ts
  * rangeOf(1, 3)(2) // true
- * rangeOf(stringOf(), 'length', 2, 3)('abc') // true
+ * rangeOf(isString, 2, 3)('abc') // true (auto-detects string length)
  * ```
  */
-export function rangeOf<T>(a: number | Guard<T>, b: number | MeasureKind, c?: number, d?: number): Guard<unknown> {
-	if (typeof a === 'function' && typeof b === 'string' && typeof c === 'number' && typeof d === 'number') {
+export function rangeOf<T>(a: number | Guard<T>, b: number, c?: number): Guard<unknown> {
+	if (typeof a === 'function' && typeof b === 'number' && typeof c === 'number') {
 		const base = a as Guard<T>
-		const kind = b as MeasureKind
-		return (x: unknown): x is T => base(x) && isRange(x, kind, c, d)
+		const min = b
+		const max = c
+		return (x: unknown): x is T => {
+			if (!base(x)) return false
+			const measure = getMeasure(x)
+			return measure !== undefined && measure >= min && measure <= max
+		}
 	}
 	const min = a as number
 	const max = b as number
@@ -194,35 +222,39 @@ export function multipleOf(m: number): Guard<number> {
 
 /**
  * Create a guard that accepts values whose unified measure equals `n`,
- * or compose with a base guard and a specific measure kind.
+ * or compose with a base guard that auto-detects the measure.
  *
  * Overloads:
  * - measureOf(n) → unified guard for numbers/lengths/sizes/counts equal to `n`
- * - measureOf(base, kind, n) → refined guard preserving base type
+ * - measureOf(base, n) → refined guard preserving base type with auto-detected measure
  *
  * Measure rules:
  * - number → value
- * - string/array → length
+ * - string/array/function → length
  * - Map/Set → size
  * - plain object → own enumerable keys + enumerable symbols count
  *
  * @param a - Either the exact measure to match (unified mode), or the base guard (composed mode)
- * @param kind - When composing with a base guard, the measure kind to compare (e.g., 'length' | 'size' | 'count' | 'value')
- * @param n - When composing with a base guard, the exact measure to require for the given kind
+ * @param n - When composing with a base guard, the exact measure to require (auto-detected)
  * @returns Guard that accepts values whose measure equals `n`
  * @example
  * ```ts
  * const m2 = measureOf(2)
  * m2('ab') // true
  * m2(new Set([1, 2])) // true
+ * measureOf(isString, 3)('abc') // true (auto-detects string length)
  * ```
  */
 export function measureOf(n: number): Guard<string | ((...args: ReadonlyArray<unknown>) => unknown) | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown>>
-export function measureOf<T>(base: Guard<T>, kind: MeasureKind, n: number): Guard<T>
-export function measureOf<T>(a: number | Guard<T>, kind?: MeasureKind, n?: number): Guard<unknown> {
-	if (typeof a === 'function' && kind && typeof n === 'number') {
+export function measureOf<T>(base: Guard<T>, n: number): Guard<T>
+export function measureOf<T>(a: number | Guard<T>, n?: number): Guard<unknown> {
+	if (typeof a === 'function' && typeof n === 'number') {
 		const base = a as Guard<T>
-		return (x: unknown): x is T => base(x) && isMeasure(x, kind, n)
+		return (x: unknown): x is T => {
+			if (!base(x)) return false
+			const measure = getMeasure(x)
+			return measure === n
+		}
 	}
 	const exact = a as number
 	return (x: unknown): x is string | ((...args: ReadonlyArray<unknown>) => unknown) | ReadonlyArray<unknown> | ReadonlyMap<unknown, unknown> | ReadonlySet<unknown> | Record<string | symbol, unknown> =>
