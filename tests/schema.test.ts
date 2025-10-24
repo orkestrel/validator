@@ -23,6 +23,7 @@ import {
 	lazyOf,
 	transformOf,
 	nullableOf,
+	instanceOf,
 } from '../src/schema.js'
 import { isString, isNumber } from '../src/primitives.js'
 import type { Guard } from '../src/types.js'
@@ -57,10 +58,10 @@ describe('literalOf', () => {
 
 describe('enumOf', () => {
 	it('accepts only values of the enum', () => {
-		enum Color { Red = 'RED', Blue = 'BLUE' }
+		const Color = { Red: 'RED', Blue: 'BLUE' } as const
 		const G = enumOf(Color)
-		expect(G('RED')).toBe(true)
-		expect(G('BLUE')).toBe(true)
+		expect(G(Color.Red)).toBe(true)
+		expect(G(Color.Blue)).toBe(true)
 		expect(G('GREEN' as unknown)).toBe(false)
 	})
 })
@@ -279,5 +280,20 @@ describe('nullableOf', () => {
 		expect(MaybeString(null)).toBe(true)
 		expect(MaybeString('x')).toBe(true)
 		expect(MaybeString(1 as unknown)).toBe(false)
+	})
+})
+describe('instanceOf', () => {
+	it('narrows to custom class instances', () => {
+		class Box { constructor(public readonly v: number, ..._rest: unknown[]) {} }
+		const IsBox = instanceOf(Box)
+		const u: unknown = new Box(1)
+		expect(IsBox(u)).toBe(true)
+		const v: unknown = {}
+		expect(IsBox(v)).toBe(false)
+	})
+	it('checks built-in instances like Date', () => {
+		const IsDate = instanceOf(Date)
+		expect(IsDate(new Date(0))).toBe(true)
+		expect(IsDate('1970-01-01' as unknown)).toBe(false)
 	})
 })

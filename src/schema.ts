@@ -1,6 +1,8 @@
-import type { Guard, GuardsShape, FromGuards, OptionalFromGuards, TupleFromGuards, GuardType, IntersectionFromGuards } from './types.js'
+import type {
+	Guard, GuardsShape, FromGuards, OptionalFromGuards, TupleFromGuards, GuardType, IntersectionFromGuards, AnyConstructor,
+} from './types.js'
 import { isArray } from './arrays.js'
-import { isMap, isRecord, isSet } from './collections.js'
+import { isMap, isObject, isRecord, isSet } from './collections.js'
 import { isIterable, isNumber, isString, isSymbol } from './primitives.js'
 
 /**
@@ -54,6 +56,16 @@ export function tupleOf(...guardsOrPreds: readonly ((x: unknown) => boolean)[]):
 	}
 }
 
+export function objectOf<S extends GuardsShape>(shape: S): Guard<FromGuards<S>>
+export function objectOf<S extends GuardsShape, K extends readonly (keyof S & string)[]>(
+	shape: S,
+	optional: K,
+): Guard<OptionalFromGuards<S, K>>
+export function objectOf<S extends GuardsShape>(
+	shape: S,
+	optional: true,
+): Guard<Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>>
+
 /**
  * Compose a guard for an object with a fixed set of properties, each validated by its own guard.
  * Extra keys are rejected. A second parameter can mark properties as optional; all others remain required.
@@ -70,16 +82,6 @@ export function tupleOf(...guardsOrPreds: readonly ((x: unknown) => boolean)[]):
  * const PartialUser = objectOf({ id: isString, age: isNumber }, true)
  * ```
  */
-export function objectOf<S extends GuardsShape>(shape: S): Guard<FromGuards<S>>
-export function objectOf<S extends GuardsShape, K extends readonly (keyof S & string)[]>(
-	shape: S,
-	optional: K,
-): Guard<OptionalFromGuards<S, K>>
-export function objectOf<S extends GuardsShape>(
-	shape: S,
-	optional: true,
-): Guard<Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>>
-
 export function objectOf<S extends GuardsShape, K extends readonly (keyof S & string)[] | true | undefined>(
 	shape: S,
 	optional?: K,
@@ -138,6 +140,32 @@ export function literalOf<const Literals extends readonly (string | number | boo
 	...literals: Literals
 ): Guard<Literals[number]> {
 	return (x: unknown): x is Literals[number] => literals.some(l => Object.is(l, x))
+}
+
+/**
+	* Guard that accepts instances created by the provided constructor (via `instanceof`).
+	*
+	* Overloads:
+	* - instanceOf(ctor) → `Guard<InstanceType<typeof ctor>>`
+	*
+	* Notes
+	* - Cross‑realm instances (different iframes/workers) may fail `instanceof`.
+	* - Prefer structural guards (e.g., `objectOf`) for plain shapes; use this for nominal class checks.
+	*
+	* @typeParam C - Constructor type
+	* @param ctor - Class/constructor function
+	* @returns Guard narrowing to `InstanceType<C>` when `value instanceof ctor`
+	* @example
+	* ```ts
+	* class Box { constructor(readonly v: number) {} }
+	* const IsBox = instanceOf(Box)
+	* IsBox(new Box(1)) // true
+	* IsBox({} as unknown) // false
+	* ```
+	*/
+export function instanceOf<C>(ctor: C): Guard<InstanceType<C & AnyConstructor<object>>> {
+	return (x: unknown): x is InstanceType<C & AnyConstructor<object>> =>
+		typeof ctor === 'function' && isObject(x) && x instanceof ctor
 }
 
 /**

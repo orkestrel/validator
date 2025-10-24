@@ -31,6 +31,16 @@ export type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never
  */
 export type IntersectionFromGuards<Gs extends readonly Guard<unknown>[]> = UnionToIntersection<GuardType<Gs[number]>>
 
+/**
+ * Any constructor signature that produces instances of T.
+ *
+ * Uses `never[]` parameters to be maximally assignable from specific constructors
+ * without resorting to `any`.
+ *
+ * @typeParam T - Instance type the constructor produces
+ */
+export type AnyConstructor<T = unknown> = new (...args: unknown[]) => T
+
 // Function helper types for reusable signatures.
 export type AnyFunction = (...args: unknown[]) => unknown
 export type AnyAsyncFunction = (...args: unknown[]) => Promise<unknown>

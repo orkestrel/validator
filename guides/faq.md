@@ -6,8 +6,8 @@ Basics
   - It doesn’t. `isNumber` checks typeof only. For finite checks, compose a predicate (e.g., `x => typeof x === 'number' && Number.isFinite(x)`) or layer it via `whereOf`.
 
 - What’s the difference between `isObject` and `isRecord`?
-  - `isObject` narrows to the primitive `object` type: any non‑null object (arrays allowed). Property keys may be strings, symbols, or numbers (numbers are coerced to strings in JavaScript).
-  - `isRecord` narrows to a plain object with string keys (non‑array). Use it when you need a typical dictionary shape.
+  - `isObject` narrows to the primitive `object` type: any non‑null object (arrays allowed). Property keys can be strings, symbols, or numbers (numbers are coerced to strings in JavaScript). Use this when you want the broad object category.
+  - `isRecord` narrows to a plain object with string keys (non‑array). Use it when you want a typical dictionary shape with string keys.
 
 - How do I validate tuples?
   - Use `tupleOf(guardA, guardB, ...)`. It checks length and per-index guards.
@@ -38,7 +38,7 @@ Advanced
   - Guards validate types and elements, not ordering. If you need ordered checks, validate after conversion or via a custom predicate with `whereOf`.
 
 - Class instances?
-  - Use `isObject` for a coarse object check; `isRecord` for plain objects with string keys; shape builders for structural checks. Specific class checks can use `instanceof` in a custom guard.
+  - For specific classes, use `instanceOf(Ctor, value)`. For a coarse object check use `isObject`; for plain records use `isRecord`; for structural validation prefer `objectOf` and friends.
 
 Troubleshooting
 

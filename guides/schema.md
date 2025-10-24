@@ -110,6 +110,23 @@ const isColor = enumOf(Color)
 isColor('RED') // true
 ```
 
+## instanceOf(ctor)
+
+Create a guard that accepts values where `value instanceof ctor`. Optionally enforce an additional boolean predicate on `T`.
+
+```ts
+import { instanceOf } from '@orkestrel/validator'
+
+class Box { constructor(readonly v: number) {} }
+const IsBox = instanceOf(Box)
+IsBox(new Box(1)) // true
+IsBox({} as unknown) // false
+```
+
+Notes
+- Cross‑realm instances may fail `instanceof`.
+- Prefer structural shape checks (e.g., `objectOf`) when classes are not required.
+
 ## Combinators for composition
 
 Keep composition explicit and typed.
@@ -132,4 +149,3 @@ const Circle = objectOf({ kind: literalOf('circle'), r: isNumber })
 const Rect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber })
 const Shape = unionOf(Circle, Rect)
 ```
-

@@ -64,7 +64,7 @@ if (Payload(input)) {
 - Collections & objects: `isObject`, `isMap`, `isSet`, `isWeakMap`, `isWeakSet`, `isRecord`
 - Emptiness: `isEmptyString`, `isEmptyArray`, `isEmptyObject`, `isEmptyMap`, `isEmptySet`, `isNonEmptyString`, `isNonEmptyArray`, `isNonEmptyObject`, `isNonEmptyMap`, `isNonEmptySet`
 - Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isPromiseFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`, `isZeroArgPromise`
-- Schema & combinators: `arrayOf`, `tupleOf`, `objectOf` (second param `optional` supports `true` or a key array), `mapOf`, `setOf`, `recordOf`, `iterableOf`, `literalOf`, `enumOf`, `keyOf`, `pickOf`, `omitOf`, `andOf`, `orOf`, `notOf`, `complementOf`, `unionOf`, `intersectionOf`, `composedOf`, `whereOf`, `lazyOf`, `transformOf`, `nullableOf`
+- Schema & combinators: `arrayOf`, `tupleOf`, `objectOf` (second param `optional` supports `true` or a key array), `mapOf`, `setOf`, `recordOf`, `iterableOf`, `literalOf`, `enumOf`, `keyOf`, `pickOf`, `omitOf`, `andOf`, `orOf`, `notOf`, `complementOf`, `unionOf`, `intersectionOf`, `composedOf`, `whereOf`, `lazyOf`, `transformOf`, `nullableOf`, `instanceOf`
 
 Each function accepts `unknown` (or the relevant supertype) and returns a precise `x is T` predicate for meaningful narrowing.
 
