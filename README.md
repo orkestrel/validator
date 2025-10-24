@@ -1,27 +1,18 @@
 # @orkestrel/validator
 
-Tiny, composable runtime validators for TypeScript with deterministic deep checks.
+Focused, composable runtime type guards for TypeScript (ESM‑only).
 
-- TypeScript‑first, ESM‑only, strict by default
-- Honest types: no `any`, no non‑null assertions, narrow from `unknown`
+- TypeScript‑first, strict by default (no any, safe narrowing from unknown)
+- Deterministic, tiny helpers that only narrow types meaningfully
 - Portable: browser + Node compatible; tests use Vitest
-- Deterministic helpers and stable options; same inputs → same outputs
 
 Repository: https://github.com/orkestrel/validator
 
 Contents
 - [Install](#install)
-- [Why this library](#why-this-library)
 - [Quick start](#quick-start)
 - [Guards](#guards)
-- [Combinators](#combinators)
-- [Schema and object builders](#schema-and-object-builders)
-- [Domain guards](#domain-guards)
-- [Deep checks](#deep-checks)
-- [Emptiness and “opposites”](#emptiness-and-opposites)
 - [TypeScript and build](#typescript-and-build)
-- [Testing](#testing)
-- [Guides](#guides)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -35,212 +26,47 @@ Requirements
 - Node 18+ (for tests), TypeScript 5+
 - ESM‑only (package.json "type": "module"); moduleResolution: bundler
 
-## Why this library
-
-- Validate at the edges, keep internals typed: accept `unknown`, then narrow precisely.
-- Small, composable helpers instead of a monolithic schema DSL.
-- Predictable semantics for deep equality and clone checks with cycle safety.
-
 ## Quick start
 
 ```ts
-import {
-  isRecord, isString, arrayOf,
-} from '@orkestrel/validator'
+import { isRecord, isString, isArray, isNumber } from '@orkestrel/validator'
 
 const input: unknown = JSON.parse('{"id":"u1","tags":["x","y"],"count":1}')
 
-// Narrow and use
-if (isRecord(input) && isString(input.id) && arrayOf(isString)(input.tags)) {
-  console.log(input.id, input.tags.join(','))
+if (isRecord(input) && isString(input.id) && isArray(input.tags) && input.tags.every(isString) && isNumber(input.count)) {
+  // id: string, tags: readonly string[], count: number
 }
+```
 
-// Declarative schema with nested guard
-const schema = {
-  id: 'string',
-  tags: (x: unknown): x is readonly string[] => Array.isArray(x) && x.every(isString),
-  count: 'number',
-} as const
+### Quick start (schema builders)
 
-// Use your preferred error strategy if narrowing fails (throw, return Result, etc.)
+```ts
+import { objectOf, arrayOf } from '@orkestrel/validator'
+import { isString, isNumber } from '@orkestrel/validator'
+
+const input: unknown = JSON.parse('{"id":"u1","tags":["x","y"],"count":1}')
+
+const Payload = objectOf({
+  id: isString,
+  tags: arrayOf(isString),
+  count: isNumber,
+})
+
+if (Payload(input)) {
+  // input is now narrowed with id/tags/count
+}
 ```
 
 ## Guards
 
-- Primitives: `isString`, `isNumber` (finite), `isBoolean`, `isFunction`, `isAsyncFunction`, `isDate`, `isRegExp`, `isError`, `isPromiseLike`
+- Primitives: `isNull`, `isUndefined`, `isDefined`, `isString`, `isNumber`, `isBoolean`, `isBigInt`, `isSymbol`, `isFunction`, `isDate`, `isRegExp`, `isError`, `isPromise`, `isPromiseLike`, `isArrayBuffer`, `isSharedArrayBuffer`, `isIterable`, `isAsyncIterator`
+- Arrays & views: `isArray`, `isArrayBufferView`, `isTypedArray`, each concrete `*Array`, `isDataView`
+- Collections & objects: `isObject`, `isMap`, `isSet`, `isWeakMap`, `isWeakSet`, `isRecord`
+- Emptiness: `isEmptyString`, `isEmptyArray`, `isEmptyObject`, `isEmptyMap`, `isEmptySet`, `isNonEmptyString`, `isNonEmptyArray`, `isNonEmptyObject`, `isNonEmptyMap`, `isNonEmptySet`
 - Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isPromiseFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`, `isZeroArgPromise`
-- Objects & keys: `isObject`, `isRecord`, `keyOf`
-- Arrays/collections: `isArray`, `arrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`, `iterableOf`
-- Strings/numbers: `matchOf`, `isLowercase`, `isUppercase`, `isAlphanumeric`, `isAscii`, `isHexColor`, `isIPv4String`, `isIPv6String`, `isHostnameString`
-- Size/length/count: `lengthOf`, `sizeOf`, `countOf`, `minOf`, `maxOf`, `rangeOf`, `measureOf`, `multipleOf`
+- Schema & combinators: `arrayOf`, `tupleOf`, `objectOf` (second param `optional` supports `true` or a key array), `mapOf`, `setOf`, `recordOf`, `iterableOf`, `literalOf`, `enumOf`, `keyOf`, `pickOf`, `omitOf`, `andOf`, `orOf`, `notOf`, `complementOf`, `unionOf`, `intersectionOf`, `composedOf`, `whereOf`, `lazyOf`, `transformOf`, `nullableOf`
 
-Each guard accepts `unknown` and returns a precise `x is T` predicate. Helpers are pure and do not mutate inputs.
-
-## Combinators
-
-Build complex shapes from small parts:
-
-```ts
-import {
-  literalOf, andOf, orOf, notOf, complementOf, unionOf, intersectionOf,
-  optionalOf, nullableOf, lazyOf, whereOf, enumOf, discriminatedUnionOf,
-  isString, isNumber, objectOf,
-  emptyOf, nonEmptyOf, matchOf,
-  lengthOf, sizeOf, countOf, minOf, maxOf, rangeOf, multipleOf,
-  mapOf, setOf, keyOf, recordOf, iterableOf, measureOf,
-} from '@orkestrel/validator'
-
-// Literal unions and where-clause confirmation (preserves base type)
-const isId = whereOf(isString, s => s.length > 0)
-const isLevel = literalOf('info','warn','error' as const)
-
-// Logical combinators
-const isStringAndNonEmpty = andOf(isString, nonEmptyOf(isString))
-const isStringOrNumber = orOf(isString, isNumber)
-
-// Negation
-const notString = notOf(isString) // Guard<unknown>
-
-// Typed exclusion using a base guard (precise Exclude)
-const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber })
-const isRect   = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber })
-const isShape  = unionOf(isCircle, isRect)
-const notCircle = complementOf(isShape, isCircle) // Guard<{ kind: 'rect', w: number, h: number }>
-
-// Size/length/count constraints
-const twoChars = lengthOf(2)        // string or array with length 2
-const between1And10 = rangeOf(1, 10) // number/string/array/map/set/object measure in [1, 10]
-const atLeast5 = minOf(5)           // measure >= 5
-const atMost100 = maxOf(100)        // measure <= 100
-
-// Empty/non-empty variants
-const maybeEmptyString = emptyOf(isString)     // '' or non-empty string
-const mustHaveItems = nonEmptyOf(arrayOf(isNumber)) // non-empty number array
-```
-
-## Typed arrays and iterableOf
-
-`arrayOf` validates only native arrays (`Array.isArray(x)`). For typed arrays (`Int8Array`, `Uint8Array`, etc.), use `iterableOf` combined with typed-array guards:
-
-```ts
-import { 
-  intersectionOf, unionOf, iterableOf,
-  isTypedArray, isInt16Array, isBigInt64Array, isBigUint64Array,
-  isFiniteNumber, isBigInt,
-} from '@orkestrel/validator'
-
-// Accept any numeric typed array
-const NumericTypedArray = intersectionOf(
-  isTypedArray,
-  iterableOf(isFiniteNumber),
-)
-NumericTypedArray(new Uint8Array([1, 2, 3])) // true
-NumericTypedArray(new Float32Array([1.5, 2.5])) // true
-NumericTypedArray(new BigInt64Array([1n, 2n])) // false (bigint elements)
-NumericTypedArray([1, 2, 3]) // false (not a typed array)
-
-// Accept only BigInt typed arrays
-const BigIntTypedArray = intersectionOf(
-  unionOf(isBigInt64Array, isBigUint64Array),
-  iterableOf(isBigInt),
-)
-BigIntTypedArray(new BigInt64Array([1n, 2n])) // true
-BigIntTypedArray(new Int32Array([1, 2])) // false (numeric elements)
-
-// Specific typed array with element refinement
-const NonNegativeInt16Array = intersectionOf(
-  isInt16Array,
-  iterableOf((n: unknown): n is number => typeof n === 'number' && n >= 0),
-)
-NonNegativeInt16Array(new Int16Array([0, 1, 2])) // true
-NonNegativeInt16Array(new Int16Array([1, -1, 2])) // false (has negative)
-```
-
-Rationale: Keeping `arrayOf` minimal encourages consistent composition. Use `iterableOf` for any iterable structure (generators, typed arrays, etc.) that needs element validation.
-
-## Schema and object builders
-
-- `isSchema(obj, schema)` — declarative shape with primitive tags and nested guards. All schema keys are required.
-- `objectOf(props, { rest })` — exact-by-default shape checks with optional `rest` guard for extras.
-- `optionalOf(shape, optionalKeys, { rest })` — mark specific keys optional while keeping exact-by-default behavior.
-
-```ts
-import { objectOf, optionalOf, isString, isNumber } from '@orkestrel/validator'
-
-const User = optionalOf(
-  { id: isString, age: isNumber, note: isString },
-  ['note' as const],
-)
-// Type: { readonly id: string; readonly age: number; readonly note?: string }
-
-User({ id: 'u1', age: 41 })           // true
-User({ id: 'u1', age: 41, note: 'hi' }) // true
-User({ id: 'u1', age: 41, extra: 1 }) // false (exact by default)
-```
-
-**Replacing partial schemas:**
-There is no separate "partial schema" helper. Use `optionalOf(shape, [...allKeys])` to make all fields optional (still exact by default).
-
-```ts
-// Make all fields optional by listing all keys in optionalOf
-const PartialUser = optionalOf(
-  { id: isString, age: isNumber, note: isString },
-  ['id' as const, 'age' as const, 'note' as const],
-)
-// Type: { readonly id?: string; readonly age?: number; readonly note?: string }
-
-PartialUser({})                      // true
-PartialUser({ id: 'u1' })            // true
-PartialUser({ age: 42, note: 'hi' }) // true
-```
-
-## Domain guards
-
-Pragmatic, ecosystem‑friendly checks:
-
-- UUID: `isUUIDv4`
-- Time: `isISODate`, `isISODateTime`
-- Email/URL: `isEmail`, `isURL`
-- Net: `isPort`, `isHostnameString`, `isIPv4String`
-- Content: `isMIMEType`, `isSlug`, `isBase64`, `isHex({ allow0x, evenLength })`, `isSemver`
-- JSON: `isJsonString`, `isJsonValue`
-- HTTP: `isHTTPMethod`
-
-## Deep checks
-
-Two complementary validators (cycle‑safe):
-
-```ts
-import { isDeepEqual, isDeepClone, deepCompare } from '@orkestrel/validator'
-
-const a = { x: [{ v: 1 }], s: new Set([1,2,3]) }
-const b = { x: [{ v: 1 }], s: new Set([3,2,1]) }
-
-isDeepEqual(a, b) // true (unordered Set/Map by default)
-
-const shared = { v: 1 }
-isDeepClone({ x: shared }, { x: shared }) // false (shared ref)
-
-// Need diagnostics? Use deepCompare for the first mismatch path/reason.
-const r = deepCompare({ a: [1, 2] }, { a: [1, 3] }, { identityMustDiffer: false, opts: {} })
-if (!r.equal) console.log(r.path, r.reason)
-```
-
-Options:
-- `strictNumbers` (default true): distinguish `+0`/`-0`; `NaN` equals `NaN`
-- `compareSetOrder` / `compareMapOrder`: order‑sensitive comparisons
-- `allowSharedFunctions` / `allowSharedErrors` for clone checks
-
-## Emptiness and “opposites”
-
-- `isEmpty` for strings/arrays/maps/sets/objects; specific variants: `isEmptyString`, `isEmptyArray`, `isEmptyObject`, `isEmptyMap`, `isEmptySet`
-- Non‑empty counterparts: `isNonEmptyString`, `isNonEmptyArray`, `isNonEmptyObject`, `isNonEmptyMap`, `isNonEmptySet`
-- Emptiness-aware combinators:
-    - `emptyOf(guard)` — allows empty values or values passing the guard
-    - `nonEmptyOf(guard)` — requires non-empty values and passing the guard
-- Opposites:
-    - `notOf(guard)` — simple negation (returns `Guard<unknown>`)
-    - `complementOf(base, exclude)` — typed exclusion: `Exclude<Base, Excluded>`
+Each function accepts `unknown` (or the relevant supertype) and returns a precise `x is T` predicate for meaningful narrowing.
 
 ## TypeScript and build
 
@@ -263,50 +89,12 @@ Recommended TS config (excerpt):
 ESM‑only usage in Node:
 
 ```sh
-node --version  # 18+ recommended
+node --version
 ```
-
-## Testing
-
-- Use Vitest for tests and assertions.
-- Mirror source files: for `src/foo.ts` create `tests/foo.test.ts`.
-
-Run:
-
-```sh
-npm test
-```
-
-Example (pinpoint deep mismatch path using `deepCompare`):
-
-```ts
-import { test, expect } from 'vitest'
-import { deepCompare } from '@orkestrel/validator'
-
-test('pinpoints failing index', () => {
-  const r = deepCompare({ a: [1, 2] }, { a: [1, 3] }, { identityMustDiffer: false, opts: {} })
-  expect(r.equal).toBe(false)
-  expect(r.path).toEqual(['a', 1])
-})
-```
-
-## Guides
-
-- Overview: https://github.com/orkestrel/validator/blob/HEAD/guides/overview.md
-- Start: https://github.com/orkestrel/validator/blob/HEAD/guides/start.md
-- Concepts: https://github.com/orkestrel/validator/blob/HEAD/guides/concepts.md
-- Examples: https://github.com/orkestrel/validator/blob/HEAD/guides/examples.md
-- Deep checks: https://github.com/orkestrel/validator/blob/HEAD/guides/deep.md
-- Domain guards: https://github.com/orkestrel/validator/blob/HEAD/guides/domains.md
-- Tips: https://github.com/orkestrel/validator/blob/HEAD/guides/tips.md
-- Tests: https://github.com/orkestrel/validator/blob/HEAD/guides/tests.md
-- FAQ: https://github.com/orkestrel/validator/blob/HEAD/guides/faq.md
-- Contribute: https://github.com/orkestrel/validator/blob/HEAD/guides/contribute.md
-- Ecosystem: https://github.com/orkestrel/validator/blob/HEAD/guides/ecosystem.md
 
 ## Contributing
 
-We value determinism, strict typing, and small, composable APIs. See Contribute for principles and workflow. For issues and feature requests, visit https://github.com/orkestrel/validator/issues.
+We value determinism, strict typing, and small, composable APIs. See guides/contribute.md for principles and workflow.
 
 ## License
 

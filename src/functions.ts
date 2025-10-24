@@ -1,5 +1,8 @@
 import { isFunction } from './primitives.js'
-import type { AnyAsyncFunction, AnyFunction, ZeroArgFunction, PromiseFunction } from './types.js'
+import type {
+	AnyAsyncFunction, AnyFunction, ZeroArgFunction,
+	ZeroArgAsyncFunction,
+} from './types.js'
 
 /**
  * Determine whether a function takes no declared arguments.
@@ -44,8 +47,7 @@ export function isAsyncFunction<F extends AnyAsyncFunction>(fn: F): fn is F
 export function isAsyncFunction(fn: unknown): fn is AnyAsyncFunction
 export function isAsyncFunction(fn: unknown): boolean {
 	if (!isFunction(fn)) return false
-	const name = (fn as { constructor?: { name?: unknown } }).constructor?.name
-	return typeof name === 'string' && name === 'AsyncFunction'
+	return fn.constructor.name === 'AsyncFunction'
 }
 
 /**
@@ -69,8 +71,7 @@ export function isGeneratorFunction<F extends (...args: unknown[]) => Generator<
 export function isGeneratorFunction(fn: unknown): fn is (...args: unknown[]) => Generator<unknown, unknown, unknown>
 export function isGeneratorFunction(fn: unknown): boolean {
 	if (!isFunction(fn)) return false
-	const name = (fn as { constructor?: { name?: unknown } }).constructor?.name
-	return typeof name === 'string' && name === 'GeneratorFunction'
+	return fn.constructor.name === 'GeneratorFunction'
 }
 
 /**
@@ -94,43 +95,7 @@ export function isAsyncGeneratorFunction<F extends (...args: unknown[]) => Async
 export function isAsyncGeneratorFunction(fn: unknown): fn is (...args: unknown[]) => AsyncGenerator<unknown, unknown, unknown>
 export function isAsyncGeneratorFunction(fn: unknown): boolean {
 	if (!isFunction(fn)) return false
-	const name = (fn as { constructor?: { name?: unknown } }).constructor?.name
-	return typeof name === 'string' && name === 'AsyncGeneratorFunction'
-}
-
-/**
- * Determine whether a function is expected to return a Promise (non-async function heuristic).
- *
- * This does not invoke the function. It returns true when `fn` is not a native async function and
- * the function source suggests it constructs or resolves a Promise (e.g., `new Promise(...)` or
- * `Promise.resolve(...)`). This is a best-effort heuristic, not a guarantee.
- *
- * Overloads:
- * - When called with a Promise-returning function type (or a subtype), returns a type predicate preserving the original type.
- * - When called with `unknown`, returns a type predicate narrowing to a generic Promise-returning function type.
- *
- * @param fn - Function to test
- * @returns True when `fn` likely returns a Promise and is not a native async function
- * @example
- * ```ts
- * const f = () => new Promise<void>(res => res())
- * isPromiseFunction(f) // true
- * isPromiseFunction(async () => 1) // false
- * ```
- */
-export function isPromiseFunction<F extends PromiseFunction>(fn: F): fn is F
-export function isPromiseFunction(fn: unknown): fn is PromiseFunction
-export function isPromiseFunction(fn: unknown): boolean {
-	if (!isFunction(fn)) return false
-	if (isAsyncFunction(fn as AnyAsyncFunction)) return false
-	try {
-		const src = Function.prototype.toString.call(fn)
-		if (/^\s*async\b/.test(src)) return false
-		return /\bnew\s+Promise\s*\(/.test(src) || /\bPromise\.resolve\s*\(/.test(src)
-	}
-	catch {
-		return false
-	}
+	return fn.constructor.name === 'AsyncGeneratorFunction'
 }
 
 /**
@@ -149,11 +114,11 @@ export function isPromiseFunction(fn: unknown): boolean {
  * isZeroArgAsync(() => Promise.resolve(1)) // false
  * ```
  */
-export function isZeroArgAsync<F extends (...args: unknown[]) => Promise<unknown>>(fn: F): fn is F
+export function isZeroArgAsync<F extends ZeroArgAsyncFunction>(fn: F): fn is F
 export function isZeroArgAsync(fn: unknown): fn is () => Promise<unknown>
 export function isZeroArgAsync(fn: unknown): boolean {
 	if (!isFunction(fn)) return false
-	return isZeroArg(fn as AnyFunction) && isAsyncFunction(fn as AnyAsyncFunction)
+	return isZeroArg(fn) && isAsyncFunction(fn)
 }
 
 /**
@@ -175,7 +140,7 @@ export function isZeroArgGenerator<F extends (...args: unknown[]) => Generator<u
 export function isZeroArgGenerator(fn: unknown): fn is () => Generator<unknown, unknown, unknown>
 export function isZeroArgGenerator(fn: unknown): boolean {
 	if (!isFunction(fn)) return false
-	return isZeroArg(fn as AnyFunction) && isGeneratorFunction(fn)
+	return isZeroArg(fn) && isGeneratorFunction(fn)
 }
 
 /**
@@ -197,31 +162,5 @@ export function isZeroArgAsyncGenerator<F extends (...args: unknown[]) => AsyncG
 export function isZeroArgAsyncGenerator(fn: unknown): fn is () => AsyncGenerator<unknown, unknown, unknown>
 export function isZeroArgAsyncGenerator(fn: unknown): boolean {
 	if (!isFunction(fn)) return false
-	return isZeroArg(fn as AnyFunction) && isAsyncGeneratorFunction(fn)
-}
-
-/**
- * Determine whether a function is a zero‑argument function that likely returns a Promise (non‑async heuristic).
- *
- * This does not invoke the function. It returns true when `fn` is not a native async function and
- * the function source suggests it constructs or resolves a Promise, and `fn.length === 0`.
- *
- * Overloads:
- * - When called with a zero‑arg Promise‑returning function subtype, preserves the original type.
- * - When called with `unknown`, narrows to a zero‑arg Promise‑returning function type.
- *
- * @param fn - Function to test
- * @returns True when `fn` is zero‑arg and likely returns a Promise (not a native async function)
- * @example
- * ```ts
- * const f = () => new Promise<void>(res => res())
- * isZeroArgPromise(f) // true
- * isZeroArgPromise(async () => 1) // false
- * ```
- */
-export function isZeroArgPromise<F extends (...args: unknown[]) => Promise<unknown>>(fn: F): fn is F
-export function isZeroArgPromise(fn: unknown): fn is () => Promise<unknown>
-export function isZeroArgPromise(fn: unknown): boolean {
-	if (!isFunction(fn)) return false
-	return isZeroArg(fn as AnyFunction) && isPromiseFunction(fn)
+	return isZeroArg(fn) && isAsyncGeneratorFunction(fn)
 }

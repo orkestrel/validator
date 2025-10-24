@@ -3,10 +3,11 @@
 Basics
 
 - Why does `isNumber` exclude NaN/Infinity?
-  - Most runtime uses expect finite values. Use `Number.isFinite` semantics. If you need integers, use `isInteger` or `isRange`.
+  - It doesn’t. `isNumber` checks typeof only. For finite checks, compose a predicate (e.g., `x => typeof x === 'number' && Number.isFinite(x)`) or layer it via `whereOf`.
 
 - What’s the difference between `isObject` and `isRecord`?
-  - `isObject` is any non-null object (arrays included). `isRecord` is non-null, non-array plain objects.
+  - `isObject` narrows to the primitive `object` type: any non‑null object (arrays allowed). Property keys may be strings, symbols, or numbers (numbers are coerced to strings in JavaScript).
+  - `isRecord` narrows to a plain object with string keys (non‑array). Use it when you need a typical dictionary shape.
 
 - How do I validate tuples?
   - Use `tupleOf(guardA, guardB, ...)`. It checks length and per-index guards.
@@ -16,43 +17,30 @@ Basics
 
 Intermediate
 
-- `hasSchema` vs `objectOf`?
-  - `hasSchema` is a declarative check with primitive tags and nested guards; `objectOf` is a builder with optional/exact/rest options and strong static types.
+- `objectOf` vs a declarative string schema?
+  - Prefer `objectOf` for programmatic, precise shapes with optional keys and exactness. Compose with `arrayOf`, `mapOf`, `setOf`, and `recordOf` as needed.
 
-- Why do “not” combinators return `Guard<unknown>` in the simple form?
-  - TypeScript cannot express the exact set complement. Use `notOf(base, exclude)` to get a precise `Exclude<Base, Excluded>` when you know the base set.
+- Why do simple negation combinators return `Guard<unknown>`?
+  - TypeScript cannot express the exact set complement for arbitrary types. Use `complementOf(base, exclude)` when you know the base set to get `Exclude<Base, Excluded>`.
 
 - How do I exclude multiple variants?
-  - Compose the excluded variants with `unionOf` and pass that to `notOf(base, exclude)`:
+  - Combine exclusions with `unionOf`:
     ```ts
-    const notCircleOrRect = notOf(isShape, unionOf(isCircle, isRect))
+    const notCircleOrRect = complementOf(isShape, unionOf(isCircle, isRect))
     ```
-    This keeps the API minimal and one-liner friendly without a separate `exclude` helper.
 
-- How can I get a path to the failing location?
-  - Use `deepCompare(a, b, { identityMustDiffer, opts })` for deep diagnostics. It returns `{ equal: false, path, reason, detail? }` on first mismatch.
+- Can I get a path to the failing location?
+  - This package provides boolean guards. For path‑rich diagnostics, build a small assertion/diagnostic helper around the guards for your use case.
 
 Advanced
 
-- Deep equality semantics: NaN and -0/+0?
-  - Strict by default: +0 !== -0; NaN equals NaN. Set `strictNumbers: false` to ignore -0/+0 distinction.
-
 - Map/Set order?
-  - Unordered by default (content-based). Enable `compareMapOrder` / `compareSetOrder` for insertion-order checks.
+  - Guards validate types and elements, not ordering. If you need ordered checks, validate after conversion or via a custom predicate with `whereOf`.
 
 - Class instances?
-  - Compared by enumerable own state. Prototypes and non-enumerable properties are ignored.
-
-- Async Iterable validation?
-  - Guards are synchronous and boolean-returning; validating AsyncIterable would require async code. Prefer a dedicated validator function for async sequences.
-
-- Why exclude non-enumerable keys and getters in deep checks?
-  - To avoid invoking user code and keep comparisons predictable and side-effect free.
+  - Use `isObject` for a coarse object check; `isRecord` for plain objects with string keys; shape builders for structural checks. Specific class checks can use `instanceof` in a custom guard.
 
 Troubleshooting
 
 - I need richer error objects:
-  - Compose a small assertion helper around guards or `deepCompare` that throws `TypeError` with the context you need (path, label, hint). For deep structures, use `deepCompare` to capture `path` and `reason`.
-
-- My Set/Map comparisons are slow:
-  - Prefer “ordered” options when you can; it’s O(n) instead of O(n²) matching.
+  - Compose a small assertion helper around guards that throws `TypeError` with the context you need (path, label, hint). Keep the guards themselves small and deterministic.

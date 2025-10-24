@@ -1,5 +1,3 @@
-import type { PrimitiveTag } from './types.js'
-
 /**
  * Determine whether a value is `null`.
  *
@@ -377,61 +375,4 @@ export function isAsyncIterator<_T = unknown>(x: AsyncIterable<_T>): boolean
 export function isAsyncIterator<_T = unknown>(x: unknown): x is AsyncIterable<_T>
 export function isAsyncIterator<_T = unknown>(x: unknown): boolean {
 	return x != null && typeof (x as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator] === 'function'
-}
-
-/**
- * Check whether a runtime value is a JavaScript primitive (per typeof),
- * i.e. one of: string | number | boolean | symbol | bigint | function.
- *
- * Note: This does NOT include objects (typeof 'object'), arrays, or null.
- *
- * @param x - Value to check
- * @returns true when x is a primitive per typeof (excluding 'object')
- * @example
- * ```ts
- * isPrimitive('hello') // true
- * isPrimitive(42) // true
- * isPrimitive({}) // false
- * isPrimitive(null) // false
- * ```
- */
-export function isPrimitive(
-	x: unknown,
-): x is string | number | boolean | symbol | bigint | ((...args: unknown[]) => unknown) {
-	const t = typeof x
-	return (
-		t === 'string'
-		|| t === 'number'
-		|| t === 'boolean'
-		|| t === 'symbol'
-		|| t === 'bigint'
-		|| t === 'function'
-	)
-}
-
-/**
- * Validate whether a string is a supported primitive "typeof" tag that this library recognizes.
- *
- * Supported tags:
- * - 'string' | 'number' | 'boolean' | 'symbol' | 'bigint' | 'function' | 'object'
- *
- * @param tag - Unknown value to validate as a primitive tag name
- * @returns true when tag is a recognized PrimitiveTag
- * @example
- * ```ts
- * isPrimitiveTag('string') // true
- * isPrimitiveTag('number') // true
- * isPrimitiveTag('invalid') // false
- * ```
- */
-export function isPrimitiveTag(tag: unknown): tag is PrimitiveTag {
-	return (
-		tag === 'string'
-		|| tag === 'number'
-		|| tag === 'boolean'
-		|| tag === 'symbol'
-		|| tag === 'bigint'
-		|| tag === 'function'
-		|| tag === 'object'
-	)
 }

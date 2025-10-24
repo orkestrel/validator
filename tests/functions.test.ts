@@ -4,11 +4,9 @@ import {
 	isAsyncFunction,
 	isGeneratorFunction,
 	isAsyncGeneratorFunction,
-	isPromiseFunction,
 	isZeroArgAsync,
 	isZeroArgGenerator,
 	isZeroArgAsyncGenerator,
-	isZeroArgPromise,
 } from '../src/functions.js'
 
 describe('functions', () => {
@@ -69,23 +67,6 @@ describe('functions', () => {
 		})
 	})
 
-	describe('isPromiseFunction', () => {
-		test('returns true for non-async functions that construct a Promise', () => {
-			const f = () => new Promise<void>(res => res())
-			expect(isPromiseFunction(f)).toBe(true)
-		})
-		test('returns false for native async functions', () => {
-			const f = async () => 1
-			expect(isPromiseFunction(f)).toBe(false)
-		})
-		test('returns false for sync functions that do not construct a Promise', () => {
-			function normal() {
-				return 1
-			}
-			expect(isPromiseFunction(normal)).toBe(false)
-		})
-	})
-
 	describe('isZeroArgAsync', () => {
 		test('returns true for zero-argument native async functions', () => {
 			const f = async () => 1
@@ -138,25 +119,6 @@ describe('functions', () => {
 			expect(isZeroArgAsyncGenerator(f)).toBe(false)
 			const g = async () => {}
 			expect(isZeroArgAsyncGenerator(g)).toBe(false)
-		})
-	})
-
-	describe('isZeroArgPromise', () => {
-		test('returns true for zero-arg non-async functions that construct a Promise', () => {
-			const f = () => new Promise<void>(res => res())
-			expect(isZeroArgPromise(f)).toBe(true)
-		})
-		test('returns false for native async functions', () => {
-			const f = async () => 1
-			expect(isZeroArgPromise(f)).toBe(false)
-		})
-		test('returns false for zero-arg sync functions that do not construct a Promise', () => {
-			const normal = () => 1
-			expect(isZeroArgPromise(normal)).toBe(false)
-		})
-		test('returns false for promise-returning functions with arguments', () => {
-			const h = (x: number) => Promise.resolve(x)
-			expect(isZeroArgPromise(h)).toBe(false)
 		})
 	})
 })

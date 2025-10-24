@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'vitest'
 import {
-	isEmpty,
 	isEmptyArray,
 	isEmptyMap,
 	isEmptyObject,
@@ -14,34 +13,6 @@ import {
 } from '../src/emptiness.js'
 
 describe('emptiness', () => {
-	describe('isEmpty', () => {
-		test('returns true for empty strings', () => {
-			expect(isEmpty('')).toBe(true)
-		})
-
-		test('returns true for empty arrays', () => {
-			expect(isEmpty([])).toBe(true)
-		})
-
-		test('returns true for empty sets', () => {
-			expect(isEmpty(new Set())).toBe(true)
-		})
-
-		test('returns true for empty maps', () => {
-			expect(isEmpty(new Map())).toBe(true)
-		})
-
-		test('returns true for empty objects', () => {
-			expect(isEmpty({})).toBe(true)
-		})
-
-		test('returns false for non-empty values', () => {
-			expect(isEmpty(['x'])).toBe(false)
-			expect(isEmpty('x')).toBe(false)
-			expect(isEmpty(new Set([1]))).toBe(false)
-		})
-	})
-
 	describe('specific emptiness guards', () => {
 		test('isEmptyString returns true for empty strings', () => {
 			expect(isEmptyString('')).toBe(true)

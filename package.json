@@ -1,7 +1,7 @@
 {
   "name": "@orkestrel/validator",
-  "version": "1.1.0",
-  "description": "Tiny, composable runtime guards and deterministic deep checks for TypeScript (ESM-only)",
+  "version": "2.0.0",
+  "description": "Focused, composable runtime type guards for TypeScript (ESM-only)",
   "type": "module",
   "license": "MIT",
   "publishConfig": {
@@ -41,11 +41,10 @@
   "devDependencies": {
     "@orkestrel/docs": "^0.1.0",
     "@orkestrel/llms-txt": "^1.1.0",
-    "@types/node": "^24.8.0",
-    "eslint": "^9.37.0",
-    "tsx": "^4.20.6",
+    "@types/node": "^24.9.1",
+    "eslint": "^9.38.0",
     "typescript": "^5.9.3",
-    "vite": "^7.1.10",
-    "vitest": "^3.2.4"
+    "vite": "^7.1.12",
+    "vitest": "^4.0.3"
   }
 }

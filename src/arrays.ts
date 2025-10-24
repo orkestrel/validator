@@ -1,5 +1,3 @@
-import type { AnyTypedArray } from './types.js'
-
 /**
  * Determine whether a value is an array.
  *
@@ -61,29 +59,6 @@ export function isArrayBufferView(x: ArrayBufferView): boolean
 export function isArrayBufferView(x: unknown): x is ArrayBufferView
 export function isArrayBufferView(x: unknown): boolean {
 	return ArrayBuffer.isView(x)
-}
-
-/**
- * Determine whether a value is any TypedArray (Int8Array, Uint8Array, Float32Array, BigInt64Array, etc.).
- *
- * Uses `isArrayBufferView(x)` to gate out non-views, then excludes `DataView` and finally
- * checks the presence of a numeric `constructor.BYTES_PER_ELEMENT` to positively identify
- * TypedArray instances in a portable way.
- *
- * @param x - Value to test
- * @returns True if `x` is a concrete TypedArray instance (not a DataView)
- * @example
- * ```ts
- * isTypedArray(new Uint8Array()) // true
- * isTypedArray(new DataView(new ArrayBuffer(8))) // false
- * isTypedArray([]) // false
- * ```
- */
-export function isTypedArray(x: unknown): x is AnyTypedArray {
-	if (!isArrayBufferView(x)) return false
-	if (isDataView(x)) return false
-	const ctor = (x as { constructor?: { BYTES_PER_ELEMENT?: unknown } }).constructor
-	return typeof ctor?.BYTES_PER_ELEMENT === 'number'
 }
 
 /**

@@ -2,44 +2,36 @@
 
 Parse JSON safely and narrow deeply
 ```ts
-import { isRecord, isString, arrayOf } from '@orkestrel/validator'
+import { objectOf, arrayOf } from '@orkestrel/validator'
+import { isString, isNumber } from '@orkestrel/validator'
 
 const raw = '{"user":{"id":"u1","tags":["pro","beta"],"age":41}}'
 const input: unknown = JSON.parse(raw)
 
-const schema = {
-  user: {
-    id: 'string',
-    tags: (x: unknown): x is readonly string[] => Array.isArray(x) && x.every(isString),
-    age: 'number',
-  },
-} as const
+const Address = objectOf({ street: isString, zip: isString })
+const User = objectOf({ id: isString, tags: arrayOf(isString), age: isNumber, addr: Address }, ['addr'] as const)
+const Payload = objectOf({ user: User })
 
-if (
-  isRecord(input)
-  && isRecord(input.user)
-  && isString(input.user.id)
-  && Array.isArray(input.user.tags) && input.user.tags.every(isString)
-  && typeof input.user.age === 'number'
-) {
-  // input is now safely usable
+if (Payload(input)) {
+  // input.user is now narrowed with id/tags/age
 } else {
-  // handle invalid structure (throw, return Result, etc.)
+  // handle invalid structure (throw, Result, etc.)
 }
 ```
 
 Environment variables
 ```ts
-import { isRecord, isString, isNumber, rangeOf, arrayOf } from '@orkestrel/validator'
+import { objectOf, arrayOf, literalOf } from '@orkestrel/validator'
+import { isString, isNumber } from '@orkestrel/validator'
 
-const env: unknown = { PORT: 8080, ALLOWED: ['a','b'] }
-const isValidPort = (x: unknown): x is number => isNumber(x) && rangeOf(1, 65535)(x)
+const env: unknown = { PORT: 8080, MODE: 'prod', ALLOWED: ['a','b'] }
+const Env = objectOf({
+  PORT: isNumber,
+  MODE: literalOf('dev','staging','prod' as const),
+  ALLOWED: arrayOf(isString),
+})
 
-if (
-  isRecord(env)
-  && isValidPort(env.PORT)
-  && arrayOf(isString)(env.ALLOWED)
-) {
+if (Env(env)) {
   // env is valid
 } else {
   // invalid env
@@ -48,11 +40,12 @@ if (
 
 Discriminated unions
 ```ts
-import { literalOf, discriminatedUnionOf, objectOf, isNumber } from '@orkestrel/validator'
+import { literalOf, objectOf, unionOf } from '@orkestrel/validator'
+import { isNumber } from '@orkestrel/validator'
 
 const isCircle = objectOf({ kind: literalOf('circle'), r: isNumber })
 const isRect = objectOf({ kind: literalOf('rect'), w: isNumber, h: isNumber })
-const isShape = discriminatedUnionOf('kind', { circle: isCircle, rect: isRect } as const)
+const isShape = unionOf(isCircle, isRect)
 
 function area(x: unknown): number {
   if (!isShape(x)) throw new TypeError('not a shape')
@@ -60,49 +53,31 @@ function area(x: unknown): number {
 }
 ```
 
-Optional/rest with exact-by-default objects
+Optional with exact-by-default objects
 ```ts
-import { objectOf, optionalOf, isString, isNumber } from '@orkestrel/validator'
+import { objectOf } from '@orkestrel/validator'
+import { isString, isNumber } from '@orkestrel/validator'
 
-// Exact by default; no extras allowed unless `rest` is provided
-const User = optionalOf({ id: isString, age: isNumber, note: isString }, ['note' as const])
+const User = objectOf({ id: isString, age: isNumber, note: isString }, ['note'] as const)
 console.log(User({ id: 'u1', age: 41 })) // true
-console.log(User({ id: 'u1', age: 41, extra: 1 })) // false
+console.log(User({ id: 'u1', age: 41, extra: 1 })) // false (extra key)
 
-const Config = objectOf({ name: isString }, { rest: isNumber })
-console.log(Config({ name: 'svc', port: 8080 })) // true
-```
-
-Deep equality and clone checks
-```ts
-import { isDeepEqual, isDeepClone, deepCompare } from '@orkestrel/validator'
-
-const a = { x: [{ v: 1 }], s: new Set([1,2,3]) }
-const b = { x: [{ v: 1 }], s: new Set([3,2,1]) }
-
-isDeepEqual(a, b) // true (Set order ignored)
-
-const shared = { v: 1 }
-const c = { x: shared }
-const d = { x: shared }
-isDeepClone(c, d) // false
-
-// Diagnostics
-const r = deepCompare({ a: [1, 2] }, { a: [1, 3] }, { identityMustDiffer: false, opts: {} })
-if (!r.equal) {
-  console.log(r.path) // ['a', 1]
-}
+const PartialUser = objectOf({ id: isString, age: isNumber }, true)
+console.log(PartialUser({})) // true (all optional)
 ```
 
 HTTP request guard
 ```ts
-import { objectOf, literalOf, matchOf, isURL } from '@orkestrel/validator'
+import { objectOf, literalOf, recordOf } from '@orkestrel/validator'
+import { isString } from '@orkestrel/validator'
 
-const isHeaderName = matchOf(/^[A-Za-z0-9-]+$/)
-const isHeaders = objectOf({ }, { rest: isHeaderName }) // any key -> header name; simplistic example
-const isRequest = objectOf(
-  { method: literalOf('GET','POST','PUT','PATCH','DELETE' as const), url: isURL, headers: isHeaders },
-)
+const isHeaderName = (x: unknown): x is string => typeof x === 'string' && /^[A-Za-z0-9-]+$/.test(x)
+const isHeaders = recordOf(isString)
+const isRequest = objectOf({
+  method: literalOf('GET','POST','PUT','PATCH','DELETE' as const),
+  url: isString,
+  headers: isHeaders,
+})
 
 declare const input: unknown
 if (!isRequest(input)) throw new TypeError('Invalid request')
@@ -110,7 +85,8 @@ if (!isRequest(input)) throw new TypeError('Invalid request')
 
 Pragmatic fail-fast pattern
 ```ts
-import { arrayOf, isString } from '@orkestrel/validator'
+import { arrayOf } from '@orkestrel/validator'
+import { isString } from '@orkestrel/validator'
 
 function assertArrayOfStrings(x: unknown, ctx: string): asserts x is readonly string[] {
   if (!arrayOf(isString)(x)) {
@@ -123,104 +99,15 @@ const tags: unknown = ['a', 'b']
 assertArrayOfStrings(tags, 'payload.tags')
 ```
 
-Emptiness and non-emptiness checks
+Combinators and enums
 ```ts
-import {
-  isRecord,
-  isNonEmptyString,
-  isNonEmptyArray,
-  isNonEmptyObject,
-  isEmpty,
-  emptyOf,
-  nonEmptyOf,
-  isString,
-  arrayOf,
-  isNumber,
-} from '@orkestrel/validator'
+import { literalOf, enumOf, andOf, whereOf } from '@orkestrel/validator'
+import { isString } from '@orkestrel/validator'
 
-function validateInput(input: unknown) {
-  if (!isRecord(input)) throw new TypeError('object required')
-  const { name, items, metadata, processed } = input
+enum Color { Red = 'RED', Blue = 'BLUE' }
+const isColor = enumOf(Color)
+const nonEmptyString = andOf(isString, (s: string): s is string => s.length > 0)
+const alpha2 = whereOf(isString, s => /^[A-Za-z]+$/.test(s))
 
-  if (!isNonEmptyString(name)) throw new TypeError('name required')
-  if (!isNonEmptyArray(items)) throw new TypeError('items must be non-empty')
-  if (!isNonEmptyObject(metadata)) throw new TypeError('metadata must be non-empty')
-  if (!isEmpty(processed)) throw new TypeError('processed must be empty')
-}
-
-// Combinator variants
-const maybeEmptyString = emptyOf(isString) // accepts '' or non-empty string
-const nonEmptyNumbers = nonEmptyOf(arrayOf(isNumber)) // requires non-empty array
-```
-
-Function introspection
-```ts
-import {
-  isZeroArg,
-  isAsyncFunction,
-  isGeneratorFunction,
-  isAsyncGeneratorFunction,
-  isPromiseFunction,
-  isZeroArgAsync,
-  isZeroArgGenerator,
-  isZeroArgAsyncGenerator,
-  isZeroArgPromise,
-} from '@orkestrel/validator'
-
-const f1 = () => 1
-const f2 = (x: number) => x
-const f3 = async () => 1
-const f4 = function* () { yield 1 }
-const f5 = async function* () { yield 1 }
-const f6 = () => Promise.resolve(1)
-
-console.log(isZeroArg(f1))                 // true - no parameters
-console.log(isZeroArg(f2))                 // false - has parameter
-console.log(isAsyncFunction(f3))           // true - native async function
-console.log(isGeneratorFunction(f4))       // true - generator function
-console.log(isAsyncGeneratorFunction(f5))  // true - async generator
-console.log(isPromiseFunction(f6))         // true - returns Promise (heuristic)
-console.log(isZeroArgAsync(f3))            // true - zero-arg async
-console.log(isZeroArgGenerator(f4))        // true - zero-arg generator
-console.log(isZeroArgAsyncGenerator(f5))   // true - zero-arg async generator
-console.log(isZeroArgPromise(f6))          // true - zero-arg Promise-returning
-```
-
-Size and range constraints
-```ts
-import {
-  lengthOf,
-  sizeOf,
-  countOf,
-  minOf,
-  maxOf,
-  rangeOf,
-  measureOf,
-  multipleOf,
-  isNumber,
-} from '@orkestrel/validator'
-
-// Exact constraints
-const twoChars = lengthOf(2)      // string or array with length 2
-const twoItems = sizeOf(2)        // Map or Set with size 2
-const twoProps = countOf(2)       // object with 2 enumerable properties
-
-// Range constraints (work across number/string/array/map/set/object)
-const atLeast5 = minOf(5)         // measure >= 5
-const atMost10 = maxOf(10)        // measure <= 10
-const between1And10 = rangeOf(1, 10) // measure in [1, 10]
-
-// Unified measure (exact value across all supported shapes)
-const measureTwo = measureOf(2)   // number 2, string length 2, array length 2, etc.
-
-// Numeric constraints
-const evenNumber = multipleOf(2)  // checks x % 2 === 0
-const divisibleBy3 = multipleOf(3)
-
-console.log(twoChars('ab'))           // true
-console.log(atLeast5([1,2,3,4,5]))    // true
-console.log(between1And10('hello'))   // true (length 5)
-console.log(measureTwo(2))            // true (number value)
-console.log(measureTwo([1, 2]))       // true (array length)
-console.log(evenNumber(10))           // true
+console.log(isColor('RED'), nonEmptyString('x'), alpha2('ab')) // true true true
 ```

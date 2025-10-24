@@ -11,68 +11,46 @@ Prerequisites
 
 Quick try: narrow unknown JSON
 ```ts
-import {
-  isRecord, isString, arrayOf,
-} from '@orkestrel/validator'
+import { isRecord, isString, arrayOf, objectOf } from '@orkestrel/validator'
 
 const input: unknown = JSON.parse('{"id":"u1","tags":["x","y"],"count":1}')
 
-if (isRecord(input) && isString(input.id) && arrayOf(isString)(input.tags)) {
+const Payload = objectOf({ id: isString, tags: arrayOf(isString), count: (x: unknown): x is number => typeof x === 'number' })
+
+if (Payload(input)) {
   console.log(input.id, input.tags.join(','))
 } else {
   // Choose your preferred error strategy (throw, return Result, etc.)
 }
-
-const schema = {
-  id: 'string',
-  tags: (x: unknown): x is readonly string[] => Array.isArray(x) && x.every(isString),
-  count: 'number',
-} as const
 ```
 
-Deep checks: equality, clone, and diagnostics
+Compose shapes with builders
 ```ts
-import {
-  isDeepEqual, isDeepClone, deepCompare,
-} from '@orkestrel/validator'
+import { objectOf, arrayOf, literalOf } from '@orkestrel/validator'
+import { isString, isNumber } from '@orkestrel/validator'
 
-const a = { x: [1, { y: 2 }] }
-const b = { x: [1, { y: 2 }] }
-
-console.log(isDeepEqual(a, b)) // true
-console.log(isDeepClone(a, b)) // true
-
-// Need the first mismatch path and reason? Use deepCompare
-const r = deepCompare({ a: [1, 2] }, { a: [1, 3] }, { identityMustDiffer: false, opts: {} })
-if (!r.equal) {
-  console.log(r.path, r.reason)
-}
+const Address = objectOf({ street: isString, zip: isString })
+const User = objectOf({ id: isString, tags: arrayOf(isString), age: isNumber, addr: Address }, ['addr'] as const)
+const Payload = objectOf({ user: User })
 ```
 
-Zero-boilerplate combinators
+Optional keys & exactness
 ```ts
-import {
-  literalOf, unionOf, andOf, optionalOf, isString, isNumber
-} from '@orkestrel/validator'
+import { objectOf } from '@orkestrel/validator'
+import { isString, isNumber } from '@orkestrel/validator'
 
-const isId = andOf(isString, (s: string): s is string => s.length > 0)
-const isLevel = literalOf('info','warn','error' as const)
-const isMaybeCount = optionalOf(isNumber)
+const User = objectOf({ id: isString, age: isNumber, note: isString }, ['note'] as const)
+User({ id: 'u1', age: 41 }) // true
+User({ id: 'u1', age: 41, extra: 1 }) // false (extra key)
 
-console.log(isLevel('warn'), isMaybeCount(undefined)) // true true
-```
-
-Emptiness and opposite checks
-```ts
-import {
-  isEmpty, notOf, isString,
-} from '@orkestrel/validator'
-
-console.log(isEmpty([]), notOf(isString)(123)) // true true
+const PartialUser = objectOf({ id: isString, age: isNumber }, true)
+PartialUser({}) // true
 ```
 
 Where next
 - Concepts for a deeper mental model
 - Examples for realistic snippets
+- Schema for builder‑focused docs and composition patterns
 - Tips for composition patterns and troubleshooting
 - Tests to mirror your source and stay fast/deterministic
+```

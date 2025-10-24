@@ -3,7 +3,6 @@ import {
 	isArray,
 	isDataView,
 	isArrayBufferView,
-	isTypedArray,
 	isInt8Array,
 	isUint8Array,
 	isUint8ClampedArray,
@@ -61,25 +60,6 @@ describe('arrays', () => {
 			expect(isArrayBufferView([] as unknown)).toBe(false)
 			expect(isArrayBufferView({} as unknown)).toBe(false)
 			expect(isArrayBufferView(null as unknown)).toBe(false)
-		})
-	})
-
-	describe('isTypedArray', () => {
-		test('returns true for TypedArray instances', () => {
-			expect(isTypedArray(new Uint8Array(4))).toBe(true)
-			expect(isTypedArray(new Int32Array(4))).toBe(true)
-			expect(isTypedArray(new Float64Array(8))).toBe(true)
-		})
-
-		test('returns false for DataView', () => {
-			const buf = new ArrayBuffer(4)
-			expect(isTypedArray(new DataView(buf))).toBe(false)
-		})
-
-		test('returns false for arrays and other objects', () => {
-			expect(isTypedArray([])).toBe(false)
-			expect(isTypedArray({})).toBe(false)
-			expect(isTypedArray(null)).toBe(false)
 		})
 	})
 
