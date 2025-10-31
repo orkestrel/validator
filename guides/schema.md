@@ -4,8 +4,8 @@ This guide covers the small set of builders and combinators for composing focuse
 
 Principles
 - Focused: each builder targets a single shape (array, tuple, object, map, set, record, iterable).
-- Exact by default: objects reject extra enumerable keys.
-- Optional keys: `objectOf` accepts `optional` as `true` (all keys) or a readonly array of keys.
+- Exact by default: objects and records reject extra enumerable keys.
+- Optional keys: `objectOf` and `recordOf` accept `optional` as `true` (all keys) or a readonly array of keys.
 - Deterministic: order and options are explicit; no reflection‑heavy magic.
 
 ## objectOf(shape, optional?)
