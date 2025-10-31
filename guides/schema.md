@@ -55,18 +55,31 @@ Pair(['a', 1]) // true
 Pair(['a'] as unknown) // false
 ```
 
-## recordOf(valueGuard)
+## recordOf(shape, optional?)
 
-Plain object with guarded values; arrays are rejected.
+Build an exact record guard from a shape of property guards. Similar to `objectOf`, but only validates string keys (symbol keys are not validated).
 
 ```ts
 import { recordOf } from '@orkestrel/validator'
-import { isString } from '@orkestrel/validator'
+import { isString, isNumber } from '@orkestrel/validator'
 
-const StringMap = recordOf(isString)
-StringMap({ a: 'x' }) // true
-StringMap(['x'] as unknown) // false
+const User = recordOf({ id: isString, age: isNumber })
+User({ id: 'u1', age: 1 }) // true
+User({ id: 'u1' }) // false (missing required)
+User({ id: 'u1', age: 1, extra: true }) // false (extra key)
+
+const WithOptional = recordOf({ id: isString, note: isString }, ['note'] as const)
+WithOptional({ id: 'u1' }) // true (note optional)
+WithOptional({ id: 'u1', note: 'hi' }) // true
+
+const Partial = recordOf({ id: isString, age: isNumber }, true)
+Partial({}) // true (all keys optional)
 ```
+
+Notes
+- Unlike `objectOf`, `recordOf` only validates enumerable string keys and ignores symbol keys.
+- Use `objectOf` when you need to validate both string and symbol keys.
+- Arrays are rejected.
 
 ## mapOf(keyGuard, valueGuard) and setOf(elemGuard)
 
