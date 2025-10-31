@@ -242,6 +242,8 @@ export function mapOf(keyGuardOrPred: (x: unknown) => boolean, valueGuardOrPred:
 
 /**
  * Guard for a plain-object record whose values match a guard or predicate.
+ * Only string keys are checked; symbol keys and non-enumerable properties are not validated.
+ * Arrays are properly rejected.
  *
  * Overloads:
  * - recordOf(guard) → typed record guard
@@ -253,16 +255,26 @@ export function mapOf(keyGuardOrPred: (x: unknown) => boolean, valueGuardOrPred:
  * ```ts
  * const NumbersByKey = recordOf(isNumber)
  * NumbersByKey({ a: 1 }) // true
+ * NumbersByKey({ a: 'x' }) // false
+ * NumbersByKey([1, 2] as unknown) // false (arrays rejected)
  * ```
  */
 export function recordOf<T>(valueGuard: Guard<T>): Guard<Record<string, T>>
 export function recordOf(valuePredicate: (x: unknown) => boolean): Guard<Record<string, unknown>>
 export function recordOf(valueGuardOrPred: (x: unknown) => boolean): Guard<Record<string, unknown>> {
 	return (x: unknown): x is Record<string, unknown> => {
+		// Check it's a plain record (not an array, not null)
 		if (!isRecord(x)) return false
-		for (const k of Object.keys(x)) {
-			if (!valueGuardOrPred((x as Record<string, unknown>)[k])) return false
+
+		// Get all enumerable own string keys
+		const keys = Object.keys(x)
+
+		// Validate each value
+		for (const k of keys) {
+			// After isRecord(x), we know x is Record<string, unknown>
+			if (!valueGuardOrPred(x[k])) return false
 		}
+
 		return true
 	}
 }

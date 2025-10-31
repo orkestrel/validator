@@ -135,6 +135,27 @@ describe('recordOf', () => {
 		expect(G({ a: 'x', b: 1 })).toBe(false)
 		expect(G(['x'] as unknown)).toBe(false)
 	})
+	it('accepts empty records', () => {
+		const G = recordOf(isString)
+		expect(G({})).toBe(true)
+	})
+	it('validates all values in record', () => {
+		const G = recordOf(isNumber)
+		expect(G({ a: 1, b: 2, c: 3 })).toBe(true)
+		expect(G({ a: 1, b: 'x' as unknown as number })).toBe(false)
+	})
+	it('properly rejects arrays with numeric indices', () => {
+		const G = recordOf(isNumber)
+		expect(G([1, 2, 3] as unknown)).toBe(false)
+		expect(G([] as unknown)).toBe(false)
+	})
+	it('rejects null and non-objects', () => {
+		const G = recordOf(isString)
+		expect(G(null as unknown)).toBe(false)
+		expect(G(undefined as unknown)).toBe(false)
+		expect(G('not an object' as unknown)).toBe(false)
+		expect(G(42 as unknown)).toBe(false)
+	})
 })
 
 describe('iterableOf', () => {
