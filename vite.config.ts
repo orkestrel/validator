@@ -1,10 +1,10 @@
-import { defineConfig } from 'vite'
-import { builtinModules } from 'node:module'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vite';
+import { builtinModules } from 'node:module';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const __rootdir = path.resolve(__dirname)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __rootdir = path.resolve(__dirname);
 
 // Vite config to bundle the library (ESM only)
 export default defineConfig({
@@ -30,4 +30,4 @@ export default defineConfig({
 			],
 		},
 	},
-})
+});

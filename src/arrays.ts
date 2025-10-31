@@ -13,10 +13,10 @@
  * isArray({}) // false
  * ```
  */
-export function isArray<_T = unknown>(x: ReadonlyArray<_T>): boolean
-export function isArray<_T = unknown>(x: unknown): x is ReadonlyArray<_T>
+export function isArray<_T = unknown>(x: readonly _T[]): boolean;
+export function isArray<_T = unknown>(x: unknown): x is readonly _T[];
 export function isArray<_T = unknown>(x: unknown): boolean {
-	return Array.isArray(x)
+	return Array.isArray(x);
 }
 
 /**
@@ -34,10 +34,10 @@ export function isArray<_T = unknown>(x: unknown): boolean {
  * isDataView(new Uint8Array(4)) // false
  * ```
  */
-export function isDataView(x: DataView<ArrayBufferLike>): boolean
-export function isDataView(x: unknown): x is DataView<ArrayBufferLike>
+export function isDataView(x: DataView<ArrayBufferLike>): boolean;
+export function isDataView(x: unknown): x is DataView<ArrayBufferLike>;
 export function isDataView(x: unknown): boolean {
-	return x instanceof DataView
+	return x instanceof DataView;
 }
 
 /**
@@ -55,10 +55,10 @@ export function isDataView(x: unknown): boolean {
  * isArrayBufferView([]) // false
  * ```
  */
-export function isArrayBufferView(x: ArrayBufferView): boolean
-export function isArrayBufferView(x: unknown): x is ArrayBufferView
+export function isArrayBufferView(x: ArrayBufferView): boolean;
+export function isArrayBufferView(x: unknown): x is ArrayBufferView;
 export function isArrayBufferView(x: unknown): boolean {
-	return ArrayBuffer.isView(x)
+	return ArrayBuffer.isView(x);
 }
 
 /**
@@ -76,10 +76,10 @@ export function isArrayBufferView(x: unknown): boolean {
  * isInt8Array(new Uint8Array()) // false
  * ```
  */
-export function isInt8Array(x: Int8Array): boolean
-export function isInt8Array(x: unknown): x is Int8Array
+export function isInt8Array(x: Int8Array): boolean;
+export function isInt8Array(x: unknown): x is Int8Array;
 export function isInt8Array(x: unknown): boolean {
-	return x instanceof Int8Array
+	return x instanceof Int8Array;
 }
 
 /**
@@ -93,10 +93,10 @@ export function isInt8Array(x: unknown): boolean {
  * isUint8Array(new Int8Array()) // false
  * ```
  */
-export function isUint8Array(x: Uint8Array): boolean
-export function isUint8Array(x: unknown): x is Uint8Array
+export function isUint8Array(x: Uint8Array): boolean;
+export function isUint8Array(x: unknown): x is Uint8Array;
 export function isUint8Array(x: unknown): boolean {
-	return x instanceof Uint8Array
+	return x instanceof Uint8Array;
 }
 
 /**
@@ -110,10 +110,10 @@ export function isUint8Array(x: unknown): boolean {
  * isUint8ClampedArray(new Uint8Array()) // false
  * ```
  */
-export function isUint8ClampedArray(x: Uint8ClampedArray): boolean
-export function isUint8ClampedArray(x: unknown): x is Uint8ClampedArray
+export function isUint8ClampedArray(x: Uint8ClampedArray): boolean;
+export function isUint8ClampedArray(x: unknown): x is Uint8ClampedArray;
 export function isUint8ClampedArray(x: unknown): boolean {
-	return x instanceof Uint8ClampedArray
+	return x instanceof Uint8ClampedArray;
 }
 
 /**
@@ -127,10 +127,10 @@ export function isUint8ClampedArray(x: unknown): boolean {
  * isInt16Array(new Uint16Array()) // false
  * ```
  */
-export function isInt16Array(x: Int16Array): boolean
-export function isInt16Array(x: unknown): x is Int16Array
+export function isInt16Array(x: Int16Array): boolean;
+export function isInt16Array(x: unknown): x is Int16Array;
 export function isInt16Array(x: unknown): boolean {
-	return x instanceof Int16Array
+	return x instanceof Int16Array;
 }
 
 /**
@@ -144,10 +144,10 @@ export function isInt16Array(x: unknown): boolean {
  * isUint16Array(new Int16Array()) // false
  * ```
  */
-export function isUint16Array(x: Uint16Array): boolean
-export function isUint16Array(x: unknown): x is Uint16Array
+export function isUint16Array(x: Uint16Array): boolean;
+export function isUint16Array(x: unknown): x is Uint16Array;
 export function isUint16Array(x: unknown): boolean {
-	return x instanceof Uint16Array
+	return x instanceof Uint16Array;
 }
 
 /**
@@ -161,10 +161,10 @@ export function isUint16Array(x: unknown): boolean {
  * isInt32Array(new Uint32Array()) // false
  * ```
  */
-export function isInt32Array(x: Int32Array): boolean
-export function isInt32Array(x: unknown): x is Int32Array
+export function isInt32Array(x: Int32Array): boolean;
+export function isInt32Array(x: unknown): x is Int32Array;
 export function isInt32Array(x: unknown): boolean {
-	return x instanceof Int32Array
+	return x instanceof Int32Array;
 }
 
 /**
@@ -178,10 +178,10 @@ export function isInt32Array(x: unknown): boolean {
  * isUint32Array(new Int32Array()) // false
  * ```
  */
-export function isUint32Array(x: Uint32Array): boolean
-export function isUint32Array(x: unknown): x is Uint32Array
+export function isUint32Array(x: Uint32Array): boolean;
+export function isUint32Array(x: unknown): x is Uint32Array;
 export function isUint32Array(x: unknown): boolean {
-	return x instanceof Uint32Array
+	return x instanceof Uint32Array;
 }
 
 /**
@@ -195,10 +195,10 @@ export function isUint32Array(x: unknown): boolean {
  * isFloat32Array(new Float64Array()) // false
  * ```
  */
-export function isFloat32Array(x: Float32Array): boolean
-export function isFloat32Array(x: unknown): x is Float32Array
+export function isFloat32Array(x: Float32Array): boolean;
+export function isFloat32Array(x: unknown): x is Float32Array;
 export function isFloat32Array(x: unknown): boolean {
-	return x instanceof Float32Array
+	return x instanceof Float32Array;
 }
 
 /**
@@ -212,10 +212,10 @@ export function isFloat32Array(x: unknown): boolean {
  * isFloat64Array(new Float32Array()) // false
  * ```
  */
-export function isFloat64Array(x: Float64Array): boolean
-export function isFloat64Array(x: unknown): x is Float64Array
+export function isFloat64Array(x: Float64Array): boolean;
+export function isFloat64Array(x: unknown): x is Float64Array;
 export function isFloat64Array(x: unknown): boolean {
-	return x instanceof Float64Array
+	return x instanceof Float64Array;
 }
 
 /**
@@ -231,10 +231,10 @@ export function isFloat64Array(x: unknown): boolean {
  * isBigInt64Array(typeof BigInt64Array !== 'undefined' ? new BigInt64Array() : undefined) // true or false depending on support
  * ```
  */
-export function isBigInt64Array(x: BigInt64Array): boolean
-export function isBigInt64Array(x: unknown): x is BigInt64Array
+export function isBigInt64Array(x: BigInt64Array): boolean;
+export function isBigInt64Array(x: unknown): x is BigInt64Array;
 export function isBigInt64Array(x: unknown): boolean {
-	return typeof BigInt64Array !== 'undefined' && x instanceof BigInt64Array
+	return typeof BigInt64Array !== 'undefined' && x instanceof BigInt64Array;
 }
 
 /**
@@ -250,8 +250,8 @@ export function isBigInt64Array(x: unknown): boolean {
  * isBigUint64Array(typeof BigUint64Array !== 'undefined' ? new BigUint64Array() : undefined) // true or false depending on support
  * ```
  */
-export function isBigUint64Array(x: BigUint64Array): boolean
-export function isBigUint64Array(x: unknown): x is BigUint64Array
+export function isBigUint64Array(x: BigUint64Array): boolean;
+export function isBigUint64Array(x: unknown): x is BigUint64Array;
 export function isBigUint64Array(x: unknown): boolean {
-	return typeof BigUint64Array !== 'undefined' && x instanceof BigUint64Array
+	return typeof BigUint64Array !== 'undefined' && x instanceof BigUint64Array;
 }

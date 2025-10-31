@@ -13,10 +13,10 @@
  * isMap({}) // false
  * ```
  */
-export function isMap<_K = unknown, _V = unknown>(x: ReadonlyMap<_K, _V>): boolean
-export function isMap<_K = unknown, _V = unknown>(x: unknown): x is ReadonlyMap<_K, _V>
+export function isMap<_K = unknown, _V = unknown>(x: ReadonlyMap<_K, _V>): boolean;
+export function isMap<_K = unknown, _V = unknown>(x: unknown): x is ReadonlyMap<_K, _V>;
 export function isMap<_K = unknown, _V = unknown>(x: unknown): boolean {
-	return x instanceof Map
+	return x instanceof Map;
 }
 
 /**
@@ -34,10 +34,10 @@ export function isMap<_K = unknown, _V = unknown>(x: unknown): boolean {
  * isSet([]) // false
  * ```
  */
-export function isSet<_T = unknown>(x: ReadonlySet<_T>): boolean
-export function isSet<_T = unknown>(x: unknown): x is ReadonlySet<_T>
+export function isSet<_T = unknown>(x: ReadonlySet<_T>): boolean;
+export function isSet<_T = unknown>(x: unknown): x is ReadonlySet<_T>;
 export function isSet<_T = unknown>(x: unknown): boolean {
-	return x instanceof Set
+	return x instanceof Set;
 }
 
 /**
@@ -55,10 +55,10 @@ export function isSet<_T = unknown>(x: unknown): boolean {
  * isWeakMap(new Map()) // false
  * ```
  */
-export function isWeakMap(x: WeakMap<object, unknown>): boolean
-export function isWeakMap(x: unknown): x is WeakMap<object, unknown>
+export function isWeakMap(x: WeakMap<object, unknown>): boolean;
+export function isWeakMap(x: unknown): x is WeakMap<object, unknown>;
 export function isWeakMap(x: unknown): boolean {
-	return x instanceof WeakMap
+	return x instanceof WeakMap;
 }
 
 /**
@@ -76,10 +76,10 @@ export function isWeakMap(x: unknown): boolean {
  * isWeakSet(new Set()) // false
  * ```
  */
-export function isWeakSet(x: WeakSet<object>): boolean
-export function isWeakSet(x: unknown): x is WeakSet<object>
+export function isWeakSet(x: WeakSet<object>): boolean;
+export function isWeakSet(x: unknown): x is WeakSet<object>;
 export function isWeakSet(x: unknown): boolean {
-	return x instanceof WeakSet
+	return x instanceof WeakSet;
 }
 
 /**
@@ -102,10 +102,10 @@ export function isWeakSet(x: unknown): boolean {
  * isObject(null) // false
  * ```
  */
-export function isObject(x: object): boolean
-export function isObject(x: unknown): x is object
+export function isObject(x: object): boolean;
+export function isObject(x: unknown): x is object;
 export function isObject(x: unknown): boolean {
-	return typeof x === 'object' && x !== null
+	return typeof x === 'object' && x !== null;
 }
 
 /**
@@ -123,8 +123,8 @@ export function isObject(x: unknown): boolean {
  * isRecord([]) // false
  * ```
  */
-export function isRecord(x: Record<string, unknown>): boolean
-export function isRecord(x: unknown): x is Record<string, unknown>
+export function isRecord(x: Record<string, unknown>): boolean;
+export function isRecord(x: unknown): x is Record<string, unknown>;
 export function isRecord(x: unknown): boolean {
-	return typeof x === 'object' && x !== null && !Array.isArray(x)
+	return typeof x === 'object' && x !== null && !Array.isArray(x);
 }

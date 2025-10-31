@@ -3,11 +3,14 @@
   "compilerOptions": {
     "lib": ["ESNext"],
     "types": [],
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "outDir": "dist",
+
     "rootDir": "src",
-    "noEmit": false
+    "outDir": "dist",
+
+    "noEmit": false,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true
   },
   "include": ["src"]
 }

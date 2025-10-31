@@ -13,10 +13,10 @@
  * isNull(undefined) // false
  * ```
  */
-export function isNull(x: null): boolean
-export function isNull(x: unknown): x is null
+export function isNull(x: null): boolean;
+export function isNull(x: unknown): x is null;
 export function isNull(x: unknown): boolean {
-	return x === null
+	return x === null;
 }
 
 /**
@@ -34,10 +34,10 @@ export function isNull(x: unknown): boolean {
  * isUndefined(null) // false
  * ```
  */
-export function isUndefined(x: undefined): boolean
-export function isUndefined(x: unknown): x is undefined
+export function isUndefined(x: undefined): boolean;
+export function isUndefined(x: unknown): x is undefined;
 export function isUndefined(x: unknown): boolean {
-	return x === undefined
+	return x === undefined;
 }
 
 /**
@@ -55,10 +55,10 @@ export function isUndefined(x: unknown): boolean {
  * isDefined(null) // false
  * ```
  */
-export function isDefined<T>(x: T): boolean
-export function isDefined<T>(x: T | null | undefined): x is T
+export function isDefined<T>(x: T): boolean;
+export function isDefined<T>(x: T | null | undefined): x is T;
 export function isDefined<T>(x: T | null | undefined): boolean {
-	return x !== null && x !== undefined
+	return x !== null && x !== undefined;
 }
 
 /**
@@ -76,10 +76,10 @@ export function isDefined<T>(x: T | null | undefined): boolean {
  * isString(1) // false
  * ```
  */
-export function isString(x: string): boolean
-export function isString(x: unknown): x is string
+export function isString(x: string): boolean;
+export function isString(x: unknown): x is string;
 export function isString(x: unknown): boolean {
-	return typeof x === 'string'
+	return typeof x === 'string';
 }
 
 /**
@@ -101,10 +101,10 @@ export function isString(x: unknown): boolean {
  * isNumber('1') // false
  * ```
  */
-export function isNumber(x: number): boolean
-export function isNumber(x: unknown): x is number
+export function isNumber(x: number): boolean;
+export function isNumber(x: unknown): x is number;
 export function isNumber(x: unknown): boolean {
-	return typeof x === 'number'
+	return typeof x === 'number';
 }
 
 /**
@@ -122,10 +122,10 @@ export function isNumber(x: unknown): boolean {
  * isBoolean(0) // false
  * ```
  */
-export function isBoolean(x: boolean): boolean
-export function isBoolean(x: unknown): x is boolean
+export function isBoolean(x: boolean): boolean;
+export function isBoolean(x: unknown): x is boolean;
 export function isBoolean(x: unknown): boolean {
-	return typeof x === 'boolean'
+	return typeof x === 'boolean';
 }
 
 /**
@@ -143,10 +143,10 @@ export function isBoolean(x: unknown): boolean {
  * isBigInt(1) // false
  * ```
  */
-export function isBigInt(x: bigint): boolean
-export function isBigInt(x: unknown): x is bigint
+export function isBigInt(x: bigint): boolean;
+export function isBigInt(x: unknown): x is bigint;
 export function isBigInt(x: unknown): boolean {
-	return typeof x === 'bigint'
+	return typeof x === 'bigint';
 }
 
 /**
@@ -164,10 +164,10 @@ export function isBigInt(x: unknown): boolean {
  * isSymbol('x') // false
  * ```
  */
-export function isSymbol(x: symbol): boolean
-export function isSymbol(x: unknown): x is symbol
+export function isSymbol(x: symbol): boolean;
+export function isSymbol(x: unknown): x is symbol;
 export function isSymbol(x: unknown): boolean {
-	return typeof x === 'symbol'
+	return typeof x === 'symbol';
 }
 
 /**
@@ -185,10 +185,10 @@ export function isSymbol(x: unknown): boolean {
  * isFunction({}) // false
  * ```
  */
-export function isFunction(x: (...args: unknown[]) => unknown): boolean
-export function isFunction(x: unknown): x is (...args: unknown[]) => unknown
+export function isFunction(x: (...args: unknown[]) => unknown): boolean;
+export function isFunction(x: unknown): x is (...args: unknown[]) => unknown;
 export function isFunction(x: unknown): boolean {
-	return typeof x === 'function'
+	return typeof x === 'function';
 }
 
 /**
@@ -204,10 +204,10 @@ export function isFunction(x: unknown): boolean {
  * isDate({}) // false
  * ```
  */
-export function isDate(x: Date): boolean
-export function isDate(x: unknown): x is Date
+export function isDate(x: Date): boolean;
+export function isDate(x: unknown): x is Date;
 export function isDate(x: unknown): boolean {
-	return x instanceof Date
+	return x instanceof Date;
 }
 
 /**
@@ -223,10 +223,10 @@ export function isDate(x: unknown): boolean {
  * isRegExp('a') // false
  * ```
  */
-export function isRegExp(x: RegExp): boolean
-export function isRegExp(x: unknown): x is RegExp
+export function isRegExp(x: RegExp): boolean;
+export function isRegExp(x: unknown): x is RegExp;
 export function isRegExp(x: unknown): boolean {
-	return x instanceof RegExp
+	return x instanceof RegExp;
 }
 
 /**
@@ -242,10 +242,10 @@ export function isRegExp(x: unknown): boolean {
  * isError({}) // false
  * ```
  */
-export function isError(x: Error): boolean
-export function isError(x: unknown): x is Error
+export function isError(x: Error): boolean;
+export function isError(x: unknown): x is Error;
 export function isError(x: unknown): boolean {
-	return x instanceof Error
+	return x instanceof Error;
 }
 
 /**
@@ -263,14 +263,14 @@ export function isError(x: unknown): boolean {
  * isPromiseLike({ then() {} }) // false
  * ```
  */
-export function isPromiseLike<_T = unknown>(x: unknown): x is Promise<_T> | (PromiseLike<_T> & { catch: unknown, finally: unknown }) {
-	if (x == null) return false
-	const t = typeof x
-	if (t !== 'object' && t !== 'function') return false
-	const then = (x as { then?: unknown }).then
-	const c = (x as { catch?: unknown }).catch
-	const f = (x as { finally?: unknown }).finally
-	return typeof then === 'function' && typeof c === 'function' && typeof f === 'function'
+export function isPromiseLike<_T = unknown>(x: unknown): x is Promise<_T> | (PromiseLike<_T> & { catch: unknown; finally: unknown }) {
+	if (x == null) return false;
+	const t = typeof x;
+	if (t !== 'object' && t !== 'function') return false;
+	const then = (x as { then?: unknown }).then;
+	const c = (x as { catch?: unknown }).catch;
+	const f = (x as { finally?: unknown }).finally;
+	return typeof then === 'function' && typeof c === 'function' && typeof f === 'function';
 }
 
 /**
@@ -286,10 +286,10 @@ export function isPromiseLike<_T = unknown>(x: unknown): x is Promise<_T> | (Pro
  * isPromise({ then() {} } as unknown) // false
  * ```
  */
-export function isPromise<_T = unknown>(x: Promise<_T>): boolean
-export function isPromise<_T = unknown>(x: unknown): x is Promise<_T>
+export function isPromise<_T = unknown>(x: Promise<_T>): boolean;
+export function isPromise<_T = unknown>(x: unknown): x is Promise<_T>;
 export function isPromise<_T = unknown>(x: unknown): boolean {
-	return x instanceof Promise
+	return x instanceof Promise;
 }
 
 /**
@@ -305,10 +305,10 @@ export function isPromise<_T = unknown>(x: unknown): boolean {
  * isArrayBuffer({}) // false
  * ```
  */
-export function isArrayBuffer(x: ArrayBuffer): boolean
-export function isArrayBuffer(x: unknown): x is ArrayBuffer
+export function isArrayBuffer(x: ArrayBuffer): boolean;
+export function isArrayBuffer(x: unknown): x is ArrayBuffer;
 export function isArrayBuffer(x: unknown): boolean {
-	return x instanceof ArrayBuffer
+	return x instanceof ArrayBuffer;
 }
 
 /**
@@ -323,10 +323,10 @@ export function isArrayBuffer(x: unknown): boolean {
  * isSharedArrayBuffer(typeof SharedArrayBuffer !== 'undefined' ? new SharedArrayBuffer(8) : undefined) // true or false
  * ```
  */
-export function isSharedArrayBuffer(x: SharedArrayBuffer): boolean
-export function isSharedArrayBuffer(x: unknown): x is SharedArrayBuffer
+export function isSharedArrayBuffer(x: SharedArrayBuffer): boolean;
+export function isSharedArrayBuffer(x: unknown): x is SharedArrayBuffer;
 export function isSharedArrayBuffer(x: unknown): boolean {
-	return typeof SharedArrayBuffer !== 'undefined' && x instanceof SharedArrayBuffer
+	return typeof SharedArrayBuffer !== 'undefined' && x instanceof SharedArrayBuffer;
 }
 
 /**
@@ -347,10 +347,10 @@ export function isSharedArrayBuffer(x: unknown): boolean {
  * isIterable({}) // false
  * ```
  */
-export function isIterable<_T = unknown>(x: Iterable<_T>): boolean
-export function isIterable<_T = unknown>(x: unknown): x is Iterable<_T>
+export function isIterable<_T = unknown>(x: Iterable<_T>): boolean;
+export function isIterable<_T = unknown>(x: unknown): x is Iterable<_T>;
 export function isIterable<_T = unknown>(x: unknown): boolean {
-	return x != null && typeof (x as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function'
+	return x != null && typeof (x as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function';
 }
 
 /**
@@ -371,8 +371,8 @@ export function isIterable<_T = unknown>(x: unknown): boolean {
  * isAsyncIterator([]) // false
  * ```
  */
-export function isAsyncIterator<_T = unknown>(x: AsyncIterable<_T>): boolean
-export function isAsyncIterator<_T = unknown>(x: unknown): x is AsyncIterable<_T>
+export function isAsyncIterator<_T = unknown>(x: AsyncIterable<_T>): boolean;
+export function isAsyncIterator<_T = unknown>(x: unknown): x is AsyncIterable<_T>;
 export function isAsyncIterator<_T = unknown>(x: unknown): boolean {
-	return x != null && typeof (x as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator] === 'function'
+	return x != null && typeof (x as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator] === 'function';
 }

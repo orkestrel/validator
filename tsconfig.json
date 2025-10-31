@@ -4,18 +4,22 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
 
-    "strict": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+
     "noEmit": true,
+
+    // Recommended Options
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
     "skipLibCheck": true,
-    "esModuleInterop": true,
 
     "baseUrl": ".",
     "paths": {
       "@orkestrel/validator": ["./src/index.ts"]
-    },
-
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["node"],
-    "resolveJsonModule": true
-  },
+    }
+  }
 }

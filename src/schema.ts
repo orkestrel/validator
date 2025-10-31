@@ -1,9 +1,9 @@
 import type {
 	Guard, GuardsShape, FromGuards, OptionalFromGuards, TupleFromGuards, GuardType, IntersectionFromGuards, AnyConstructor,
-} from './types.js'
-import { isArray } from './arrays.js'
-import { isMap, isObject, isRecord, isSet } from './collections.js'
-import { isIterable, isNumber, isString, isSymbol } from './primitives.js'
+} from './types.js';
+import { isArray } from './arrays.js';
+import { isMap, isObject, isRecord, isSet } from './collections.js';
+import { isIterable, isNumber, isString, isSymbol } from './primitives.js';
 
 /**
  * Guard for an array whose elements satisfy the provided element guard or predicate.
@@ -20,10 +20,10 @@ import { isIterable, isNumber, isString, isSymbol } from './primitives.js'
  * Strings(['a']) // true
  * ```
  */
-export function arrayOf<T>(elem: Guard<T>): Guard<ReadonlyArray<T>>
-export function arrayOf(elem: (x: unknown) => boolean): Guard<ReadonlyArray<unknown>>
-export function arrayOf(elem: (x: unknown) => boolean): Guard<ReadonlyArray<unknown>> {
-	return (x: unknown): x is ReadonlyArray<unknown> => isArray(x) && x.every(elem)
+export function arrayOf<T>(elem: Guard<T>): Guard<readonly T[]>;
+export function arrayOf(elem: (x: unknown) => boolean): Guard<readonly unknown[]>;
+export function arrayOf(elem: (x: unknown) => boolean): Guard<readonly unknown[]> {
+	return (x: unknown): x is readonly unknown[] => isArray(x) && x.every(elem);
 }
 
 /**
@@ -41,30 +41,30 @@ export function arrayOf(elem: (x: unknown) => boolean): Guard<ReadonlyArray<unkn
  * T([1, 'x']) // true
  * ```
  */
-export function tupleOf<const Gs extends readonly Guard<unknown>[]>(
+export function tupleOf<const Gs extends ReadonlyArray<Guard<unknown>>>(
 	...guards: Gs
-): Guard<TupleFromGuards<Gs>>
-export function tupleOf(...predicates: readonly ((x: unknown) => boolean)[]): Guard<readonly unknown[]>
-export function tupleOf(...guardsOrPreds: readonly ((x: unknown) => boolean)[]): Guard<readonly unknown[]> {
+): Guard<TupleFromGuards<Gs>>;
+export function tupleOf(...predicates: ReadonlyArray<(x: unknown) => boolean>): Guard<readonly unknown[]>;
+export function tupleOf(...guardsOrPreds: ReadonlyArray<(x: unknown) => boolean>): Guard<readonly unknown[]> {
 	return (x: unknown): x is readonly unknown[] => {
-		if (!Array.isArray(x) || x.length !== guardsOrPreds.length) return false
+		if (!Array.isArray(x) || x.length !== guardsOrPreds.length) return false;
 		for (let i = 0; i < guardsOrPreds.length; i++) {
-			const guard = guardsOrPreds[i]
-			if (!guard || !guard(x[i])) return false
+			const guard = guardsOrPreds[i];
+			if (!guard?.(x[i])) return false;
 		}
-		return true
-	}
+		return true;
+	};
 }
 
-export function objectOf<S extends GuardsShape>(shape: S): Guard<FromGuards<S>>
-export function objectOf<S extends GuardsShape, K extends readonly (keyof S & string)[]>(
+export function objectOf<S extends GuardsShape>(shape: S): Guard<FromGuards<S>>;
+export function objectOf<S extends GuardsShape, K extends ReadonlyArray<keyof S & string>>(
 	shape: S,
 	optional: K,
-): Guard<OptionalFromGuards<S, K>>
+): Guard<OptionalFromGuards<S, K>>;
 export function objectOf<S extends GuardsShape>(
 	shape: S,
 	optional: true,
-): Guard<Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>>
+): Guard<Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>>;
 
 /**
  * Compose a guard for an object with a fixed set of properties, each validated by its own guard.
@@ -82,46 +82,46 @@ export function objectOf<S extends GuardsShape>(
  * const PartialUser = objectOf({ id: isString, age: isNumber }, true)
  * ```
  */
-export function objectOf<S extends GuardsShape, K extends readonly (keyof S & string)[] | true | undefined>(
+export function objectOf<S extends GuardsShape, K extends ReadonlyArray<keyof S & string> | true | undefined>(
 	shape: S,
 	optional?: K,
 ): Guard<
 	K extends true
 		? Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>
-		: K extends readonly (keyof S & string)[]
+		: K extends ReadonlyArray<keyof S & string>
 			? OptionalFromGuards<S, K>
 			: FromGuards<S>
 > {
-	const keys = Object.keys(shape) as readonly (keyof S & string)[]
+	const keys = Object.keys(shape) as ReadonlyArray<keyof S & string>;
 	const optionalSet: Set<string>
 		= optional === true
 			? new Set<string>(keys as readonly string[])
-			: new Set<string>(((optional as readonly string[] | undefined)) ?? [])
+			: new Set<string>(((optional as readonly string[] | undefined)) ?? []);
 	return ((x: unknown): x is never => {
-		if (!isRecord(x)) return false
-		const ownKeys: (string | symbol)[] = [
+		if (!isRecord(x)) return false;
+		const ownKeys: Array<string | symbol> = [
 			...Object.keys(x),
 			...Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable),
-		]
+		];
 		for (const k of ownKeys) {
-			if (typeof k === 'string' && !keys.includes(k as keyof S & string)) return false
+			if (typeof k === 'string' && !keys.includes(k as keyof S & string)) return false;
 		}
 		for (const k of keys) {
-			const present = k in x
-			if (!optionalSet.has(k) && !present) return false
+			const present = k in x;
+			if (!optionalSet.has(k) && !present) return false;
 			if (present) {
-				const g = shape[k]
-				if (!g((x as Record<string, unknown>)[k])) return false
+				const g = shape[k];
+				if (!g((x)[k])) return false;
 			}
 		}
-		return true
+		return true;
 	}) as unknown as Guard<
 		K extends true
 			? Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>
-			: K extends readonly (keyof S & string)[]
+			: K extends ReadonlyArray<keyof S & string>
 				? OptionalFromGuards<S, K>
 				: FromGuards<S>
-	>
+	>;
 }
 
 /**
@@ -136,10 +136,10 @@ export function objectOf<S extends GuardsShape, K extends readonly (keyof S & st
  * g('c') // false
  * ```
  */
-export function literalOf<const Literals extends readonly (string | number | boolean)[]>(
+export function literalOf<const Literals extends ReadonlyArray<string | number | boolean>>(
 	...literals: Literals
 ): Guard<Literals[number]> {
-	return (x: unknown): x is Literals[number] => literals.some(l => Object.is(l, x))
+	return (x: unknown): x is Literals[number] => literals.some(l => Object.is(l, x));
 }
 
 /**
@@ -165,7 +165,7 @@ export function literalOf<const Literals extends readonly (string | number | boo
 	*/
 export function instanceOf<C>(ctor: C): Guard<InstanceType<C & AnyConstructor<object>>> {
 	return (x: unknown): x is InstanceType<C & AnyConstructor<object>> =>
-		typeof ctor === 'function' && isObject(x) && x instanceof ctor
+		typeof ctor === 'function' && isObject(x) && x instanceof ctor;
 }
 
 /**
@@ -181,8 +181,8 @@ export function instanceOf<C>(ctor: C): Guard<InstanceType<C & AnyConstructor<ob
  * ```
  */
 export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E[keyof E]> {
-	const values = new Set(Object.values(e) as (string | number)[])
-	return (x: unknown): x is E[keyof E] => values.has(x as string | number)
+	const values = new Set(Object.values(e));
+	return (x: unknown): x is E[keyof E] => values.has(x as string | number);
 }
 
 /**
@@ -200,16 +200,16 @@ export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E
  * NumSet(new Set([1])) // true
  * ```
  */
-export function setOf<T>(elemGuard: Guard<T>): Guard<ReadonlySet<T>>
-export function setOf(elemPredicate: (x: unknown) => boolean): Guard<ReadonlySet<unknown>>
+export function setOf<T>(elemGuard: Guard<T>): Guard<ReadonlySet<T>>;
+export function setOf(elemPredicate: (x: unknown) => boolean): Guard<ReadonlySet<unknown>>;
 export function setOf(elemGuardOrPred: (x: unknown) => boolean): Guard<ReadonlySet<unknown>> {
 	return (x: unknown): x is ReadonlySet<unknown> => {
-		if (!isSet(x)) return false
+		if (!isSet(x)) return false;
 		for (const v of x as Set<unknown>) {
-			if (!elemGuardOrPred(v)) return false
+			if (!elemGuardOrPred(v)) return false;
 		}
-		return true
-	}
+		return true;
+	};
 }
 
 /**
@@ -228,27 +228,27 @@ export function setOf(elemGuardOrPred: (x: unknown) => boolean): Guard<ReadonlyS
  * M(new Map([['a', 1]])) // true
  * ```
  */
-export function mapOf<K, V>(keyGuard: Guard<K>, valueGuard: Guard<V>): Guard<ReadonlyMap<K, V>>
-export function mapOf(keyPredicate: (x: unknown) => boolean, valuePredicate: (x: unknown) => boolean): Guard<ReadonlyMap<unknown, unknown>>
+export function mapOf<K, V>(keyGuard: Guard<K>, valueGuard: Guard<V>): Guard<ReadonlyMap<K, V>>;
+export function mapOf(keyPredicate: (x: unknown) => boolean, valuePredicate: (x: unknown) => boolean): Guard<ReadonlyMap<unknown, unknown>>;
 export function mapOf(keyGuardOrPred: (x: unknown) => boolean, valueGuardOrPred: (x: unknown) => boolean): Guard<ReadonlyMap<unknown, unknown>> {
 	return (x: unknown): x is ReadonlyMap<unknown, unknown> => {
-		if (!isMap(x)) return false
+		if (!isMap(x)) return false;
 		for (const [k, v] of x as Map<unknown, unknown>) {
-			if (!keyGuardOrPred(k) || !valueGuardOrPred(v)) return false
+			if (!keyGuardOrPred(k) || !valueGuardOrPred(v)) return false;
 		}
-		return true
-	}
+		return true;
+	};
 }
 
-export function recordOf<S extends GuardsShape>(shape: S): Guard<FromGuards<S>>
-export function recordOf<S extends GuardsShape, K extends readonly (keyof S & string)[]>(
+export function recordOf<S extends GuardsShape>(shape: S): Guard<FromGuards<S>>;
+export function recordOf<S extends GuardsShape, K extends ReadonlyArray<keyof S & string>>(
 	shape: S,
 	optional: K,
-): Guard<OptionalFromGuards<S, K>>
+): Guard<OptionalFromGuards<S, K>>;
 export function recordOf<S extends GuardsShape>(
 	shape: S,
 	optional: true,
-): Guard<Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>>
+): Guard<Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>>;
 
 /**
  * Compose a guard for a record with a fixed set of string properties, each validated by its own guard.
@@ -267,46 +267,46 @@ export function recordOf<S extends GuardsShape>(
  * const PartialUser = recordOf({ id: isString, age: isNumber }, true)
  * ```
  */
-export function recordOf<S extends GuardsShape, K extends readonly (keyof S & string)[] | true | undefined>(
+export function recordOf<S extends GuardsShape, K extends ReadonlyArray<keyof S & string> | true | undefined>(
 	shape: S,
 	optional?: K,
 ): Guard<
 	K extends true
 		? Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>
-		: K extends readonly (keyof S & string)[]
+		: K extends ReadonlyArray<keyof S & string>
 			? OptionalFromGuards<S, K>
 			: FromGuards<S>
 > {
-	const keys = Object.keys(shape) as readonly (keyof S & string)[]
+	const keys = Object.keys(shape) as ReadonlyArray<keyof S & string>;
 	const optionalSet: Set<string>
 		= optional === true
 			? new Set<string>(keys as readonly string[])
-			: new Set<string>(((optional as readonly string[] | undefined)) ?? [])
+			: new Set<string>(((optional as readonly string[] | undefined)) ?? []);
 	return ((x: unknown): x is never => {
-		if (!isRecord(x)) return false
+		if (!isRecord(x)) return false;
 		// Get all enumerable own string keys (no symbols, unlike objectOf)
-		const ownKeys = Object.keys(x)
+		const ownKeys = Object.keys(x);
 		// Reject extra keys
 		for (const k of ownKeys) {
-			if (!keys.includes(k as keyof S & string)) return false
+			if (!keys.includes(k as keyof S & string)) return false;
 		}
 		// Check required and optional keys
 		for (const k of keys) {
-			const present = k in x
-			if (!optionalSet.has(k) && !present) return false
+			const present = k in x;
+			if (!optionalSet.has(k) && !present) return false;
 			if (present) {
-				const g = shape[k]
-				if (!g(x[k])) return false
+				const g = shape[k];
+				if (!g(x[k])) return false;
 			}
 		}
-		return true
+		return true;
 	}) as unknown as Guard<
 		K extends true
 			? Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>
-			: K extends readonly (keyof S & string)[]
+			: K extends ReadonlyArray<keyof S & string>
 				? OptionalFromGuards<S, K>
 				: FromGuards<S>
-	>
+	>;
 }
 
 /**
@@ -325,16 +325,16 @@ export function recordOf<S extends GuardsShape, K extends readonly (keyof S & st
  * G(gen()) // true
  * ```
  */
-export function iterableOf<T>(elemGuard: Guard<T>): Guard<Iterable<T>>
-export function iterableOf(elemPredicate: (x: unknown) => boolean): Guard<Iterable<unknown>>
+export function iterableOf<T>(elemGuard: Guard<T>): Guard<Iterable<T>>;
+export function iterableOf(elemPredicate: (x: unknown) => boolean): Guard<Iterable<unknown>>;
 export function iterableOf(elemGuardOrPred: (x: unknown) => boolean): Guard<Iterable<unknown>> {
 	return (x: unknown): x is Iterable<unknown> => {
-		if (!isIterable(x)) return false
+		if (!isIterable(x)) return false;
 		for (const v of x) {
-			if (!elemGuardOrPred(v)) return false
+			if (!elemGuardOrPred(v)) return false;
 		}
-		return true
-	}
+		return true;
+	};
 }
 
 /**
@@ -350,7 +350,7 @@ export function iterableOf(elemGuardOrPred: (x: unknown) => boolean): Guard<Iter
  * ```
  */
 export function keyOf<const O extends Readonly<Record<PropertyKey, unknown>>>(obj: O): Guard<keyof O> {
-	return (x: unknown): x is keyof O => (isString(x) || isSymbol(x) || isNumber(x)) && x in obj
+	return (x: unknown): x is keyof O => (isString(x) || isSymbol(x) || isNumber(x)) && x in obj;
 }
 
 /**
@@ -365,12 +365,12 @@ export function keyOf<const O extends Readonly<Record<PropertyKey, unknown>>>(ob
  * const picked = pickOf(base, ['id' as const, 'name' as const])
  * ```
  */
-export function pickOf<S extends GuardsShape, K extends readonly (keyof S)[]>(shape: S, keys: K): Pick<S, K[number]> {
-	const out: Record<string, Guard<unknown>> = {}
-	for (const k of keys as readonly (keyof S & string)[]) {
-		if (Object.prototype.hasOwnProperty.call(shape, k)) out[k] = shape[k]
+export function pickOf<S extends GuardsShape, K extends ReadonlyArray<keyof S>>(shape: S, keys: K): Pick<S, K[number]> {
+	const out: Record<string, Guard<unknown>> = {};
+	for (const k of keys as ReadonlyArray<keyof S & string>) {
+		if (Object.prototype.hasOwnProperty.call(shape, k)) out[k] = shape[k];
 	}
-	return out as Pick<S, K[number]>
+	return out as Pick<S, K[number]>;
 }
 
 /**
@@ -385,13 +385,13 @@ export function pickOf<S extends GuardsShape, K extends readonly (keyof S)[]>(sh
  * const omitted = omitOf(base, ['age' as const])
  * ```
  */
-export function omitOf<S extends GuardsShape, K extends readonly (keyof S)[]>(shape: S, keys: K): Omit<S, K[number]> {
-	const skip = new Set<PropertyKey>(keys as readonly PropertyKey[])
-	const out: Record<string, Guard<unknown>> = {}
+export function omitOf<S extends GuardsShape, K extends ReadonlyArray<keyof S>>(shape: S, keys: K): Omit<S, K[number]> {
+	const skip = new Set<PropertyKey>(keys as readonly PropertyKey[]);
+	const out: Record<string, Guard<unknown>> = {};
 	for (const k of Object.keys(shape)) {
-		if (!skip.has(k)) out[k] = shape[k]
+		if (!skip.has(k)) out[k] = shape[k];
 	}
-	return out as Omit<S, K[number]>
+	return out as Omit<S, K[number]>;
 }
 
 /**
@@ -412,12 +412,12 @@ export function omitOf<S extends GuardsShape, K extends readonly (keyof S)[]>(sh
  * nonEmpty('') // false
  * ```
  */
-export function andOf<A, B>(a: Guard<A>, b: Guard<B>): Guard<A & B>
-export function andOf<T, U extends T>(a: Guard<T>, b: (x: T) => x is U): Guard<U>
-export function andOf<T>(a: Guard<T>, b: (x: T) => boolean): Guard<T>
-export function andOf(a: (x: unknown) => boolean, b: (x: unknown) => boolean): Guard<unknown>
+export function andOf<A, B>(a: Guard<A>, b: Guard<B>): Guard<A & B>;
+export function andOf<T, U extends T>(a: Guard<T>, b: (x: T) => x is U): Guard<U>;
+export function andOf<T>(a: Guard<T>, b: (x: T) => boolean): Guard<T>;
+export function andOf(a: (x: unknown) => boolean, b: (x: unknown) => boolean): Guard<unknown>;
 export function andOf(a: (x: unknown) => boolean, b: (x: unknown) => boolean): Guard<unknown> {
-	return (x: unknown): x is unknown => a(x) && b(x)
+	return (x: unknown): x is unknown => a(x) && b(x);
 }
 
 /**
@@ -437,10 +437,10 @@ export function andOf(a: (x: unknown) => boolean, b: (x: unknown) => boolean): G
  * g('c') // false
  * ```
  */
-export function orOf<A, B>(a: Guard<A>, b: Guard<B>): Guard<A | B>
-export function orOf(a: (x: unknown) => boolean, b: (x: unknown) => boolean): Guard<unknown>
+export function orOf<A, B>(a: Guard<A>, b: Guard<B>): Guard<A | B>;
+export function orOf(a: (x: unknown) => boolean, b: (x: unknown) => boolean): Guard<unknown>;
 export function orOf(a: (x: unknown) => boolean, b: (x: unknown) => boolean): Guard<unknown> {
-	return (x: unknown): x is unknown => a(x) || b(x)
+	return (x: unknown): x is unknown => a(x) || b(x);
 }
 
 /**
@@ -456,7 +456,7 @@ export function orOf(a: (x: unknown) => boolean, b: (x: unknown) => boolean): Gu
  * ```
  */
 export function notOf(g: (x: unknown) => boolean): Guard<unknown> {
-	return (x: unknown): x is unknown => !g(x)
+	return (x: unknown): x is unknown => !g(x);
 }
 
 /**
@@ -481,7 +481,7 @@ export function complementOf<TBase, TExclude extends TBase>(
 	base: Guard<TBase>,
 	exclude: Guard<TExclude> | ((x: TBase) => x is TExclude),
 ): Guard<Exclude<TBase, TExclude>> {
-	return (x: unknown): x is Exclude<TBase, TExclude> => base(x) && !(exclude as (x: unknown) => boolean)(x)
+	return (x: unknown): x is Exclude<TBase, TExclude> => base(x) && !(exclude as (x: unknown) => boolean)(x);
 }
 
 /**
@@ -500,10 +500,10 @@ export function complementOf<TBase, TExclude extends TBase>(
  * AB('c' as unknown) // false
  * ```
  */
-export function unionOf<const Gs extends readonly Guard<unknown>[]>(...guards: Gs): Guard<GuardType<Gs[number]>>
-export function unionOf(...predicates: readonly ((x: unknown) => boolean)[]): Guard<unknown>
-export function unionOf(...guardsOrPreds: readonly ((x: unknown) => boolean)[]): Guard<unknown> {
-	return (x: unknown): x is unknown => guardsOrPreds.some(g => g(x))
+export function unionOf<const Gs extends ReadonlyArray<Guard<unknown>>>(...guards: Gs): Guard<GuardType<Gs[number]>>;
+export function unionOf(...predicates: ReadonlyArray<(x: unknown) => boolean>): Guard<unknown>;
+export function unionOf(...guardsOrPreds: ReadonlyArray<(x: unknown) => boolean>): Guard<unknown> {
+	return (x: unknown): x is unknown => guardsOrPreds.some(g => g(x));
 }
 
 /**
@@ -522,10 +522,10 @@ export function unionOf(...guardsOrPreds: readonly ((x: unknown) => boolean)[]):
  * nonEmptyString('') // false
  * ```
  */
-export function intersectionOf<const Gs extends readonly Guard<unknown>[]>(...guards: Gs): Guard<IntersectionFromGuards<Gs>>
-export function intersectionOf(...predicates: readonly ((x: unknown) => boolean)[]): Guard<unknown>
-export function intersectionOf(...guardsOrPreds: readonly ((x: unknown) => boolean)[]): Guard<unknown> {
-	return (x: unknown): x is unknown => guardsOrPreds.every(g => g(x))
+export function intersectionOf<const Gs extends ReadonlyArray<Guard<unknown>>>(...guards: Gs): Guard<IntersectionFromGuards<Gs>>;
+export function intersectionOf(...predicates: ReadonlyArray<(x: unknown) => boolean>): Guard<unknown>;
+export function intersectionOf(...guardsOrPreds: ReadonlyArray<(x: unknown) => boolean>): Guard<unknown> {
+	return (x: unknown): x is unknown => guardsOrPreds.every(g => g(x));
 }
 
 /**
@@ -547,13 +547,13 @@ export function intersectionOf(...guardsOrPreds: readonly ((x: unknown) => boole
  * alpha2('a1') // false
  * ```
  */
-export function composedOf<const Gs extends readonly Guard<unknown>[]>(...guards: Gs): Guard<IntersectionFromGuards<Gs>>
-export function composedOf(...predicates: readonly ((x: unknown) => boolean)[]): Guard<unknown>
-export function composedOf(...guardsOrPreds: readonly ((x: unknown) => boolean)[]): Guard<unknown> {
+export function composedOf<const Gs extends ReadonlyArray<Guard<unknown>>>(...guards: Gs): Guard<IntersectionFromGuards<Gs>>;
+export function composedOf(...predicates: ReadonlyArray<(x: unknown) => boolean>): Guard<unknown>;
+export function composedOf(...guardsOrPreds: ReadonlyArray<(x: unknown) => boolean>): Guard<unknown> {
 	return (x: unknown): x is unknown => {
-		for (const g of guardsOrPreds) if (!g(x)) return false
-		return true
-	}
+		for (const g of guardsOrPreds) if (!g(x)) return false;
+		return true;
+	};
 }
 
 /**
@@ -570,13 +570,13 @@ export function composedOf(...guardsOrPreds: readonly ((x: unknown) => boolean)[
  * nonEmpty('') // false
  * ```
  */
-export function whereOf<T>(base: Guard<T>, predicate: (x: T) => boolean): Guard<T>
-export function whereOf<T, _U extends T>(base: Guard<T>, predicate: (x: T) => x is _U): Guard<T>
+export function whereOf<T>(base: Guard<T>, predicate: (x: T) => boolean): Guard<T>;
+export function whereOf<T, _U extends T>(base: Guard<T>, predicate: (x: T) => x is _U): Guard<T>;
 export function whereOf<T>(base: Guard<T>, predicate: (x: T) => boolean): Guard<T> {
 	return (x: unknown): x is T => {
-		if (!base(x)) return false
-		return predicate(x as T)
-	}
+		if (!base(x)) return false;
+		return predicate(x);
+	};
 }
 
 /**
@@ -592,7 +592,7 @@ export function whereOf<T>(base: Guard<T>, predicate: (x: T) => boolean): Guard<
  * ```
  */
 export function lazyOf<T>(thunk: () => Guard<T>): Guard<T> {
-	return (x: unknown): x is T => thunk()(x)
+	return (x: unknown): x is T => thunk()(x);
 }
 
 /**
@@ -610,14 +610,14 @@ export function lazyOf<T>(thunk: () => Guard<T>): Guard<T> {
  * g('') // false
  * ```
  */
-export function transformOf<T, U>(base: Guard<T>, project: ((x: T) => U) | ((x: T) => (arg: T) => U), to: Guard<U>): Guard<T>
+export function transformOf<T, U>(base: Guard<T>, project: ((x: T) => U) | ((x: T) => (arg: T) => U), to: Guard<U>): Guard<T>;
 export function transformOf<T, _U>(base: Guard<T>, project: (x: T) => unknown, to: (x: unknown) => boolean): Guard<T> {
 	return (x: unknown): x is T => {
-		if (!base(x)) return false
-		const projected = project(x as T)
-		const value = typeof projected === 'function' ? (projected as (arg: unknown) => unknown)(x) : projected
-		return to(value)
-	}
+		if (!base(x)) return false;
+		const projected = project(x);
+		const value = typeof projected === 'function' ? (projected as (arg: unknown) => unknown)(x) : projected;
+		return to(value);
+	};
 }
 
 /**
@@ -632,5 +632,5 @@ export function transformOf<T, _U>(base: Guard<T>, project: (x: T) => unknown, t
  * ```
  */
 export function nullableOf<T>(g: Guard<T>): Guard<T | null> {
-	return (x: unknown): x is T | null => x === null || g(x)
+	return (x: unknown): x is T | null => x === null || g(x);
 }

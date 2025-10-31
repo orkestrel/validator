@@ -1,4 +1,4 @@
-import { isRecord } from './collections.js'
+import { isRecord } from './collections.js';
 
 /**
  * Determine whether a value is the empty string (x === '').
@@ -12,7 +12,7 @@ import { isRecord } from './collections.js'
  * ```
  */
 export function isEmptyString(x: unknown): x is '' {
-	return x === ''
+	return x === '';
 }
 
 /**
@@ -28,10 +28,10 @@ export function isEmptyString(x: unknown): x is '' {
  * isEmptyArray(['a'] as unknown) // false
  * ```
  */
-export function isEmptyArray(x: readonly []): boolean
-export function isEmptyArray(x: unknown): x is readonly []
+export function isEmptyArray(x: readonly []): boolean;
+export function isEmptyArray(x: unknown): x is readonly [];
 export function isEmptyArray(x: unknown): boolean {
-	return Array.isArray(x) && x.length === 0
+	return Array.isArray(x) && x.length === 0;
 }
 
 /**
@@ -45,13 +45,13 @@ export function isEmptyArray(x: unknown): boolean {
  * isEmptyObject({ a: 1 } as unknown) // false
  * ```
  */
-export function isEmptyObject(x: Record<string | symbol, never>): boolean
-export function isEmptyObject(x: unknown): x is Record<string | symbol, never>
+export function isEmptyObject(x: Record<string | symbol, never>): boolean;
+export function isEmptyObject(x: unknown): x is Record<string | symbol, never>;
 export function isEmptyObject(x: unknown): boolean {
-	if (!isRecord(x)) return false
-	if (Object.keys(x).length > 0) return false
-	const syms = Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable)
-	return syms.length === 0
+	if (!isRecord(x)) return false;
+	if (Object.keys(x).length > 0) return false;
+	const syms = Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable);
+	return syms.length === 0;
 }
 
 /**
@@ -65,10 +65,10 @@ export function isEmptyObject(x: unknown): boolean {
  * isEmptyMap(new Map([[1, 2]]) as unknown) // false
  * ```
  */
-export function isEmptyMap(x: ReadonlyMap<never, never>): boolean
-export function isEmptyMap(x: unknown): x is ReadonlyMap<never, never>
+export function isEmptyMap(x: ReadonlyMap<never, never>): boolean;
+export function isEmptyMap(x: unknown): x is ReadonlyMap<never, never>;
 export function isEmptyMap(x: unknown): boolean {
-	return x instanceof Map && x.size === 0
+	return x instanceof Map && x.size === 0;
 }
 
 /**
@@ -82,10 +82,10 @@ export function isEmptyMap(x: unknown): boolean {
  * isEmptySet(new Set([1]) as unknown) // false
  * ```
  */
-export function isEmptySet(x: ReadonlySet<never>): boolean
-export function isEmptySet(x: unknown): x is ReadonlySet<never>
+export function isEmptySet(x: ReadonlySet<never>): boolean;
+export function isEmptySet(x: unknown): x is ReadonlySet<never>;
 export function isEmptySet(x: unknown): boolean {
-	return x instanceof Set && x.size === 0
+	return x instanceof Set && x.size === 0;
 }
 
 /**
@@ -99,10 +99,10 @@ export function isEmptySet(x: unknown): boolean {
  * isNonEmptyString('' as unknown) // false
  * ```
  */
-export function isNonEmptyString(x: string): boolean
-export function isNonEmptyString(x: unknown): x is string
+export function isNonEmptyString(x: string): boolean;
+export function isNonEmptyString(x: unknown): x is string;
 export function isNonEmptyString(x: unknown): boolean {
-	return typeof x === 'string' && x.length > 0
+	return typeof x === 'string' && x.length > 0;
 }
 
 /**
@@ -117,10 +117,10 @@ export function isNonEmptyString(x: unknown): boolean {
  * isNonEmptyArray([] as unknown) // false
  * ```
  */
-export function isNonEmptyArray<_T = unknown>(x: readonly [_T, ..._T[]]): boolean
-export function isNonEmptyArray<_T = unknown>(x: unknown): x is readonly [_T, ..._T[]]
+export function isNonEmptyArray<_T = unknown>(x: readonly [_T, ..._T[]]): boolean;
+export function isNonEmptyArray<_T = unknown>(x: unknown): x is readonly [_T, ..._T[]];
 export function isNonEmptyArray<_T = unknown>(x: unknown): boolean {
-	return Array.isArray(x) && x.length > 0
+	return Array.isArray(x) && x.length > 0;
 }
 
 /**
@@ -134,13 +134,13 @@ export function isNonEmptyArray<_T = unknown>(x: unknown): boolean {
  * isNonEmptyObject({} as unknown) // false
  * ```
  */
-export function isNonEmptyObject(x: Record<string | symbol, unknown>): boolean
-export function isNonEmptyObject(x: unknown): x is Record<string | symbol, unknown>
+export function isNonEmptyObject(x: Record<string | symbol, unknown>): boolean;
+export function isNonEmptyObject(x: unknown): x is Record<string | symbol, unknown>;
 export function isNonEmptyObject(x: unknown): boolean {
-	if (!isRecord(x)) return false
-	if (Object.keys(x).length > 0) return true
-	const syms = Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable)
-	return syms.length > 0
+	if (!isRecord(x)) return false;
+	if (Object.keys(x).length > 0) return true;
+	const syms = Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable);
+	return syms.length > 0;
 }
 
 /**
@@ -154,10 +154,10 @@ export function isNonEmptyObject(x: unknown): boolean {
  * isNonEmptyMap(new Map() as unknown) // false
  * ```
  */
-export function isNonEmptyMap<_K = unknown, _V = unknown>(x: ReadonlyMap<_K, _V>): boolean
-export function isNonEmptyMap<_K = unknown, _V = unknown>(x: unknown): x is ReadonlyMap<_K, _V>
+export function isNonEmptyMap<_K = unknown, _V = unknown>(x: ReadonlyMap<_K, _V>): boolean;
+export function isNonEmptyMap<_K = unknown, _V = unknown>(x: unknown): x is ReadonlyMap<_K, _V>;
 export function isNonEmptyMap<_K = unknown, _V = unknown>(x: unknown): boolean {
-	return x instanceof Map && x.size > 0
+	return x instanceof Map && x.size > 0;
 }
 
 /**
@@ -171,8 +171,8 @@ export function isNonEmptyMap<_K = unknown, _V = unknown>(x: unknown): boolean {
  * isNonEmptySet(new Set() as unknown) // false
  * ```
  */
-export function isNonEmptySet<_T = unknown>(x: ReadonlySet<_T>): boolean
-export function isNonEmptySet<_T = unknown>(x: unknown): x is ReadonlySet<_T>
+export function isNonEmptySet<_T = unknown>(x: ReadonlySet<_T>): boolean;
+export function isNonEmptySet<_T = unknown>(x: unknown): x is ReadonlySet<_T>;
 export function isNonEmptySet<_T = unknown>(x: unknown): boolean {
-	return x instanceof Set && x.size > 0
+	return x instanceof Set && x.size > 0;
 }
