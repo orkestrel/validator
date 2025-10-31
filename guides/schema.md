@@ -79,7 +79,7 @@ Partial({}) // true (all keys optional)
 Notes
 - Unlike `objectOf`, `recordOf` only validates enumerable string keys and ignores symbol keys.
 - Use `objectOf` when you need to validate both string and symbol keys.
-- Arrays are rejected.
+- Arrays are rejected (they fail the `isRecord` check; only plain objects with string keys are accepted).
 
 ## mapOf(keyGuard, valueGuard) and setOf(elemGuard)
 
