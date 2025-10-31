@@ -1,33 +1,37 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import { builtinModules } from 'node:module';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const __rootdir = path.resolve(__dirname);
 
 // Vite config to bundle the library (ESM only)
 export default defineConfig({
-	root: path.resolve(__rootdir, 'src'),
-	resolve: {
-		alias: {
-			'@orkestrel/validator': path.resolve(__rootdir, 'src', 'index.ts'),
-		},
-	},
-	build: {
-		sourcemap: true,
-		emptyOutDir: false,
-		outDir: path.resolve(__rootdir, 'dist'),
-		lib: {
-			entry: 'index.ts',
-			formats: ['es'],
-			fileName: () => 'index.js',
-		},
-		rollupOptions: {
-			external: [
-				...builtinModules,
-				/^node:.*/,
-			],
-		},
-	},
+    resolve: {
+        alias: {
+            '@orkestrel/validator': fileURLToPath(new URL('./src/index.ts', import.meta.url)),
+        },
+    },
+    build: {
+        sourcemap: true,
+        emptyOutDir: false,
+        outDir: fileURLToPath(new URL('./dist', import.meta.url)),
+        lib: {
+            entry: fileURLToPath(new URL('./src/index.ts', import.meta.url)),
+            formats: ['es'],
+            fileName: () => 'index.js',
+        },
+        rollupOptions: {
+            external: [
+                ...builtinModules,
+                /^node:.*/,
+            ],
+        },
+    },
+    test: {
+        globals: true,
+        // setupFiles: ['./tests/setup.ts'],
+        environment: 'node',
+        include: ['tests/**/*.test.ts'],
+        exclude: ['node_modules', 'dist'],
+        testTimeout: 10000,
+        hookTimeout: 10000,
+    }
 });
