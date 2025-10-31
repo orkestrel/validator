@@ -129,32 +129,36 @@ describe('setOf', () => {
 })
 
 describe('recordOf', () => {
-	it('validates plain object values and rejects arrays', () => {
-		const G = recordOf(isString)
-		expect(G({ a: 'x' })).toBe(true)
-		expect(G({ a: 'x', b: 1 })).toBe(false)
-		expect(G(['x'] as unknown)).toBe(false)
+	it('accepts exact records and rejects extras', () => {
+		const User = recordOf({ id: isString, age: isNumber })
+		expect(User({ id: 'u1', age: 1 })).toBe(true)
+		expect(User({ id: 'u1' })).toBe(false) // missing required
+		expect(User({ id: 'u1', age: 1, extra: true })).toBe(false) // extra key
 	})
-	it('accepts empty records', () => {
-		const G = recordOf(isString)
-		expect(G({})).toBe(true)
+	it('supports optional keys via second parameter', () => {
+		const User = recordOf({ id: isString, note: isString }, ['note'] as const)
+		expect(User({ id: 'u1' })).toBe(true) // note optional
+		expect(User({ id: 'u1', note: 'hi' })).toBe(true)
+		expect(User({ id: 'u1', note: 1 as unknown as string })).toBe(false)
+		expect(User({ id: 'u1', extra: 1 } as unknown)).toBe(false) // exact-by-default
 	})
-	it('validates all values in record', () => {
-		const G = recordOf(isNumber)
-		expect(G({ a: 1, b: 2, c: 3 })).toBe(true)
-		expect(G({ a: 1, b: 'x' as unknown as number })).toBe(false)
+	it('supports optional=true to make all keys optional', () => {
+		const PartialUser = recordOf({ id: isString, age: isNumber }, true)
+		expect(PartialUser({})).toBe(true)
+		expect(PartialUser({ id: 'x' })).toBe(true)
+		expect(PartialUser({ id: 1 as unknown as string })).toBe(false)
 	})
-	it('properly rejects arrays with numeric indices', () => {
-		const G = recordOf(isNumber)
-		expect(G([1, 2, 3] as unknown)).toBe(false)
-		expect(G([] as unknown)).toBe(false)
+	it('rejects arrays', () => {
+		const User = recordOf({ id: isString })
+		expect(User(['x'] as unknown)).toBe(false)
+		expect(User([] as unknown)).toBe(false)
 	})
 	it('rejects null and non-objects', () => {
-		const G = recordOf(isString)
-		expect(G(null as unknown)).toBe(false)
-		expect(G(undefined as unknown)).toBe(false)
-		expect(G('not an object' as unknown)).toBe(false)
-		expect(G(42 as unknown)).toBe(false)
+		const User = recordOf({ id: isString })
+		expect(User(null as unknown)).toBe(false)
+		expect(User(undefined as unknown)).toBe(false)
+		expect(User('not an object' as unknown)).toBe(false)
+		expect(User(42 as unknown)).toBe(false)
 	})
 })
 
