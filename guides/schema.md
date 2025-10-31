@@ -4,8 +4,8 @@ This guide covers the small set of builders and combinators for composing focuse
 
 Principles
 - Focused: each builder targets a single shape (array, tuple, object, map, set, record, iterable).
-- Exact by default: objects reject extra enumerable keys.
-- Optional keys: `objectOf` accepts `optional` as `true` (all keys) or a readonly array of keys.
+- Exact by default: objects and records reject extra enumerable keys.
+- Optional keys: `objectOf` and `recordOf` accept `optional` as `true` (all keys) or a readonly array of keys.
 - Deterministic: order and options are explicit; no reflection‑heavy magic.
 
 ## objectOf(shape, optional?)
@@ -55,18 +55,31 @@ Pair(['a', 1]) // true
 Pair(['a'] as unknown) // false
 ```
 
-## recordOf(valueGuard)
+## recordOf(shape, optional?)
 
-Plain object with guarded values; arrays are rejected.
+Build an exact record guard from a shape of property guards. Similar to `objectOf`, but only validates string keys (symbol keys are not validated).
 
 ```ts
 import { recordOf } from '@orkestrel/validator'
-import { isString } from '@orkestrel/validator'
+import { isString, isNumber } from '@orkestrel/validator'
 
-const StringMap = recordOf(isString)
-StringMap({ a: 'x' }) // true
-StringMap(['x'] as unknown) // false
+const User = recordOf({ id: isString, age: isNumber })
+User({ id: 'u1', age: 1 }) // true
+User({ id: 'u1' }) // false (missing required)
+User({ id: 'u1', age: 1, extra: true }) // false (extra key)
+
+const WithOptional = recordOf({ id: isString, note: isString }, ['note'] as const)
+WithOptional({ id: 'u1' }) // true (note optional)
+WithOptional({ id: 'u1', note: 'hi' }) // true
+
+const Partial = recordOf({ id: isString, age: isNumber }, true)
+Partial({}) // true (all keys optional)
 ```
+
+Notes
+- Unlike `objectOf`, `recordOf` only validates enumerable string keys and ignores symbol keys.
+- Use `objectOf` when you need to validate both string and symbol keys.
+- Arrays are rejected (they fail the `isRecord` check; only plain objects with string keys are accepted).
 
 ## mapOf(keyGuard, valueGuard) and setOf(elemGuard)
 
