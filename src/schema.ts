@@ -240,31 +240,73 @@ export function mapOf(keyGuardOrPred: (x: unknown) => boolean, valueGuardOrPred:
 	}
 }
 
+export function recordOf<S extends GuardsShape>(shape: S): Guard<FromGuards<S>>
+export function recordOf<S extends GuardsShape, K extends readonly (keyof S & string)[]>(
+	shape: S,
+	optional: K,
+): Guard<OptionalFromGuards<S, K>>
+export function recordOf<S extends GuardsShape>(
+	shape: S,
+	optional: true,
+): Guard<Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>>
+
 /**
- * Guard for a plain-object record whose values match a guard or predicate.
+ * Compose a guard for a record with a fixed set of string properties, each validated by its own guard.
+ * Extra keys are rejected. Symbol keys are not validated (string keys only).
+ * A second parameter can mark properties as optional; all others remain required.
  *
- * Overloads:
- * - recordOf(guard) → typed record guard
- * - recordOf(predicate) → untyped record guard (no TS narrowing)
- *
- * @param valueGuard - Guard/predicate applied to each property value
- * @returns Guard for a record of values matching `valueGuard`
+ * @typeParam S - Shape mapping keys to guards
+ * @typeParam K - Optional keys subset
+ * @param shape - Guards per property
+ * @param optional - Either `true` to mark all keys optional, or a readonly array of keys that are optional
+ * @returns Guard that narrows to a readonly record with required and optional string keys
  * @example
  * ```ts
- * const NumbersByKey = recordOf(isNumber)
- * NumbersByKey({ a: 1 }) // true
+ * const User = recordOf({ id: isString, age: isNumber })
+ * const UserWithOptionalNote = recordOf({ id: isString, note: isString }, ['note'] as const)
+ * const PartialUser = recordOf({ id: isString, age: isNumber }, true)
  * ```
  */
-export function recordOf<T>(valueGuard: Guard<T>): Guard<Record<string, T>>
-export function recordOf(valuePredicate: (x: unknown) => boolean): Guard<Record<string, unknown>>
-export function recordOf(valueGuardOrPred: (x: unknown) => boolean): Guard<Record<string, unknown>> {
-	return (x: unknown): x is Record<string, unknown> => {
+export function recordOf<S extends GuardsShape, K extends readonly (keyof S & string)[] | true | undefined>(
+	shape: S,
+	optional?: K,
+): Guard<
+	K extends true
+		? Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>
+		: K extends readonly (keyof S & string)[]
+			? OptionalFromGuards<S, K>
+			: FromGuards<S>
+> {
+	const keys = Object.keys(shape) as readonly (keyof S & string)[]
+	const optionalSet: Set<string>
+		= optional === true
+			? new Set<string>(keys as readonly string[])
+			: new Set<string>(((optional as readonly string[] | undefined)) ?? [])
+	return ((x: unknown): x is never => {
 		if (!isRecord(x)) return false
-		for (const k of Object.keys(x)) {
-			if (!valueGuardOrPred((x as Record<string, unknown>)[k])) return false
+		// Get all enumerable own string keys (no symbols, unlike objectOf)
+		const ownKeys = Object.keys(x)
+		// Reject extra keys
+		for (const k of ownKeys) {
+			if (!keys.includes(k as keyof S & string)) return false
+		}
+		// Check required and optional keys
+		for (const k of keys) {
+			const present = k in x
+			if (!optionalSet.has(k) && !present) return false
+			if (present) {
+				const g = shape[k]
+				if (!g(x[k])) return false
+			}
 		}
 		return true
-	}
+	}) as unknown as Guard<
+		K extends true
+			? Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>
+			: K extends readonly (keyof S & string)[]
+				? OptionalFromGuards<S, K>
+				: FromGuards<S>
+	>
 }
 
 /**
