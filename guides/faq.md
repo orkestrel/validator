@@ -18,7 +18,7 @@ Basics
 Intermediate
 
 - `objectOf` vs a declarative string schema?
-  - Prefer `objectOf` for programmatic, precise shapes with optional keys and exactness. Compose with `arrayOf`, `mapOf`, `setOf`, and `recordOf` as needed.
+  - Prefer `objectOf` for programmatic, precise shapes with optional keys and exactness. Compose with `arrayOf`, `mapOf`, `setOf`, and `recordOf` as needed. Extra-key checks consider string keys; symbol keys are ignored for exactness.
 
 - Why do simple negation combinators return `Guard<unknown>`?
   - TypeScript cannot express the exact set complement for arbitrary types. Use `complementOf(base, exclude)` when you know the base set to get `Exclude<Base, Excluded>`.

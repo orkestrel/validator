@@ -15,12 +15,12 @@ Highlights
 - Deterministic behavior: options and ordering are explicit and stable
 
 Modules at a glance
-- Primitives: `isString`, `isNumber` (typeof), `isBoolean`, `isFunction`, `isAsyncFunction`, …
-- Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isPromiseFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`, `isZeroArgPromise`
-- Objects: `isRecord`, `keyOf`
+- Primitives: `isString`, `isNumber` (typeof), `isBoolean`, `isFunction`, `isDate`, `isRegExp`, `isError`, `isPromise`, `isPromiseLike`, `isIterable`, `isAsyncIterator`, ArrayBuffer/TypedArray guards
+- Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`
+- Objects: `isRecord`, `keyOf`, `isObject`
 - Arrays & collections: `isArray`, `arrayOf`, `tupleOf`, `recordOf`, `isMap`, `isSet`, `mapOf`, `setOf`, `iterableOf`
-- Combinators: `literalOf`, `enumOf`, `andOf`, `orOf`, `notOf`, `complementOf`, `unionOf`, `intersectionOf`, `composedOf`, `whereOf`, `lazyOf`, `transformOf`, `nullableOf`
-- Emptiness: `isEmptyString` (+ specific) and non‑empty counterparts
+- Combinators: `literalOf`, `enumOf`, `andOf`, `orOf`, `notOf`, `complementOf`, `unionOf`, `intersectionOf`, `composedOf`, `whereOf`, `lazyOf`, `transformOf`, `nullableOf`, `instanceOf`
+- Emptiness: `isEmptyString` (+ others) and non‑empty counterparts
 
 See also
 - Start: installation and a 5‑minute guided try

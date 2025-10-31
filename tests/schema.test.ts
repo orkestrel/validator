@@ -108,6 +108,20 @@ describe('objectOf', () => {
 			ids: new Set(['a', 'b']),
 		} as unknown)).toBe(false);
 	});
+	describe('symbol keys handling', () => {
+		it('ignores extra symbol keys for exactness in objectOf but still validates string keys', () => {
+			const sym = Symbol('s');
+			const G = objectOf({ id: isString });
+			const value = { id: 'u1', [sym]: 123 } as unknown;
+			expect(G(value)).toBe(true);
+		});
+		it('recordOf exactness considers only string keys', () => {
+			const sym = Symbol('s');
+			const G = recordOf({ id: isString });
+			const value = { id: 'u1', [sym]: 123 } as unknown;
+			expect(G(value)).toBe(true);
+		});
+	});
 });
 
 describe('mapOf', () => {

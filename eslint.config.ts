@@ -28,6 +28,10 @@ const exportedSetters = [
     'ExportDefaultDeclaration > ClassDeclaration > ClassBody > MethodDefinition[kind="set"][accessibility!=private][accessibility!=protected]',
 ];
 
+// Narrowed selectors that exclude TypeScript type guard functions (those with a TSTypePredicate return)
+const exportedFnsNoTypePredicate = exportedFns.map(s => `${s}:not(:has(TSTypePredicate))`);
+const exportedMethodsNoTypePredicate = exportedMethods.map(s => `${s}:not(:has(TSTypePredicate))`);
+
 // Toggle-able config blocks (spread into export default)
 // 1) Enable JSDoc's built-in examples processor/config (MD code blocks, etc.)
 const jsdocExamples = jsdoc.configs.examples; // array of flat config entries
@@ -42,13 +46,6 @@ const jsdocRules = [
             jsdoc: { mode: 'typescript', tagNamePreference: { returns: 'returns' } },
         },
         rules: {
-            // Keep types/interfaces centralized in typesFile only
-            'no-restricted-syntax': [
-                'error',
-                { selector: 'TSTypeAliasDeclaration', message: `Define type aliases only in ${typesFile}.` },
-                { selector: 'TSInterfaceDeclaration', message: `Define interfaces only in ${typesFile}.` },
-            ],
-
             // JSDoc authoring across exported APIs
             'jsdoc/no-types': 'error',
             'jsdoc/require-jsdoc': [
@@ -85,13 +82,28 @@ const jsdocRules = [
                 'error',
                 { contexts: [...exportedFns, ...exportedMethods] },
             ],
+            // For functions that are TS type guards (return type predicate), don't require @returns docs.
             'jsdoc/require-returns': [
                 'error',
-                { contexts: [...exportedFns, ...exportedMethods, ...exportedGetters] },
+                {
+                    contexts: [
+                        // Exclude functions/methods that have a TSTypePredicate in their return type
+                        ...exportedFnsNoTypePredicate,
+                        ...exportedMethodsNoTypePredicate,
+                        // Getters can never be type guards; keep them
+                        ...exportedGetters,
+                    ],
+                },
             ],
             'jsdoc/require-returns-description': [
                 'error',
-                { contexts: [...exportedFns, ...exportedMethods, ...exportedGetters] },
+                {
+                    contexts: [
+                        ...exportedFnsNoTypePredicate,
+                        ...exportedMethodsNoTypePredicate,
+                        ...exportedGetters,
+                    ],
+                },
             ],
             'jsdoc/require-example': [
                 'error',
@@ -149,6 +161,21 @@ export default [
             ],
         },
     },
+    // Source files overrides
+    {
+        files: ['src/**/*.ts', 'src/**/*.tsx'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                // Ban value assertions (casts) in source files
+                { selector: 'TSAsExpression', message: 'Do not use type assertions (as). Prefer safer patterns like type guards, generics, inference, or the satisfies operator.' },
+                { selector: 'TSTypeAssertion', message: 'Do not use angle-bracket type assertions (<T>value). Prefer safer patterns like type guards, generics, inference, or the satisfies operator.' },
+                // Keep types/interfaces centralized in typesFile only
+                { selector: 'TSTypeAliasDeclaration', message: `Define type aliases only in ${typesFile}.` },
+                { selector: 'TSInterfaceDeclaration', message: `Define interfaces only in ${typesFile}.` },
+            ],
+        },
+    },
 
     // Test files overrides
     {
@@ -158,6 +185,7 @@ export default [
             '@typescript-eslint/no-unused-vars': 'off',
             '@typescript-eslint/no-empty-function': 'off',
             '@typescript-eslint/require-await': 'off',
+            '@typescript-eslint/no-unsafe-assignment': 'off',
         },
     },
 

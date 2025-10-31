@@ -1,5 +1,32 @@
 # Examples
 
+Object shape
+```ts
+import { objectOf, isString, isNumber } from '@orkestrel/validator'
+
+const User = objectOf({ id: isString, age: isNumber })
+User({ id: 'u1', age: 1 }) // true
+User({ id: 'u1', age: 1, extra: true } as unknown) // false (extra key)
+```
+
+Record shape (string keys only)
+```ts
+import { recordOf, isString } from '@orkestrel/validator'
+
+const R = recordOf({ a: isString })
+R({ a: 'x' }) // true
+R({ a: 'x', b: 'y' } as unknown) // false
+```
+
+Iterables
+```ts
+import { isIterable } from '@orkestrel/validator'
+
+isIterable('abc') // true (strings are iterable)
+isIterable(new Set([1, 2])) // true
+isIterable({}) // false
+```
+
 Parse JSON safely and narrow deeply
 ```ts
 import { objectOf, arrayOf } from '@orkestrel/validator'

@@ -1,3 +1,5 @@
+import { isObject } from './collections.js';
+
 /**
  * Determine whether a value is `null`.
  *
@@ -264,12 +266,10 @@ export function isError(x: unknown): boolean {
  * ```
  */
 export function isPromiseLike<_T = unknown>(x: unknown): x is Promise<_T> | (PromiseLike<_T> & { catch: unknown; finally: unknown }) {
-	if (x == null) return false;
-	const t = typeof x;
-	if (t !== 'object' && t !== 'function') return false;
-	const then = (x as { then?: unknown }).then;
-	const c = (x as { catch?: unknown }).catch;
-	const f = (x as { finally?: unknown }).finally;
+    if (!isObject(x)) return false;
+	const then: unknown = Reflect.get(x, 'then');
+	const c: unknown = Reflect.get(x, 'catch');
+	const f: unknown = Reflect.get(x, 'finally');
 	return typeof then === 'function' && typeof c === 'function' && typeof f === 'function';
 }
 
@@ -350,7 +350,10 @@ export function isSharedArrayBuffer(x: unknown): boolean {
 export function isIterable<_T = unknown>(x: Iterable<_T>): boolean;
 export function isIterable<_T = unknown>(x: unknown): x is Iterable<_T>;
 export function isIterable<_T = unknown>(x: unknown): boolean {
-	return x != null && typeof (x as { [Symbol.iterator]?: unknown })[Symbol.iterator] === 'function';
+	if (typeof x === 'string') return true; // strings are iterable primitives
+	if (!isObject(x)) return false;
+	const iter: unknown = Reflect.get(x, Symbol.iterator);
+	return typeof iter === 'function';
 }
 
 /**
@@ -374,5 +377,7 @@ export function isIterable<_T = unknown>(x: unknown): boolean {
 export function isAsyncIterator<_T = unknown>(x: AsyncIterable<_T>): boolean;
 export function isAsyncIterator<_T = unknown>(x: unknown): x is AsyncIterable<_T>;
 export function isAsyncIterator<_T = unknown>(x: unknown): boolean {
-	return x != null && typeof (x as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator] === 'function';
+	if (!isObject(x)) return false;
+	const aiter: unknown = Reflect.get(x, Symbol.asyncIterator);
+	return typeof aiter === 'function';
 }

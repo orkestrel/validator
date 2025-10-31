@@ -60,10 +60,10 @@ if (Payload(input)) {
 ## Guards
 
 - Primitives: `isNull`, `isUndefined`, `isDefined`, `isString`, `isNumber`, `isBoolean`, `isBigInt`, `isSymbol`, `isFunction`, `isDate`, `isRegExp`, `isError`, `isPromise`, `isPromiseLike`, `isArrayBuffer`, `isSharedArrayBuffer`, `isIterable`, `isAsyncIterator`
-- Arrays & views: `isArray`, `isArrayBufferView`, `isTypedArray`, each concrete `*Array`, `isDataView`
+- Arrays & views: `isArray`, `isArrayBufferView`, typed arrays (`isInt8Array`, `isUint8Array`, `isUint8ClampedArray`, `isInt16Array`, `isUint16Array`, `isInt32Array`, `isUint32Array`, `isFloat32Array`, `isFloat64Array`, `isBigInt64Array`, `isBigUint64Array`), `isDataView`
 - Collections & objects: `isObject`, `isMap`, `isSet`, `isWeakMap`, `isWeakSet`, `isRecord`
 - Emptiness: `isEmptyString`, `isEmptyArray`, `isEmptyObject`, `isEmptyMap`, `isEmptySet`, `isNonEmptyString`, `isNonEmptyArray`, `isNonEmptyObject`, `isNonEmptyMap`, `isNonEmptySet`
-- Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isPromiseFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`, `isZeroArgPromise`
+- Function introspection: `isZeroArg`, `isAsyncFunction`, `isGeneratorFunction`, `isAsyncGeneratorFunction`, `isZeroArgAsync`, `isZeroArgGenerator`, `isZeroArgAsyncGenerator`
 - Schema & combinators: `arrayOf`, `tupleOf`, `objectOf` (second param `optional` supports `true` or a key array), `mapOf`, `setOf`, `recordOf`, `iterableOf`, `literalOf`, `enumOf`, `keyOf`, `pickOf`, `omitOf`, `andOf`, `orOf`, `notOf`, `complementOf`, `unionOf`, `intersectionOf`, `composedOf`, `whereOf`, `lazyOf`, `transformOf`, `nullableOf`, `instanceOf`
 
 Each function accepts `unknown` (or the relevant supertype) and returns a precise `x is T` predicate for meaningful narrowing.

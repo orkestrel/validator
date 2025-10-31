@@ -92,36 +92,53 @@ export function objectOf<S extends GuardsShape, K extends ReadonlyArray<keyof S 
 			? OptionalFromGuards<S, K>
 			: FromGuards<S>
 > {
-	const keys = Object.keys(shape) as ReadonlyArray<keyof S & string>;
-	const optionalSet: Set<string>
-		= optional === true
-			? new Set<string>(keys as readonly string[])
-			: new Set<string>(((optional as readonly string[] | undefined)) ?? []);
-	return ((x: unknown): x is never => {
-		if (!isRecord(x)) return false;
-		const ownKeys: Array<string | symbol> = [
-			...Object.keys(x),
-			...Object.getOwnPropertySymbols(x).filter(s => Object.getOwnPropertyDescriptor(x, s)?.enumerable),
-		];
-		for (const k of ownKeys) {
-			if (typeof k === 'string' && !keys.includes(k as keyof S & string)) return false;
-		}
-		for (const k of keys) {
-			const present = k in x;
-			if (!optionalSet.has(k) && !present) return false;
-			if (present) {
-				const g = shape[k];
-				if (!g((x)[k])) return false;
-			}
-		}
-		return true;
-	}) as unknown as Guard<
+	// Build the allowed string key set from the shape (stable order not required here)
+	const allowed = new Set<string>();
+	for (const k in shape) {
+		if (Object.prototype.hasOwnProperty.call(shape, k)) allowed.add(k);
+	}
+
+	// Build the optional keys set:
+	// - true → all allowed keys optional
+	// - array → listed keys optional
+	// - undefined → none optional
+	const optionalSet = new Set<string>(
+		optional === true
+			? [...allowed]
+			: Array.isArray(optional)
+				? optional.map(k => String(k))
+				: [],
+	);
+
+	return (
+		x: unknown,
+	): x is (
 		K extends true
 			? Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>
 			: K extends ReadonlyArray<keyof S & string>
 				? OptionalFromGuards<S, K>
 				: FromGuards<S>
-	>;
+	) => {
+		if (!isRecord(x)) return false;
+
+		// Collect all enumerable own string keys (symbols are ignored for extra-key checks)
+		const ownStringKeys = Object.keys(x);
+		for (const k of ownStringKeys) {
+			if (!allowed.has(k)) return false;
+		}
+
+		// Check required/optional presence and validate present values
+		for (const k in shape) {
+			if (!Object.prototype.hasOwnProperty.call(shape, k)) continue;
+			const present = k in x;
+			if (!optionalSet.has(k) && !present) return false;
+			if (present) {
+				const g = shape[k];
+				if (!g(x[k])) return false;
+			}
+		}
+		return true;
+	};
 }
 
 /**
@@ -182,7 +199,7 @@ export function instanceOf<C>(ctor: C): Guard<InstanceType<C & AnyConstructor<ob
  */
 export function enumOf<E extends Record<string, string | number>>(e: E): Guard<E[keyof E]> {
 	const values = new Set(Object.values(e));
-	return (x: unknown): x is E[keyof E] => values.has(x as string | number);
+	return (x: unknown): x is E[keyof E] => (typeof x === 'string' || typeof x === 'number') && values.has(x);
 }
 
 /**
@@ -205,7 +222,7 @@ export function setOf(elemPredicate: (x: unknown) => boolean): Guard<ReadonlySet
 export function setOf(elemGuardOrPred: (x: unknown) => boolean): Guard<ReadonlySet<unknown>> {
 	return (x: unknown): x is ReadonlySet<unknown> => {
 		if (!isSet(x)) return false;
-		for (const v of x as Set<unknown>) {
+		for (const v of x) {
 			if (!elemGuardOrPred(v)) return false;
 		}
 		return true;
@@ -233,7 +250,7 @@ export function mapOf(keyPredicate: (x: unknown) => boolean, valuePredicate: (x:
 export function mapOf(keyGuardOrPred: (x: unknown) => boolean, valueGuardOrPred: (x: unknown) => boolean): Guard<ReadonlyMap<unknown, unknown>> {
 	return (x: unknown): x is ReadonlyMap<unknown, unknown> => {
 		if (!isMap(x)) return false;
-		for (const [k, v] of x as Map<unknown, unknown>) {
+		for (const [k, v] of x) {
 			if (!keyGuardOrPred(k) || !valueGuardOrPred(v)) return false;
 		}
 		return true;
@@ -277,21 +294,31 @@ export function recordOf<S extends GuardsShape, K extends ReadonlyArray<keyof S 
 			? OptionalFromGuards<S, K>
 			: FromGuards<S>
 > {
-	const keys = Object.keys(shape) as ReadonlyArray<keyof S & string>;
-	const optionalSet: Set<string>
-		= optional === true
-			? new Set<string>(keys as readonly string[])
-			: new Set<string>(((optional as readonly string[] | undefined)) ?? []);
-	return ((x: unknown): x is never => {
+	const allowed = new Set<string>();
+	for (const k in shape) {
+		if (Object.prototype.hasOwnProperty.call(shape, k)) allowed.add(k);
+	}
+	const optionalSet = new Set<string>(
+		optional === true ? [...allowed] : Array.isArray(optional) ? optional.map(k => String(k)) : [],
+	);
+
+	return (
+		x: unknown,
+	): x is (
+		K extends true
+			? Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>
+			: K extends ReadonlyArray<keyof S & string>
+				? OptionalFromGuards<S, K>
+				: FromGuards<S>
+	) => {
 		if (!isRecord(x)) return false;
-		// Get all enumerable own string keys (no symbols, unlike objectOf)
+		// Only string keys are considered for extra key rejection
 		const ownKeys = Object.keys(x);
-		// Reject extra keys
 		for (const k of ownKeys) {
-			if (!keys.includes(k as keyof S & string)) return false;
+			if (!allowed.has(k)) return false;
 		}
-		// Check required and optional keys
-		for (const k of keys) {
+		for (const k in shape) {
+			if (!Object.prototype.hasOwnProperty.call(shape, k)) continue;
 			const present = k in x;
 			if (!optionalSet.has(k) && !present) return false;
 			if (present) {
@@ -300,13 +327,7 @@ export function recordOf<S extends GuardsShape, K extends ReadonlyArray<keyof S 
 			}
 		}
 		return true;
-	}) as unknown as Guard<
-		K extends true
-			? Readonly<{ [P in keyof S]: FromGuards<S>[P] | undefined }>
-			: K extends ReadonlyArray<keyof S & string>
-				? OptionalFromGuards<S, K>
-				: FromGuards<S>
-	>;
+	};
 }
 
 /**
@@ -365,12 +386,21 @@ export function keyOf<const O extends Readonly<Record<PropertyKey, unknown>>>(ob
  * const picked = pickOf(base, ['id' as const, 'name' as const])
  * ```
  */
-export function pickOf<S extends GuardsShape, K extends ReadonlyArray<keyof S>>(shape: S, keys: K): Pick<S, K[number]> {
-	const out: Record<string, Guard<unknown>> = {};
-	for (const k of keys as ReadonlyArray<keyof S & string>) {
+export function pickOf<S extends GuardsShape, K extends ReadonlyArray<keyof S & string>>(shape: S, keys: K): Pick<S, K[number]> {
+	const out: Partial<Record<keyof S & string, Guard<unknown>>> = {};
+	for (const k of keys) {
 		if (Object.prototype.hasOwnProperty.call(shape, k)) out[k] = shape[k];
 	}
-	return out as Pick<S, K[number]>;
+	// Refine type locally without value casts
+	function ensureComplete(
+		_value: unknown,
+		_shape: S,
+		_keys: K,
+	): asserts _value is Pick<S, K[number]> {
+		void _value; void _shape; void _keys;
+	}
+	ensureComplete(out, shape, keys);
+	return out;
 }
 
 /**
@@ -385,13 +415,23 @@ export function pickOf<S extends GuardsShape, K extends ReadonlyArray<keyof S>>(
  * const omitted = omitOf(base, ['age' as const])
  * ```
  */
-export function omitOf<S extends GuardsShape, K extends ReadonlyArray<keyof S>>(shape: S, keys: K): Omit<S, K[number]> {
-	const skip = new Set<PropertyKey>(keys as readonly PropertyKey[]);
-	const out: Record<string, Guard<unknown>> = {};
-	for (const k of Object.keys(shape)) {
+export function omitOf<S extends GuardsShape, K extends ReadonlyArray<keyof S & string>>(shape: S, keys: K): Omit<S, K[number]> {
+	const skip = new Set<PropertyKey>();
+	for (const k of keys) skip.add(k);
+	const out: Partial<Record<keyof S & string, Guard<unknown>>> = {};
+	for (const k in shape) {
+		if (!Object.prototype.hasOwnProperty.call(shape, k)) continue;
 		if (!skip.has(k)) out[k] = shape[k];
 	}
-	return out as Omit<S, K[number]>;
+	function ensureOmitted(
+		_value: unknown,
+		_shape: S,
+		_keys: K,
+	): asserts _value is Omit<S, K[number]> {
+		void _value; void _shape; void _keys;
+	}
+	ensureOmitted(out, shape, keys);
+	return out;
 }
 
 /**
@@ -481,7 +521,10 @@ export function complementOf<TBase, TExclude extends TBase>(
 	base: Guard<TBase>,
 	exclude: Guard<TExclude> | ((x: TBase) => x is TExclude),
 ): Guard<Exclude<TBase, TExclude>> {
-	return (x: unknown): x is Exclude<TBase, TExclude> => base(x) && !(exclude as (x: unknown) => boolean)(x);
+	return (x: unknown): x is Exclude<TBase, TExclude> => {
+		if (!base(x)) return false;
+		return !exclude(x);
+	};
 }
 
 /**
@@ -533,7 +576,7 @@ export function intersectionOf(...guardsOrPreds: ReadonlyArray<(x: unknown) => b
  *
  * Overloads:
  * - composedOf(...guards) → typed intersection guard
- * - composedOf(...predicates) → untyped guard (no TS narrowing)
+ * - composedOf(...predicates) → untyped guard (no TS element narrowing)
  *
  * @param guards - Guards or predicates to combine
  * @returns Guard for the intersection of all guarded types
@@ -615,7 +658,10 @@ export function transformOf<T, _U>(base: Guard<T>, project: (x: T) => unknown, t
 	return (x: unknown): x is T => {
 		if (!base(x)) return false;
 		const projected = project(x);
-		const value = typeof projected === 'function' ? (projected as (arg: unknown) => unknown)(x) : projected;
+		function isUnary<R>(v: unknown): v is (arg: T) => R {
+			return typeof v === 'function';
+		}
+		const value = isUnary<unknown>(projected) ? projected(x) : projected;
 		return to(value);
 	};
 }

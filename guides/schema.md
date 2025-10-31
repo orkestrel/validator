@@ -10,7 +10,7 @@ Principles
 
 ## objectOf(shape, optional?)
 
-Build an exact object guard from a shape of property guards.
+Build an exact object guard from a shape of property guards. Extra‑key checks consider only enumerable string keys; symbol keys are ignored for exactness.
 
 ```ts
 import { objectOf } from '@orkestrel/validator'
@@ -77,8 +77,7 @@ Partial({}) // true (all keys optional)
 ```
 
 Notes
-- Unlike `objectOf`, `recordOf` only validates enumerable string keys and ignores symbol keys.
-- Use `objectOf` when you need to validate both string and symbol keys.
+- For extra‑key checks, both `objectOf` and `recordOf` consider only enumerable string keys; symbol keys are ignored for exactness.
 - Arrays are rejected (they fail the `isRecord` check; only plain objects with string keys are accepted).
 
 ## mapOf(keyGuard, valueGuard) and setOf(elemGuard)
@@ -125,7 +124,7 @@ isColor('RED') // true
 
 ## instanceOf(ctor)
 
-Create a guard that accepts values where `value instanceof ctor`. Optionally enforce an additional boolean predicate on `T`.
+Create a guard that accepts values where `value instanceof ctor`.
 
 ```ts
 import { instanceOf } from '@orkestrel/validator'
